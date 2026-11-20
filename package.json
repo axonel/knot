@@ -14,6 +14,8 @@
     "package:dir": "electron-builder --linux dir",
     "package:appimage": "electron-builder --linux AppImage",
     "pack": "npm run build && npm run package",
+    "install:desktop": "node scripts/install-desktop.js",
+    "uninstall:desktop": "node scripts/uninstall-desktop.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "start": "node scripts/start.js",

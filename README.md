@@ -43,6 +43,9 @@ Knot replaces this manual command with a fully managed, UI-based process control
   - `Running`: Process is active, alive, and communicating.
   - `Stopping`: Graceful shutdown signal has been dispatched.
   - `Error`: Startup failure or unexpected exit occurred with diagnostic telemetry.
+- **Remote Connection Verification**:
+  - Explicitly distinguishes between process-level execution and verified remote connectivity (`Unverified`, `Pairing Required`, or `Remote Connected`).
+  - Detects remote broker connection and device pairing requirements from process telemetry output rather than assuming connection merely because the child process is alive.
 - **Graceful Termination & Fallback**:
   - Sends `SIGINT` (with fallback to `SIGTERM`) to permit Desktop Commander to revoke MQTT sessions cleanly.
   - Automatically escalates to `SIGKILL` only if the process fails to terminate within the grace timeout.
@@ -94,22 +97,73 @@ Run the comprehensive test suite with Vitest:
 npm test
 ```
 
+### Local Development
+Launch the Electron desktop application with Vite Hot Module Replacement (HMR):
+```bash
+npm run dev
+```
+
 ### Production Build
 Compile renderer, Electron main process, and preload scripts:
 ```bash
 npm run build
 ```
 
-### Starting the Application
+### Starting the Compiled Application
 Launch the compiled desktop application in Electron:
 ```bash
 npm start
 ```
 
-For live renderer development in a browser window:
+---
+
+## 🐧 Linux Desktop Integration & Packaging
+
+Knot is fully integrated into the Linux desktop environment (tested on Arch Linux / Omarchy / Hyprland / Wayland).
+
+### Packaging
+Knot uses `electron-builder` to produce standalone Linux distributions:
+- **Build AppImage and Unpacked directory**:
+  ```bash
+  npm run pack
+  ```
+- **Build AppImage only**:
+  ```bash
+  npm run package:appimage
+  ```
+- **Build Unpacked Linux binary**:
+  ```bash
+  npm run package:dir
+  ```
+
+Packaged artifacts are placed into the `release/` directory:
+- `release/Knot-1.0.0.AppImage`
+- `release/linux-unpacked/knot`
+
+### Installing to Application Launcher
+To make Knot immediately discoverable in your desktop environment's application launcher (such as Omarchy launcher / wofi / rofi / GNOME / KDE):
+
 ```bash
-npm run dev
+npm run install:desktop
 ```
+
+This automated installation:
+1. Installs `knot.desktop` to `~/.local/share/applications/` with standard XDG categories (`Development;`), keywords, and WMClass.
+2. Installs high-resolution application icons (16x16, 24x24, 32x32, 48x48, 64x64, 128x128, 256x256, 512x512, and scalable SVG) into `~/.local/share/icons/hicolor/`.
+3. Creates an executable launcher wrapper at `~/.local/bin/knot`.
+4. Runs `desktop-file-validate`, `update-desktop-database`, and `gtk-update-icon-cache`.
+
+You can then launch Knot from the application launcher or directly from the terminal with:
+```bash
+knot
+```
+
+### Uninstalling Desktop Launcher Integration
+To cleanly remove the desktop launcher entry, icons, and executable wrapper:
+```bash
+npm run uninstall:desktop
+```
+
 
 ---
 

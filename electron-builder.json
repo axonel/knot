@@ -2,7 +2,6 @@
   "appId": "com.axonel.knot",
   "productName": "Knot",
   "executableName": "knot",
-  "desktopName": "knot.desktop",
   "directories": {
     "output": "release"
   },
@@ -18,13 +17,7 @@
     "category": "Development",
     "icon": "build/icons",
     "syncDesktopName": true,
-    "desktop": {
-      "Name": "Knot",
-      "GenericName": "AI Agent Process Manager",
-      "Comment": "Where AI agents work together.",
-      "Categories": "Development;",
-      "Keywords": "ai;agent;knot;mcp;desktop-commander;remote;",
-      "StartupWMClass": "Knot"
-    }
+    "description": "Where AI agents work together.",
+    "synopsis": "Desktop Commander Process Manager"
   }
 }

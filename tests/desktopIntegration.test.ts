@@ -73,7 +73,8 @@ describe('Linux Desktop Integration & Packaging', () => {
       expect(config.executableName).toBe('knot');
       expect(config.linux.target).toContain('AppImage');
       expect(config.linux.target).toContain('dir');
-      expect(config.linux.desktop.Name).toBe('Knot');
+      expect(config.linux.category).toBe('Development');
+      expect(config.linux.syncDesktopName).toBe(true);
     });
   });
 

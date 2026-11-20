@@ -2,6 +2,7 @@
   "name": "knot",
   "version": "1.0.0",
   "description": "Knot — Where AI agents work together.",
+  "desktopName": "knot.desktop",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "node scripts/dev.js",

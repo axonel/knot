@@ -28,14 +28,126 @@ export function installDesktopIntegration(options = {}) {
   const unpackedBinary = path.join(projectDir, 'release', 'linux-unpacked', 'knot');
 
   const launcherContent = `#!/usr/bin/env bash
-# Knot desktop launcher script
-if [ -f "${appImagePath}" ]; then
-  exec "${appImagePath}" "$@"
-elif [ -x "${unpackedBinary}" ]; then
-  exec "${unpackedBinary}" "$@"
-else
-  cd "${projectDir}" && npm start -- "$@"
+# Knot desktop launcher script with robust diagnostic logging and fallback
+set -u
+
+STATE_HOME="\${XDG_STATE_HOME:-\$HOME/.local/state}"
+LOG_DIR="\$STATE_HOME/knot/logs"
+mkdir -p "\$LOG_DIR"
+LOG_FILE="\$LOG_DIR/launcher.log"
+
+# Log rotation: rotate if greater than 1MB and preserve up to 5 backups
+if [ -f "\$LOG_FILE" ]; then
+  FILE_SIZE=\$(wc -c < "\$LOG_FILE" 2>/dev/null || echo 0)
+  if [ "\$FILE_SIZE" -gt 1048576 ]; then
+    mv "\$LOG_FILE" "\$LOG_FILE.\$(date +%Y%m%d%H%M%S).bak"
+    ls -tp "\$LOG_DIR"/launcher.log.*.bak 2>/dev/null | grep -v '/\$' | tail -n +6 | xargs -r rm -f --
+  fi
 fi
+
+log() {
+  echo "[\$(date -Iseconds)] [Knot Launcher] \$*" >> "\$LOG_FILE"
+}
+
+log "=== Knot launch sequence initiated ==="
+log "Arguments: \${*:-none}"
+log "Display environment: DISPLAY=\${DISPLAY:-none}, WAYLAND_DISPLAY=\${WAYLAND_DISPLAY:-none}, XDG_SESSION_TYPE=\${XDG_SESSION_TYPE:-none}"
+
+APPIMAGE_PATH="${appImagePath}"
+UNPACKED_PATH="${unpackedBinary}"
+PROJECT_DIR="${projectDir}"
+
+# 1. Check FUSE library availability
+FUSE2_AVAILABLE=0
+if ldconfig -p 2>/dev/null | grep -q "libfuse\\.so\\.2"; then
+  FUSE2_AVAILABLE=1
+  log "System FUSE2 library (libfuse.so.2) detected."
+else
+  log "System FUSE2 library not found. Enabling APPIMAGE_EXTRACT_AND_RUN=1 for AppImage compatibility."
+  export APPIMAGE_EXTRACT_AND_RUN=1
+fi
+
+LAUNCH_SUCCESS=0
+
+# Target 1: AppImage
+if [ -f "\$APPIMAGE_PATH" ]; then
+  chmod +x "\$APPIMAGE_PATH" 2>/dev/null || true
+  if [ -x "\$APPIMAGE_PATH" ]; then
+    log "Attempting launch using AppImage at: \$APPIMAGE_PATH"
+    "\$APPIMAGE_PATH" "\$@" >> "\$LOG_FILE" 2>&1 &
+    APP_PID=\$!
+    sleep 0.35
+    if kill -0 "\$APP_PID" 2>/dev/null; then
+      log "AppImage started successfully (PID: \$APP_PID)."
+      LAUNCH_SUCCESS=1
+      wait "\$APP_PID" 2>/dev/null || true
+      exit 0
+    else
+      wait "\$APP_PID" 2>/dev/null
+      APP_EXIT=\$?
+      if [ "\$APP_EXIT" -eq 0 ]; then
+        log "AppImage completed execution with exit code 0."
+        exit 0
+      else
+        log "AppImage exited prematurely with error code \$APP_EXIT. Proceeding to unpacked fallback."
+      fi
+    fi
+  else
+    log "AppImage found but lacks executable permissions: \$APPIMAGE_PATH"
+  fi
+else
+  log "AppImage not found at \$APPIMAGE_PATH"
+fi
+
+# Target 2: Unpacked Binary Fallback
+if [ "\$LAUNCH_SUCCESS" -eq 0 ] && [ -f "\$UNPACKED_PATH" ]; then
+  chmod +x "\$UNPACKED_PATH" 2>/dev/null || true
+  if [ -x "\$UNPACKED_PATH" ]; then
+    log "Attempting fallback launch using unpacked binary at: \$UNPACKED_PATH"
+    "\$UNPACKED_PATH" "\$@" >> "\$LOG_FILE" 2>&1 &
+    APP_PID=\$!
+    sleep 0.35
+    if kill -0 "\$APP_PID" 2>/dev/null; then
+      log "Unpacked application started successfully (PID: \$APP_PID)."
+      LAUNCH_SUCCESS=1
+      wait "\$APP_PID" 2>/dev/null || true
+      exit 0
+    else
+      wait "\$APP_PID" 2>/dev/null
+      APP_EXIT=\$?
+      if [ "\$APP_EXIT" -eq 0 ]; then
+        log "Unpacked binary completed execution with exit code 0."
+        exit 0
+      else
+        log "Unpacked binary exited prematurely with error code \$APP_EXIT. Proceeding to npm fallback."
+      fi
+    fi
+  else
+    log "Unpacked binary found but lacks executable permissions: \$UNPACKED_PATH"
+  fi
+fi
+
+# Target 3: npm start Fallback (only if npm and node are in PATH)
+if [ "\$LAUNCH_SUCCESS" -eq 0 ]; then
+  NPM_BIN=\$(command -v npm 2>/dev/null || true)
+  if [ -n "\$NPM_BIN" ] && [ -d "\$PROJECT_DIR" ]; then
+    log "Attempting fallback launch via npm start at: \$PROJECT_DIR"
+    cd "\$PROJECT_DIR"
+    "\$NPM_BIN" start -- "\$@" >> "\$LOG_FILE" 2>&1 &
+    APP_PID=\$!
+    wait "\$APP_PID" 2>/dev/null || true
+    exit 0
+  else
+    log "npm command not found in PATH or project directory missing."
+  fi
+fi
+
+# Failure: All targets failed
+log "FATAL: All launch targets failed for Knot."
+if command -v notify-send >/dev/null 2>&1; then
+  notify-send -u critical "Knot Launch Error" "Could not start Knot. Diagnostic logs saved to \$LOG_FILE"
+fi
+exit 1
 `;
 
   fs.writeFileSync(launcherPath, launcherContent, { mode: 0o755 });
@@ -74,7 +186,7 @@ Icon=knot
 Terminal=false
 Categories=Development;
 Keywords=ai;agent;knot;mcp;desktop-commander;remote;
-StartupWMClass=Knot
+StartupWMClass=knot
 `;
 
   fs.writeFileSync(desktopFilePath, desktopContent, { mode: 0o644 });

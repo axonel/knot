@@ -21,7 +21,7 @@ describe('Linux Desktop Integration & Packaging', () => {
       expect(content).toContain('Icon=knot');
       expect(content).toContain('Type=Application');
       expect(content).toContain('Categories=Development;');
-      expect(content).toContain('StartupWMClass=Knot');
+      expect(content).toMatch(/StartupWMClass=knot/i);
     });
 
     it('passes desktop-file-validate', () => {

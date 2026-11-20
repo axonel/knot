@@ -8,4 +8,4 @@ Icon=knot
 Terminal=false
 Categories=Development;
 Keywords=ai;agent;knot;mcp;desktop-commander;remote;
-StartupWMClass=Knot
+StartupWMClass=knot

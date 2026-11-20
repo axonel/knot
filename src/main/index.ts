@@ -1,12 +1,26 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import * as path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { DesktopCommanderManager } from './desktopCommanderManager.js';
 import { logger } from './diagnosticLogger.js';
+import { initDatabaseService, DatabaseService } from './database/index.js';
+import type {
+  CreateProjectInput,
+  UpdateProjectInput,
+  CreateSessionInput,
+  SessionStatus,
+  AppendMessageInput,
+  PaginationOptions,
+  CreateTaskInput,
+  TaskStatus,
+  AppendEventInput,
+  EventFilterOptions,
+} from '../shared/types.js';
 
 let mainWindow: BrowserWindow | null = null;
 const manager = new DesktopCommanderManager();
+let dbService: DatabaseService | null = null;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -25,24 +39,7 @@ if (process.platform === 'linux') {
   app.setAppUserModelId('knot');
 }
 
-// 1. Single Instance Lock: Prevent duplicate processes
-const gotTheLock = app.requestSingleInstanceLock();
-if (!gotTheLock) {
-  logger.info('Duplicate Knot process launch detected. Transferring focus to existing instance and terminating duplicate.');
-  app.exit(0);
-} else {
-  app.on('second-instance', (_event, commandLine) => {
-    logger.info('Second instance launch requested with command line', commandLine);
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) {
-        mainWindow.restore();
-      }
-      mainWindow.focus();
-    }
-  });
-}
-
-// 2. Handle CLI flags (--version, --help) when run directly from terminal
+// 1. Handle CLI flags (--version, --help) when run directly from terminal
 const args = process.argv.slice(1);
 if (args.includes('--version') || args.includes('-v')) {
   console.log('Knot v1.0.0');
@@ -59,6 +56,23 @@ Options:
   -h, --help       Show help text
 `);
   process.exit(0);
+}
+
+// 2. Single Instance Lock: Prevent duplicate GUI processes
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  logger.info('Duplicate Knot process launch detected. Transferring focus to existing instance and terminating duplicate.');
+  app.exit(0);
+} else {
+  app.on('second-instance', (_event, commandLine) => {
+    logger.info('Second instance launch requested with command line', commandLine);
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.focus();
+    }
+  });
 }
 
 function resolveIconPath(): string | undefined {
@@ -317,9 +331,146 @@ ipcMain.handle('desktop-commander:logs', () => {
   return manager.getLogs();
 });
 
+// Register Desktop Commander IPC handlers
+ipcMain.handle('desktop-commander:start', async () => {
+  return await manager.start();
+});
+
+ipcMain.handle('desktop-commander:stop', async () => {
+  return await manager.stop();
+});
+
+ipcMain.handle('desktop-commander:status', () => {
+  return manager.getStatus();
+});
+
+ipcMain.handle('desktop-commander:logs', () => {
+  return manager.getLogs();
+});
+
 ipcMain.handle('desktop-commander:clearLogs', () => {
   manager.clearLogs();
   return { success: true };
+});
+
+// Register Project Management IPC handlers
+ipcMain.handle('projects:list', (_event, includeArchived?: boolean) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.projects.list(Boolean(includeArchived));
+});
+
+ipcMain.handle('projects:get', (_event, id: string) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.projects.get(id);
+});
+
+ipcMain.handle('projects:create', (_event, data: CreateProjectInput) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.projects.create(data);
+});
+
+ipcMain.handle('projects:update', (_event, id: string, data: UpdateProjectInput) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.projects.update(id, data);
+});
+
+ipcMain.handle('projects:archive', (_event, id: string) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.projects.archive(id);
+});
+
+ipcMain.handle('projects:unarchive', (_event, id: string) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.projects.unarchive(id);
+});
+
+ipcMain.handle('projects:selectDirectory', async () => {
+  const focusedWindow = BrowserWindow.getFocusedWindow() || mainWindow;
+  const dialogOptions = {
+    title: 'Select Project Repository Directory',
+    properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[],
+  };
+  const result = focusedWindow
+    ? await dialog.showOpenDialog(focusedWindow, dialogOptions)
+    : await dialog.showOpenDialog(dialogOptions);
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+  const chosenPath = result.filePaths[0];
+  if (fs.existsSync(chosenPath) && fs.statSync(chosenPath).isDirectory()) {
+    return chosenPath;
+  }
+  throw new Error('Selected path is not a valid directory.');
+});
+
+// Register Session Management IPC handlers
+ipcMain.handle('sessions:list', (_event, projectId: string, includeArchived?: boolean) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.sessions.listByProject(projectId, Boolean(includeArchived));
+});
+
+ipcMain.handle('sessions:get', (_event, id: string) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.sessions.get(id);
+});
+
+ipcMain.handle('sessions:create', (_event, data: CreateSessionInput) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.sessions.create(data);
+});
+
+ipcMain.handle('sessions:updateStatus', (_event, id: string, status: SessionStatus) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.sessions.updateStatus(id, status);
+});
+
+ipcMain.handle('sessions:updateTitle', (_event, id: string, title: string) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.sessions.updateTitle(id, title);
+});
+
+// Register Message Persistence IPC handlers
+ipcMain.handle('messages:list', (_event, sessionId: string, options?: PaginationOptions) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.messages.listBySession(sessionId, options);
+});
+
+ipcMain.handle('messages:append', (_event, data: AppendMessageInput) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.messages.append(data);
+});
+
+// Register Task Management IPC handlers
+ipcMain.handle('tasks:list', (_event, sessionId: string, status?: TaskStatus) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.tasks.listBySession(sessionId, status);
+});
+
+ipcMain.handle('tasks:get', (_event, id: string) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.tasks.get(id);
+});
+
+ipcMain.handle('tasks:create', (_event, data: CreateTaskInput) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.tasks.create(data);
+});
+
+ipcMain.handle('tasks:updateStatus', (_event, id: string, status: TaskStatus) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.tasks.updateStatus(id, status);
+});
+
+// Register Event Audit Log IPC handlers
+ipcMain.handle('events:list', (_event, sessionId: string, options?: EventFilterOptions) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.events.listBySession(sessionId, options);
+});
+
+ipcMain.handle('events:append', (_event, data: AppendEventInput) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.events.append(data);
 });
 
 // App lifecycle & shutdown cleanup
@@ -331,11 +482,26 @@ app.on('before-quit', async (event) => {
   } catch (err) {
     logger.error('Error during Desktop Commander cleanup on app quit', err);
   } finally {
+    if (dbService) {
+      try {
+        dbService.close();
+        logger.info('Database closed cleanly.');
+      } catch (dbErr) {
+        logger.error('Error closing database on app quit', dbErr);
+      }
+    }
     app.exit(0);
   }
 });
 
 if (gotTheLock) {
+  try {
+    dbService = initDatabaseService();
+    logger.info('Database service successfully initialized.');
+  } catch (err) {
+    logger.error('Failed to initialize database service at startup', err);
+  }
+
   app.whenReady().then(() => {
     createWindow();
 

@@ -5,8 +5,12 @@ import { KnotLogo } from '../src/renderer/components/KnotLogo.js';
 import { DesktopCommanderLogo } from '../src/renderer/components/DesktopCommanderLogo.js';
 import { StatusBadge } from '../src/renderer/components/DesktopCommander/StatusBadge.js';
 import { ProcessManager } from '../src/renderer/components/DesktopCommander/ProcessManager.js';
+import { StatusPill } from '../src/renderer/components/ProjectManager/StatusPill.js';
+import { ProjectList } from '../src/renderer/components/ProjectManager/ProjectList.js';
+import { ProjectDetail } from '../src/renderer/components/ProjectManager/ProjectDetail.js';
+import { SessionDetail } from '../src/renderer/components/ProjectManager/SessionDetail.js';
 import { App } from '../src/renderer/App.js';
-import { ProcessStatusInfo, LogEntry } from '../src/shared/types.js';
+import { ProcessStatusInfo, LogEntry, Project, Session } from '../src/shared/types.js';
 
 describe('UI and Branding Components', () => {
   describe('KnotLogo', () => {
@@ -82,6 +86,36 @@ describe('UI and Branding Components', () => {
           logCallback = cb;
           return vi.fn();
         }),
+        projects: {
+          list: vi.fn().mockResolvedValue([]),
+          get: vi.fn().mockResolvedValue(null),
+          create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'p-1', ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+          update: vi.fn().mockImplementation((id, d) => Promise.resolve({ id, ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+          archive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Archived', createdAt: '', updatedAt: '', archivedAt: new Date().toISOString(), sessionCount: 0 })),
+          unarchive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Active', createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+          selectDirectory: vi.fn().mockResolvedValue('/mock/path'),
+        },
+        sessions: {
+          list: vi.fn().mockResolvedValue([]),
+          get: vi.fn().mockResolvedValue(null),
+          create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 's-1', ...d, status: 'active', createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
+          updateStatus: vi.fn().mockImplementation((id, status) => Promise.resolve({ id, projectId: 'p-1', title: 'S', status, createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
+          updateTitle: vi.fn().mockImplementation((id, title) => Promise.resolve({ id, projectId: 'p-1', title, status: 'active', createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
+        },
+        messages: {
+          list: vi.fn().mockResolvedValue([]),
+          append: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'm-1', ...d, sequence: 1, createdAt: '' })),
+        },
+        tasks: {
+          list: vi.fn().mockResolvedValue([]),
+          get: vi.fn().mockResolvedValue(null),
+          create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 't-1', ...d, status: 'pending', createdAt: '', updatedAt: '', startedAt: null, completedAt: null, payload: null })),
+          updateStatus: vi.fn().mockImplementation((id, status) => Promise.resolve({ id, sessionId: 's-1', title: 'T', status, createdAt: '', updatedAt: '', startedAt: null, completedAt: null, payload: null })),
+        },
+        events: {
+          list: vi.fn().mockResolvedValue([]),
+          append: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'e-1', ...d, createdAt: '' })),
+        },
       };
     });
 
@@ -215,4 +249,224 @@ describe('UI and Branding Components', () => {
       expect(screen.getByText('axonel/knot')).toBeInTheDocument();
     });
   });
+
+  describe('Project & Session Management UI', () => {
+    describe('StatusPill', () => {
+      it('renders session status variants correctly', () => {
+        const { rerender } = render(<StatusPill status="active" type="session" />);
+        expect(screen.getByTestId('status-pill')).toHaveTextContent('Active');
+
+        rerender(<StatusPill status="paused" type="session" />);
+        expect(screen.getByTestId('status-pill')).toHaveTextContent('Paused');
+
+        rerender(<StatusPill status="completed" type="session" />);
+        expect(screen.getByTestId('status-pill')).toHaveTextContent('Completed');
+
+        rerender(<StatusPill status="archived" type="session" />);
+        expect(screen.getByTestId('status-pill')).toHaveTextContent('Archived');
+      });
+
+      it('renders task status variants correctly', () => {
+        const { rerender } = render(<StatusPill status="running" type="task" />);
+        expect(screen.getByTestId('status-pill')).toHaveTextContent('Running');
+
+        rerender(<StatusPill status="queued" type="task" />);
+        expect(screen.getByTestId('status-pill')).toHaveTextContent('Queued');
+
+        rerender(<StatusPill status="succeeded" type="task" />);
+        expect(screen.getByTestId('status-pill')).toHaveTextContent('Succeeded');
+
+        rerender(<StatusPill status="failed" type="task" />);
+        expect(screen.getByTestId('status-pill')).toHaveTextContent('Failed');
+      });
+    });
+
+    describe('ProjectList', () => {
+      const mockProjects: Project[] = [
+        {
+          id: 'proj-1',
+          name: 'Knot Main Repo',
+          repositoryPath: '/home/user/workspace/knot',
+          repositoryRemote: 'https://github.com/axonel/knot',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          archivedAt: null,
+          sessionCount: 3,
+        },
+        {
+          id: 'proj-2',
+          name: 'Archived Demo',
+          repositoryPath: null,
+          repositoryRemote: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          archivedAt: new Date().toISOString(),
+          sessionCount: 0,
+        },
+      ];
+
+      it('renders empty state when no projects exist', () => {
+        render(
+          <ProjectList
+            projects={[]}
+            isLoading={false}
+            onSelectProject={vi.fn()}
+            onRefresh={vi.fn()}
+          />
+        );
+
+        expect(screen.getByText('No projects found')).toBeInTheDocument();
+        expect(screen.getByText('Create First Project')).toBeInTheDocument();
+      });
+
+      it('renders active projects and triggers selection on click', () => {
+        const onSelect = vi.fn();
+        render(
+          <ProjectList
+            projects={mockProjects}
+            isLoading={false}
+            onSelectProject={onSelect}
+            onRefresh={vi.fn()}
+          />
+        );
+
+        expect(screen.getByText('Knot Main Repo')).toBeInTheDocument();
+        expect(screen.getByText('3 sessions')).toBeInTheDocument();
+        expect(screen.queryByText('Archived Demo')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Knot Main Repo'));
+        expect(onSelect).toHaveBeenCalledWith('proj-1');
+      });
+
+      it('opens New Project modal and creates a project', async () => {
+        const onRefresh = vi.fn();
+        render(
+          <ProjectList
+            projects={[]}
+            isLoading={false}
+            onSelectProject={vi.fn()}
+            onRefresh={onRefresh}
+          />
+        );
+
+        fireEvent.click(screen.getByTestId('new-project-btn'));
+        expect(screen.getByPlaceholderText('e.g. knot or my-project')).toBeInTheDocument();
+
+        fireEvent.change(screen.getByPlaceholderText('e.g. knot or my-project'), {
+          target: { value: 'New Test Project' },
+        });
+
+        fireEvent.click(screen.getByText('Create Project'));
+
+        await waitFor(() => {
+          expect(window.knotApi?.projects.create).toHaveBeenCalledWith(
+            expect.objectContaining({ name: 'New Test Project' })
+          );
+          expect(onRefresh).toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe('ProjectDetail', () => {
+      const mockProject: Project = {
+        id: 'proj-1',
+        name: 'Knot Main Repo',
+        repositoryPath: '/home/user/workspace/knot',
+        repositoryRemote: 'https://github.com/axonel/knot',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        archivedAt: null,
+        sessionCount: 1,
+      };
+
+      const mockSessions: Session[] = [
+        {
+          id: 'sess-1',
+          projectId: 'proj-1',
+          title: 'Initial Development',
+          status: 'active',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          lastActivityAt: new Date().toISOString(),
+          startedAt: new Date().toISOString(),
+          endedAt: null,
+          metadata: null,
+        },
+      ];
+
+      it('renders project metadata, sessions, and triggers status change', async () => {
+        (window.knotApi!.sessions.list as any).mockResolvedValue(mockSessions);
+
+        render(
+          <ProjectDetail
+            project={mockProject}
+            onBack={vi.fn()}
+            onSelectSession={vi.fn()}
+            onProjectUpdated={vi.fn()}
+          />
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('Initial Development')).toBeInTheDocument();
+        });
+
+        const pauseBtn = screen.getByText('Pause');
+        fireEvent.click(pauseBtn);
+
+        await waitFor(() => {
+          expect(window.knotApi?.sessions.updateStatus).toHaveBeenCalledWith('sess-1', 'paused');
+        });
+      });
+    });
+
+    describe('SessionDetail', () => {
+      const mockSession: Session = {
+        id: 'sess-1',
+        projectId: 'proj-1',
+        title: 'Session Alpha',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastActivityAt: new Date().toISOString(),
+        startedAt: new Date().toISOString(),
+        endedAt: null,
+        metadata: null,
+      };
+
+      it('renders session details and appends message', async () => {
+        (window.knotApi!.sessions.get as any).mockResolvedValue(mockSession);
+        (window.knotApi!.messages.list as any).mockResolvedValue([]);
+        (window.knotApi!.tasks.list as any).mockResolvedValue([]);
+        (window.knotApi!.events.list as any).mockResolvedValue([]);
+
+        render(
+          <SessionDetail
+            sessionId="sess-1"
+            onBack={vi.fn()}
+            onSessionUpdated={vi.fn()}
+          />
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('Session Alpha')).toBeInTheDocument();
+        });
+
+        const textarea = screen.getByPlaceholderText('Type message content or notes here...');
+        fireEvent.change(textarea, { target: { value: 'Testing message appending' } });
+
+        const sendBtn = screen.getByText('Send Message');
+        fireEvent.click(sendBtn);
+
+        await waitFor(() => {
+          expect(window.knotApi?.messages.append).toHaveBeenCalledWith(
+            expect.objectContaining({
+              sessionId: 'sess-1',
+              contentMarkdown: 'Testing message appending',
+            })
+          );
+        });
+      });
+    });
+  });
 });
+

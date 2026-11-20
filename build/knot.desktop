@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Knot
+GenericName=AI Agent Process Manager
+Comment=Where AI agents work together.
+Exec=knot %U
+Icon=knot
+Terminal=false
+Categories=Development;
+Keywords=ai;agent;knot;mcp;desktop-commander;remote;
+StartupWMClass=Knot

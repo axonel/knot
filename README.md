@@ -167,16 +167,60 @@ npm run uninstall:desktop
 
 ---
 
+## 🗄️ Persistent Database & Project/Session Management
+
+Knot includes an integrated local persistent database layer built with **SQLite** (`node:sqlite` via `DatabaseSync`), avoiding external C++ ABI incompatibilities and ensuring zero-overhead integration with Electron.
+
+### Database Location & Configuration
+
+- **Storage Location**: `app.getPath('userData')/knot.sqlite` (e.g., `~/.config/knot/knot.sqlite` on Linux).
+- **Persistent by Default**: Automatically created and migrated on startup, persisting across application restarts. The database is never stored inside the repository or `app.asar`.
+- **WAL Journaling**: Configured with `PRAGMA journal_mode = WAL;` for concurrent reading and writing.
+- **Foreign Key Enforcement**: Configured with `PRAGMA foreign_keys = ON;` ensuring strict referential integrity across projects, sessions, messages, tasks, and events.
+- **Busy Timeout**: Configured with `PRAGMA busy_timeout = 5000;` to handle transient lock contentions.
+- **Atomic Operations & Rollback**: All multi-step operations and schema migrations execute within transactional boundaries (`withTransaction`).
+- **Graceful Shutdown**: Electron application shutdown hooks (`before-quit`) close the database cleanly.
+
+### Versioned Schema & Tables
+
+The schema is maintained by an idempotent, transactional migration engine (`schema_migrations` table):
+
+| Table | Primary Key | Key Fields & Constraints | Purpose |
+|---|---|---|---|
+| `projects` | `id` (UUID) | `name`, `repository_path`, `repository_remote`, `created_at`, `updated_at`, `archived_at` | Top-level project repositories |
+| `sessions` | `id` (UUID) | `project_id` (FK), `title`, `status`, `last_activity_at`, `started_at`, `ended_at`, `metadata_json` | Independent agent coordination sessions |
+| `messages` | `id` (UUID) | `session_id` (FK), `sequence` (UNIQUE per session), `sender`, `recipient`, `message_type`, `content_markdown` | Chronological agent conversation history |
+| `tasks` | `id` (UUID) | `session_id` (FK), `title`, `description`, `assigned_to`, `status`, `payload_json` | Agent tasks and sub-operations |
+| `events` | `id` (UUID) | `session_id` (FK), `task_id` (FK NULL), `event_type`, `actor`, `data_json` | Audit trail and telemetry events |
+
+### Monotonic Sequence Numbering
+
+Messages in a session are guaranteed atomic, monotonically increasing sequence numbers (`1, 2, 3...`) enforced via atomic transactions (`SELECT COALESCE(MAX(sequence), 0) + 1`), ensuring exact ordering without sequence collisions.
+
+### Session Lifecycle State Machine
+
+Session status transitions follow a strict lifecycle state machine:
+- `active` ➔ `paused`, `completed`, `archived`
+- `paused` ➔ `active`, `completed`, `archived`
+- `completed` ➔ `active`, `archived` (cannot transition directly to `paused`)
+- `archived` ➔ `active` (cannot transition directly to `paused` or `completed`)
+
+Invalid transitions are rejected immediately with descriptive errors.
+
+---
+
 ## 🔒 Security Architecture
 
 1. **Strict Context Isolation**: Renderer runs with `contextIsolation: true` and `nodeIntegration: false`.
-2. **Narrowly Scoped Preload Bridge**: Frontend components communicate exclusively via strongly typed Electron IPC (`knotApi`). No raw shell execution or direct file system access is exposed to the renderer.
+2. **Narrowly Scoped Preload Bridge**: Frontend components communicate exclusively via strongly typed Electron IPC (`window.knotApi`). No raw shell execution or direct file system access is exposed to the renderer.
 3. **No Shell Interpolation**: Child process execution uses `spawn` with `shell: false` and array arguments, preventing shell injection vulnerabilities.
 4. **Credential Protection**: The log sanitizer continuously matches and redacts authentication secrets, JWTs, and URLs with embedded credentials.
+5. **Parameterized SQL Queries**: All database queries use parameterized prepared statements (`?`), eliminating SQL injection risks.
 
 ---
 
 ## ⚠️ Known Limitations
 
 - **Remote Cloud Pairing**: First-time execution of Desktop Commander Remote requires completing device pairing via the browser/terminal prompt provided by `@wonderwhy-er/desktop-commander`.
-- **Milestone Scope**: Milestone 1 focuses on the core visual identity, branding, and Desktop Commander process manager. The "Agent Threads" and "Message Mesh" modules in the sidebar navigation are scheduled for Milestone 2.
+- **Milestone Scope**: Milestone 4 establishes persistent project, session, message, task, and event storage. Agent bridging (ChatGPT and Antigravity) and shared markdown conversation synchronization will be implemented in subsequent milestones.
+

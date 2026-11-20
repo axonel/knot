@@ -9,12 +9,16 @@ const manager = new DesktopCommanderManager();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function createWindow(): void {
+  const possibleIconPath = path.join(__dirname, '../../build/icon.png');
+  const icon = path.resolve(possibleIconPath);
+
   mainWindow = new BrowserWindow({
     title: 'Knot',
     width: 1140,
     height: 780,
     minWidth: 840,
     minHeight: 620,
+    icon: icon,
     backgroundColor: '#090B0D',
     show: false,
     webPreferences: {

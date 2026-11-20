@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    title: 'Threadline',
+    title: 'Knot',
     width: 1140,
     height: 780,
     minWidth: 840,

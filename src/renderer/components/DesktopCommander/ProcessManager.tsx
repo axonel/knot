@@ -3,11 +3,13 @@ import { LogEntry, ProcessStatusInfo } from '../../../shared/types.js';
 import { DesktopCommanderLogo } from '../DesktopCommanderLogo.js';
 import { StatusBadge } from './StatusBadge.js';
 import { DiagnosticLogs } from './DiagnosticLogs.js';
-import { Play, Square, Loader2, AlertCircle, Clock, Hash } from 'lucide-react';
+import { Play, Square, Loader2, AlertCircle, Clock, Hash, Wifi, Key } from 'lucide-react';
 
 export const ProcessManager: React.FC = () => {
   const [status, setStatus] = useState<ProcessStatusInfo>({
     state: 'Stopped',
+    connectionState: 'disconnected',
+    connectionVerified: false,
     pid: null,
     startedAt: null,
     stoppedAt: null,
@@ -21,20 +23,20 @@ export const ProcessManager: React.FC = () => {
 
   // Initialize status and register listeners
   useEffect(() => {
-    if (!window.threadlineApi) {
+    if (!window.knotApi) {
       setUiError('Desktop Commander API unavailable in this environment');
       return;
     }
 
     // Fetch initial status and logs
-    window.threadlineApi.getStatus().then(setStatus).catch((err) => {
+    window.knotApi.getStatus().then(setStatus).catch((err) => {
       setUiError(err instanceof Error ? err.message : String(err));
     });
 
-    window.threadlineApi.getLogs().then(setLogs).catch(() => {});
+    window.knotApi.getLogs().then(setLogs).catch(() => {});
 
     // Listen for live status changes
-    const unsubStatus = window.threadlineApi.onStatusChange((newStatus) => {
+    const unsubStatus = window.knotApi.onStatusChange((newStatus) => {
       setStatus(newStatus);
       setActionPending(false);
       if (newStatus.state !== 'Error') {
@@ -43,7 +45,7 @@ export const ProcessManager: React.FC = () => {
     });
 
     // Listen for incoming logs
-    const unsubLogs = window.threadlineApi.onLog((newLog) => {
+    const unsubLogs = window.knotApi.onLog((newLog) => {
       setLogs((prev) => [...prev, newLog]);
     });
 
@@ -54,12 +56,12 @@ export const ProcessManager: React.FC = () => {
   }, []);
 
   const handleStart = useCallback(async () => {
-    if (!window.threadlineApi || actionPending) return;
+    if (!window.knotApi || actionPending) return;
     setActionPending(true);
     setUiError(null);
 
     try {
-      const res = await window.threadlineApi.startDesktopCommander();
+      const res = await window.knotApi.startDesktopCommander();
       if (!res.success) {
         setUiError(res.message || 'Failed to start process');
         setActionPending(false);
@@ -71,12 +73,12 @@ export const ProcessManager: React.FC = () => {
   }, [actionPending]);
 
   const handleStop = useCallback(async () => {
-    if (!window.threadlineApi || actionPending) return;
+    if (!window.knotApi || actionPending) return;
     setActionPending(true);
     setUiError(null);
 
     try {
-      const res = await window.threadlineApi.stopDesktopCommander();
+      const res = await window.knotApi.stopDesktopCommander();
       if (!res.success) {
         setUiError(res.message || 'Failed to stop process');
         setActionPending(false);
@@ -88,8 +90,8 @@ export const ProcessManager: React.FC = () => {
   }, [actionPending]);
 
   const handleClearLogs = useCallback(async () => {
-    if (!window.threadlineApi) return;
-    await window.threadlineApi.clearLogs();
+    if (!window.knotApi) return;
+    await window.knotApi.clearLogs();
     setLogs([]);
   }, []);
 
@@ -118,6 +120,25 @@ export const ProcessManager: React.FC = () => {
                 Desktop Commander Remote
               </h2>
               <StatusBadge state={status.state} />
+              {isRunning && (
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border ${
+                    status.connectionVerified
+                      ? 'bg-[#004E72]/20 border-[#004E72]/60 text-[#F9F9F9]'
+                      : status.connectionState === 'pairing_required'
+                      ? 'bg-[#FF6E42]/20 border-[#FF6E42]/60 text-[#FF6E42]'
+                      : 'bg-[#F9F9F9]/5 border-[#F9F9F9]/15 text-[#F9F9F9]/60'
+                  }`}
+                  data-testid="connection-badge"
+                >
+                  <Wifi size={12} className={status.connectionVerified ? 'text-[#004E72]' : 'text-current'} />
+                  {status.connectionVerified
+                    ? 'Remote Verified'
+                    : status.connectionState === 'pairing_required'
+                    ? 'Pairing Required'
+                    : 'Awaiting Connection'}
+                </span>
+              )}
             </div>
             <p className="text-xs text-[#F9F9F9]/60 font-normal">
               Managed child process bridge (<code className="text-[#F9F9F9]/80 font-mono text-[11px]">npx @wonderwhy-er/desktop-commander@latest remote</code>)
@@ -158,6 +179,19 @@ export const ProcessManager: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Pairing Guidance Notice */}
+      {isRunning && status.connectionState === 'pairing_required' && (
+        <div className="mt-3.5 flex items-start gap-2.5 p-3 rounded-lg bg-[#FF6E42]/10 border border-[#FF6E42]/30 text-[#FF6E42] text-xs">
+          <Key size={16} className="shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <span className="font-semibold block">Device Pairing Required:</span>
+            <span className="opacity-90">
+              Desktop Commander Remote requires initial authentication. Check the diagnostic logs below for the authorization URL.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Error Banner when state is Error or UI error exists */}
       {(status.errorMessage || uiError) && (

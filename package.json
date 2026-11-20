@@ -1,7 +1,7 @@
 {
   "name": "knot",
   "version": "1.0.0",
-  "description": "Threadline — Where AI agents work together.",
+  "description": "Knot — Where AI agents work together.",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "vite",

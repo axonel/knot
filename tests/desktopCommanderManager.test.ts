@@ -131,7 +131,7 @@ describe('DesktopCommanderManager', () => {
   describe('Failed startup', () => {
     it('detects failure when command is non-existent (spawn error)', async () => {
       manager = new DesktopCommanderManager({
-        command: 'non_existent_executable_12345_threadline',
+        command: 'non_existent_executable_12345_knot',
         args: [],
       });
 

@@ -29,7 +29,7 @@ export const App: React.FC = () => {
               <span>Multi-Agent Architecture</span>
             </div>
             <p className="text-xs text-[#F9F9F9]/80 leading-relaxed font-normal">
-              <strong className="text-[#F9F9F9]">Threadline</strong> is designed for multi-agent coordination. The Desktop Commander Remote process acts as the terminal and filesystem MCP bridge, allowing remote autonomous agents to communicate, inspect code, and execute diagnostics within this workspace.
+              <strong className="text-[#F9F9F9]">Knot</strong> is designed for multi-agent coordination. The Desktop Commander Remote process acts as the terminal and filesystem MCP bridge, allowing remote autonomous agents to communicate, inspect code, and execute diagnostics within this workspace.
             </p>
             <div className="grid grid-cols-2 gap-3 pt-2 text-[11px] text-[#F9F9F9]/60">
               <div className="p-2.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10">

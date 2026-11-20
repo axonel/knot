@@ -1,8 +1,8 @@
-import { ThreadlineApi } from '../../shared/types.js';
+import { KnotApi } from '../../shared/types.js';
 
 declare global {
   interface Window {
-    threadlineApi?: ThreadlineApi;
+    knotApi?: KnotApi;
   }
 }
 

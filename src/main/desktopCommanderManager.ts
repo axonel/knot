@@ -1,6 +1,6 @@
 import { spawn, ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { LogEntry, LogLevel, ProcessState, ProcessStatusInfo } from '../shared/types.js';
+import { LogEntry, LogLevel, ProcessState, ProcessStatusInfo, RemoteConnectionState } from '../shared/types.js';
 import { sanitizeLogOutput } from './logSanitizer.js';
 
 export interface ManagerOptions {
@@ -15,6 +15,8 @@ export interface ManagerOptions {
 
 export class DesktopCommanderManager extends EventEmitter {
   private state: ProcessState = 'Stopped';
+  private connectionState: RemoteConnectionState = 'disconnected';
+  private connectionVerified = false;
   private childProcess: ChildProcess | null = null;
   private pid: number | null = null;
   private startedAt: string | null = null;
@@ -48,6 +50,8 @@ export class DesktopCommanderManager extends EventEmitter {
   public getStatus(): ProcessStatusInfo {
     return {
       state: this.state,
+      connectionState: this.connectionState,
+      connectionVerified: this.connectionVerified,
       pid: this.pid,
       startedAt: this.startedAt,
       stoppedAt: this.stoppedAt,
@@ -112,6 +116,8 @@ export class DesktopCommanderManager extends EventEmitter {
     this.errorMessage = null;
     this.exitCode = null;
     this.stoppedAt = null;
+    this.connectionState = 'unverified';
+    this.connectionVerified = false;
     this.setState('Starting');
 
     this.addLog('system', `Launching Desktop Commander Remote: ${this.command} ${this.args.join(' ')}`);
@@ -147,6 +153,7 @@ export class DesktopCommanderManager extends EventEmitter {
       child.stdout?.on('data', (data: Buffer) => {
         const text = data.toString('utf-8');
         this.addLog('stdout', text);
+        this.inspectOutputForConnectionSignals(text);
 
         // If still in Starting state, receiving meaningful output confirms it's alive and running
         if (this.state === 'Starting') {
@@ -158,6 +165,7 @@ export class DesktopCommanderManager extends EventEmitter {
       child.stderr?.on('data', (data: Buffer) => {
         const text = data.toString('utf-8');
         this.addLog('stderr', text);
+        this.inspectOutputForConnectionSignals(text);
       });
 
       // Handle process exit
@@ -294,9 +302,42 @@ export class DesktopCommanderManager extends EventEmitter {
     this.emit('processExited', { code, signal });
   }
 
+  private inspectOutputForConnectionSignals(text: string): void {
+    const lower = text.toLowerCase();
+    if (
+      lower.includes('connected') ||
+      lower.includes('device registered') ||
+      lower.includes('session active') ||
+      lower.includes('listening on') ||
+      lower.includes('mcp server initialized') ||
+      lower.includes('remote device active')
+    ) {
+      if (!this.connectionVerified || this.connectionState !== 'connected') {
+        this.connectionVerified = true;
+        this.connectionState = 'connected';
+        this.emit('statusChange', this.getStatus());
+      }
+    } else if (
+      lower.includes('pair') ||
+      lower.includes('sign in') ||
+      lower.includes('login') ||
+      lower.includes('device code') ||
+      lower.includes('authorization') ||
+      lower.includes('authorize')
+    ) {
+      if (this.connectionState !== 'pairing_required') {
+        this.connectionState = 'pairing_required';
+        this.connectionVerified = false;
+        this.emit('statusChange', this.getStatus());
+      }
+    }
+  }
+
   private cleanUpChildReference(): void {
     this.childProcess = null;
     this.pid = null;
+    this.connectionState = 'disconnected';
+    this.connectionVerified = false;
   }
 
   /**

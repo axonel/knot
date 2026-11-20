@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrandLogo } from './BrandLogo.js';
+import { KnotLogo } from './KnotLogo.js';
 import { Terminal, Users, Cpu, Settings, ShieldCheck } from 'lucide-react';
 
 interface SidebarProps {
@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => 
       {/* Top Brand Section */}
       <div>
         <div className="pb-5 mb-5 border-b border-[#F9F9F9]/10">
-          <BrandLogo showText={true} subtitle={true} size={40} />
+          <KnotLogo showText={true} subtitle={true} size={40} />
         </div>
 
         {/* Navigation list */}

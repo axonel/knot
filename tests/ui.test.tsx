@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { BrandLogo } from '../src/renderer/components/BrandLogo.js';
+import { KnotLogo } from '../src/renderer/components/KnotLogo.js';
 import { DesktopCommanderLogo } from '../src/renderer/components/DesktopCommanderLogo.js';
 import { StatusBadge } from '../src/renderer/components/DesktopCommander/StatusBadge.js';
 import { ProcessManager } from '../src/renderer/components/DesktopCommander/ProcessManager.js';
@@ -9,15 +9,15 @@ import { App } from '../src/renderer/App.js';
 import { ProcessStatusInfo, LogEntry } from '../src/shared/types.js';
 
 describe('UI and Branding Components', () => {
-  describe('BrandLogo', () => {
+  describe('KnotLogo', () => {
     it('renders the scalable SVG geometric mark', () => {
-      render(<BrandLogo />);
-      expect(screen.getByLabelText('Threadline logo')).toBeInTheDocument();
+      render(<KnotLogo />);
+      expect(screen.getByLabelText('Knot logo')).toBeInTheDocument();
     });
 
     it('renders text and tagline when requested', () => {
-      render(<BrandLogo showText={true} subtitle={true} />);
-      expect(screen.getByText('Threadline')).toBeInTheDocument();
+      render(<KnotLogo showText={true} subtitle={true} />);
+      expect(screen.getByText('Knot')).toBeInTheDocument();
       expect(screen.getByText('Where AI agents work together.')).toBeInTheDocument();
     });
   });
@@ -57,6 +57,8 @@ describe('UI and Branding Components', () => {
     beforeEach(() => {
       mockStatus = {
         state: 'Stopped',
+        connectionState: 'disconnected',
+        connectionVerified: false,
         pid: null,
         startedAt: null,
         stoppedAt: null,
@@ -66,7 +68,7 @@ describe('UI and Branding Components', () => {
 
       mockLogs = [];
 
-      window.threadlineApi = {
+      window.knotApi = {
         startDesktopCommander: vi.fn().mockResolvedValue({ success: true }),
         stopDesktopCommander: vi.fn().mockResolvedValue({ success: true }),
         getStatus: vi.fn().mockImplementation(() => Promise.resolve(mockStatus)),
@@ -97,7 +99,7 @@ describe('UI and Branding Components', () => {
       fireEvent.click(startBtn);
 
       await waitFor(() => {
-        expect(window.threadlineApi?.startDesktopCommander).toHaveBeenCalledTimes(1);
+        expect(window.knotApi?.startDesktopCommander).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -112,6 +114,8 @@ describe('UI and Branding Components', () => {
       act(() => {
         statusCallback({
           state: 'Running',
+          connectionState: 'unverified',
+          connectionVerified: false,
           pid: 9942,
           startedAt: new Date().toISOString(),
           stoppedAt: null,
@@ -123,13 +127,32 @@ describe('UI and Branding Components', () => {
       await waitFor(() => {
         expect(screen.getByTestId('stop-btn')).toBeInTheDocument();
         expect(screen.getByText('9942')).toBeInTheDocument();
+        expect(screen.getByTestId('connection-badge')).toHaveTextContent('Awaiting Connection');
+      });
+
+      // Simulate verified connection
+      act(() => {
+        statusCallback({
+          state: 'Running',
+          connectionState: 'connected',
+          connectionVerified: true,
+          pid: 9942,
+          startedAt: new Date().toISOString(),
+          stoppedAt: null,
+          exitCode: null,
+          errorMessage: null,
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('connection-badge')).toHaveTextContent('Remote Verified');
       });
 
       // Click Stop button
       fireEvent.click(screen.getByTestId('stop-btn'));
 
       await waitFor(() => {
-        expect(window.threadlineApi?.stopDesktopCommander).toHaveBeenCalledTimes(1);
+        expect(window.knotApi?.stopDesktopCommander).toHaveBeenCalledTimes(1);
       });
     });
 
@@ -143,6 +166,8 @@ describe('UI and Branding Components', () => {
       act(() => {
         statusCallback({
           state: 'Error',
+          connectionState: 'disconnected',
+          connectionVerified: false,
           pid: null,
           startedAt: null,
           stoppedAt: new Date().toISOString(),
@@ -181,10 +206,10 @@ describe('UI and Branding Components', () => {
   });
 
   describe('App Shell', () => {
-    it('renders the complete Threadline application workspace', async () => {
+    it('renders the complete Knot application workspace', async () => {
       render(<App />);
 
-      expect(screen.getAllByText('Threadline').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Knot').length).toBeGreaterThan(0);
       expect(screen.getByText('Where AI agents work together.')).toBeInTheDocument();
       expect(screen.getByText('Desktop Commander')).toBeInTheDocument();
       expect(screen.getByText('axonel/knot')).toBeInTheDocument();

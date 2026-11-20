@@ -1,16 +1,16 @@
-# Threadline
+# Knot
 
 > **Where AI agents work together.**
 
-![Threadline Logo](public/threadline-logo.svg)
+![Knot Logo](public/knot-logo.svg)
 
-**Threadline** (hosted in the `axonel/knot` repository) is a desktop developer environment designed for autonomous AI agent collaboration. It provides unified orchestration, process management, and communication mesh for independent AI agents to share context, inspect files, and execute commands safely.
+**Knot** (repository `axonel/knot`) is a desktop developer environment designed for autonomous AI agent collaboration. It provides unified orchestration, process management, and communication mesh for independent AI agents to share context, inspect files, and execute commands safely.
 
 ---
 
 ## 🎨 Visual Identity & Design System
 
-Threadline features an original geometric mark symbolizing two independent agents collaborating across an intertwined, real-time communication threadline.
+Knot features an original geometric mark symbolizing two independent agents collaborating across an intertwined, real-time connection knot.
 
 The application strictly enforces a focused 5-color developer tool palette:
 
@@ -24,7 +24,7 @@ The application strictly enforces a focused 5-color developer tool palette:
 
 ---
 
-## 🚀 Milestone 1: Desktop Commander Process Manager
+## 🚀 Desktop Commander Process Manager
 
 Starting Desktop Commander Remote previously required running manual terminal commands:
 
@@ -32,7 +32,7 @@ Starting Desktop Commander Remote previously required running manual terminal co
 npx @wonderwhy-er/desktop-commander@latest remote
 ```
 
-Threadline Milestone 1 replaces this manual command with a fully managed, UI-based process controller built directly into the desktop workspace.
+Knot replaces this manual command with a fully managed, UI-based process controller built directly into the desktop workspace.
 
 ### Key Capabilities
 
@@ -116,7 +116,7 @@ npm run dev
 ## 🔒 Security Architecture
 
 1. **Strict Context Isolation**: Renderer runs with `contextIsolation: true` and `nodeIntegration: false`.
-2. **Narrowly Scoped Preload Bridge**: Frontend components communicate exclusively via strongly typed Electron IPC (`threadlineApi`). No raw shell execution or direct file system access is exposed to the renderer.
+2. **Narrowly Scoped Preload Bridge**: Frontend components communicate exclusively via strongly typed Electron IPC (`knotApi`). No raw shell execution or direct file system access is exposed to the renderer.
 3. **No Shell Interpolation**: Child process execution uses `spawn` with `shell: false` and array arguments, preventing shell injection vulnerabilities.
 4. **Credential Protection**: The log sanitizer continuously matches and redacts authentication secrets, JWTs, and URLs with embedded credentials.
 

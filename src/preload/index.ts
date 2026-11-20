@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import { LogEntry, ProcessStatusInfo, ThreadlineApi } from '../shared/types.js';
+import { LogEntry, ProcessStatusInfo, KnotApi } from '../shared/types.js';
 
-const api: ThreadlineApi = {
+const api: KnotApi = {
   startDesktopCommander: () => ipcRenderer.invoke('desktop-commander:start'),
   stopDesktopCommander: () => ipcRenderer.invoke('desktop-commander:stop'),
   getStatus: () => ipcRenderer.invoke('desktop-commander:status'),
@@ -25,4 +25,4 @@ const api: ThreadlineApi = {
   },
 };
 
-contextBridge.exposeInMainWorld('threadlineApi', api);
+contextBridge.exposeInMainWorld('knotApi', api);

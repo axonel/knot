@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar.js';
 import { Header } from './components/Header.js';
+import { ProcessManager } from './components/DesktopCommander/ProcessManager.js';
 import { Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -16,6 +17,11 @@ export const App: React.FC = () => {
         <Header />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Main Desktop Commander Process Manager Section */}
+          <section>
+            <ProcessManager />
+          </section>
+
           {/* Architecture Overview Section */}
           <section className="rounded-xl border border-[#F9F9F9]/10 bg-[#092634]/50 p-5 space-y-3">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#F9F9F9]/60 font-mono">

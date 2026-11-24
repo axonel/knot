@@ -48,7 +48,7 @@ describe('Persistent Antigravity Task Queue', () => {
 
   it('retrieves next executable task in priority order while filtering unapproved tasks', () => {
     // Session 1 tasks
-    const unapproved = dbService.tasks.create({
+    dbService.tasks.create({
       sessionId: sessionId1,
       title: 'Unapproved task',
       priority: 'urgent',
@@ -56,7 +56,7 @@ describe('Persistent Antigravity Task Queue', () => {
       approvalStatus: 'awaiting_approval',
     });
 
-    const approvedNormal = dbService.tasks.create({
+    dbService.tasks.create({
       sessionId: sessionId1,
       title: 'Normal approved task',
       priority: 'normal',

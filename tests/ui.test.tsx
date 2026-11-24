@@ -185,6 +185,11 @@ function createMockKnotApi() {
       dispatchNext: vi.fn().mockResolvedValue(null),
       onEvent: vi.fn().mockReturnValue(() => {}),
     },
+    git: {
+      getTaskDiff: vi.fn().mockResolvedValue(null),
+      getFileDiff: vi.fn().mockResolvedValue(null),
+      getRepoStatus: vi.fn().mockResolvedValue(null),
+    },
   };
 }
 

@@ -327,4 +327,153 @@ export interface KnotApi {
 
   // ChatGPT ↔ Knot Filesystem Bridge API
   bridge: BridgeApi;
+
+  // Google Antigravity CLI Integration API
+  antigravity: AntigravityApi;
 }
+
+// ==========================================
+// Agent Session & Antigravity CLI Types
+// ==========================================
+
+export type AgentType = 'antigravity' | 'chatgpt';
+
+export type AgentExecutionMode = 'default' | 'accept-edits' | 'auto' | 'plan';
+
+export interface AgentSession {
+  id: string;
+  sessionId: string;
+  agentType: string;
+  cliConversationId: string | null;
+  workingDirectory: string;
+  status: string;
+  executionMode: string;
+  model: string | null;
+  effort: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastStartedAt: string | null;
+  lastExitCode: number | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface UpsertAgentSessionInput {
+  sessionId: string;
+  agentType: string;
+  workingDirectory: string;
+  status?: string;
+  executionMode?: string;
+  cliConversationId?: string | null;
+  model?: string | null;
+  effort?: string | null;
+  lastStartedAt?: string | null;
+  lastExitCode?: number | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export type AntigravityReadinessState =
+  | 'not_installed'
+  | 'installed'
+  | 'auth_unverified'
+  | 'ready'
+  | 'auth_required'
+  | 'error';
+
+export type AntigravityExecutionMode = 'default' | 'accept-edits' | 'auto' | 'plan';
+
+export type AntigravityProcessState =
+  | 'unavailable'
+  | 'stopped'
+  | 'starting'
+  | 'ready'
+  | 'thinking'
+  | 'stopping'
+  | 'authentication_required'
+  | 'needs_attention'
+  | 'error';
+
+export interface AntigravityCapabilities {
+  installed: boolean;
+  executablePath: string | null;
+  version: string | null;
+  supportedModes: AntigravityExecutionMode[];
+  supportsStreaming: boolean;
+  supportsResumption: boolean;
+  readiness: AntigravityReadinessState;
+  errorDetails?: string | null;
+}
+
+export interface AntigravityStatus {
+  sessionId: string;
+  state: AntigravityProcessState;
+  pid: number | null;
+  cliConversationId: string | null;
+  workingDirectory: string;
+  executionMode: AntigravityExecutionMode;
+  model: string | null;
+  effort: string | null;
+  lastStartedAt: string | null;
+  lastExitCode: number | null;
+  capabilities: AntigravityCapabilities;
+  currentTurnPending: boolean;
+  lastResult?: {
+    status: string;
+    durationSeconds?: number;
+    error?: string | null;
+    numTurns?: number;
+  } | null;
+}
+
+export interface StartAgentOptions {
+  mode?: AntigravityExecutionMode;
+  model?: string;
+  effort?: string;
+  resumeConversationId?: string;
+  executablePath?: string;
+}
+
+export interface AntigravityToolCall {
+  name: string;
+  parameters: Record<string, unknown>;
+  output?: string;
+  status: 'active' | 'done' | 'denied' | 'error';
+}
+
+export interface AntigravityStep {
+  stepIndex: number;
+  state: 'ACTIVE' | 'DONE';
+  stepType: string;
+  textDelta?: string;
+  tool?: AntigravityToolCall;
+  subagentInfo?: Record<string, unknown>;
+  durationSeconds?: number;
+  usage?: Record<string, unknown>;
+}
+
+export interface AntigravityUiEvent {
+  type:
+    | 'status_changed'
+    | 'text_delta'
+    | 'tool_started'
+    | 'tool_completed'
+    | 'tool_denied'
+    | 'turn_completed'
+    | 'error'
+    | 'auth_required';
+  sessionId: string;
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
+export interface AntigravityApi {
+  detect: (customPath?: string) => Promise<AntigravityCapabilities>;
+  getStatus: (sessionId: string) => Promise<AntigravityStatus>;
+  start: (sessionId: string, options?: StartAgentOptions) => Promise<void>;
+  sendMessage: (sessionId: string, prompt: string) => Promise<void>;
+  stop: (sessionId: string) => Promise<void>;
+  interrupt: (sessionId: string) => Promise<void>;
+  resume: (sessionId: string) => Promise<void>;
+  getHistory: (sessionId: string) => Promise<Message[]>;
+  onEvent: (callback: (event: AntigravityUiEvent) => void) => () => void;
+}
+

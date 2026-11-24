@@ -330,6 +330,40 @@ Knot integrates the official Google Antigravity CLI (`agy`) directly as a persis
 
 ---
 
+## 🧠 ChatGPT-Led Multi-Agent Orchestration & Task Handoff Engine
+
+Knot coordinates a collaborative multi-agent development workflow between **ChatGPT** (The Orchestrator) and **Google Antigravity** (The Executor), with Knot operating as the central desktop runtime, safety policy engine, and persistent task queue.
+
+For complete architectural details, protocol specifications, diagrams, and workflow lifecycle, refer to:
+👉 **[Orchestration Architecture Guide](docs/orchestration-architecture.md)**
+
+### Architecture Highlights
+
+- **The 3-Participant Hierarchy**:
+  - **ChatGPT (The Orchestrator)**: Sole planner and decision maker. Inspects local source repositories via Desktop Commander Remote MCP, reviews GitHub PRs and issues, assigns tasks, and verifies results.
+  - **Antigravity (The Executor)**: Dedicated implementation worker. Executes assigned tasks strictly in the project repository, modifies files, runs test suites, and returns structured execution reports.
+  - **Knot (The Workspace & Runtime)**: Ingests tasks via filesystem mailbox, enforces safety execution policies, manages persistent FIFO task queues, streams execution events, and publishes deterministic results.
+- **Desktop Commander Permissions**:
+  - Requires `allowedDirectories` configuration covering both the Knot Bridge Root (`bridge/v1`) and the target project repository path.
+  - Instant one-click clipboard copy from the **Directory Access Diagnostic** chip in Knot.
+- **Bridge Protocols**:
+  - `workspace-index.md`: Real-time registry of all active projects, sessions, workers, and queued tasks.
+  - `task_assignment`: Structured Markdown tasks with title, priority (`low`, `normal`, `high`, `urgent`), execution mode, and acceptance criteria checklists.
+  - `activity`: Background reporting for research, repository inspection, code review, and planning without polluting the canonical conversation transcript.
+  - `task_result`: Deterministic results published to `outbox/knot/task-<taskId>-result.md` and recorded in `conversation.md`.
+- **Persistent Task Queue & Safety Policies**:
+  - Concurrency limited to 1 active task per session (FIFO priority order).
+  - **Safety Policy**: Safe development tasks are auto-approved; sensitive operations (e.g. `git push`, production deploy, destructive file deletions) are held in an `awaiting_approval` state requiring explicit user confirmation in the UI.
+  - User controls: **Approve & Dispatch**, **Reject**, **Cancel Task**, and **Retry**.
+  - Startup recovery restores in-flight tasks cleanly across application restarts.
+- **3-Panel Multi-Project Collaboration Workspace**:
+  - Mini Workspace Tree Sidebar with live task badges.
+  - Left Panel: ChatGPT-Reported Activity feed with category filtering chips.
+  - Center Panel: Canonical Shared Conversation stream with role-colored participant badges and copy actions.
+  - Right Panel: Antigravity Execution with worker status, active task card, acceptance criteria checklist, and live stream console.
+
+---
+
 ## 🔒 Security Architecture
 
 1. **Strict Context Isolation**: Renderer runs with `contextIsolation: true` and `nodeIntegration: false`.
@@ -338,13 +372,14 @@ Knot integrates the official Google Antigravity CLI (`agy`) directly as a persis
 4. **Credential Protection**: The log sanitizer continuously matches and redacts authentication secrets, JWTs, and URLs with embedded credentials.
 5. **Parameterized SQL Queries**: All database queries use parameterized prepared statements (`?`), eliminating SQL injection risks.
 6. **Filesystem Bridge Isolation**: Bridge folders are constrained strictly within `app.getPath('userData')/bridge/v1/`. All incoming files are validated for 256 KB size limits, valid JSON headers, and scope UUIDs before SQLite persistence.
-7. **No Auto-Approvals for Dangerous Operations**: Antigravity is executed with standard permission requirements; automated execution never bypasses tool confirmation policies.
+7. **No Auto-Approvals for Dangerous Operations**: Antigravity is executed with standard permission requirements; automated execution never bypasses tool confirmation policies. Knot **NEVER** passes `--dangerously-skip-permissions` or `--always-proceed`.
+8. **Sensitive Task Gating**: Potentially destructive commands and operations are held behind an explicit human approval gate.
 
 ---
 
 ## ⚠️ Known Limitations
 
 - **Remote Cloud Pairing**: First-time execution of Desktop Commander Remote requires completing device pairing via the browser/terminal prompt provided by `@wonderwhy-er/desktop-commander`.
-- **Milestone Scope**: Milestone 6 establishes the complete Google Antigravity CLI integration with persistent streaming, SQLite persistence, timeline UI, and bridge outbox publication. Automated task delegation between ChatGPT and Antigravity belongs to Prompt 07.
+- **Desktop Commander Scope**: ChatGPT requires Desktop Commander Remote to have read/write access to both the Knot Bridge directory and project repository directory via `allowedDirectories`.
 
 

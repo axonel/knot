@@ -35,6 +35,7 @@
   },
   "homepage": "https://github.com/axonel/knot#readme",
   "dependencies": {
+    "chokidar": "^6.0.0",
     "lucide-react": "^1.77.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

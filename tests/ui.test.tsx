@@ -75,6 +75,12 @@ function createMockKnotApi() {
       getStatus: vi.fn().mockResolvedValue({
         workspaceInitialized: true,
         bridgeRoot: '/mock/bridge/v1',
+        exists: true,
+        readable: true,
+        writable: true,
+        watcherActive: true,
+        watchedSessionsCount: 1,
+        watchedSessionIds: ['s-1'],
         desktopCommanderRunning: true,
         mcpPermissionConfigured: true,
         handshakeState: 'workspace_ready',

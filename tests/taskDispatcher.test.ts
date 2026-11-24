@@ -135,4 +135,70 @@ describe('Task Lifecycle & TaskDispatcher', () => {
     expect(dispatched?.id).toBe(task1.id);
     expect(dispatched?.status).toBe('succeeded');
   });
+
+  it('fails gracefully when project repository directory is missing or inaccessible', async () => {
+    const missingProj = dbService.projects.create({
+      name: 'Missing Repo Project',
+      repositoryPath: path.join(tempDir, 'does-not-exist-dir'),
+    });
+    const missingSess = dbService.sessions.create({
+      projectId: missingProj.id,
+      title: 'Missing Repo Session',
+    });
+    const task = dbService.tasks.create({
+      sessionId: missingSess.id,
+      title: 'Task on missing dir',
+      status: 'queued',
+      approvalStatus: 'approved',
+    });
+
+    await expect(dispatcher.executeTask(task)).rejects.toThrow('inaccessible or missing');
+    const saved = dbService.tasks.get(task.id);
+    expect(saved?.status).toBe('failed');
+    expect(saved?.failureReason).toContain('inaccessible or missing');
+  });
+
+  it('cancels pending task when session is archived', async () => {
+    const archivedSess = dbService.sessions.create({
+      projectId: dbService.projects.list()[0].id,
+      title: 'Archived Session',
+    });
+    dbService.sessions.updateStatus(archivedSess.id, 'archived');
+
+    const task = dbService.tasks.create({
+      sessionId: archivedSess.id,
+      title: 'Task on archived session',
+      status: 'queued',
+      approvalStatus: 'approved',
+    });
+
+    const result = await dispatcher.executeTask(task);
+    expect(result.status).toBe('cancelled');
+    expect(result.failureReason).toContain('Session is archived');
+  });
+
+  it('calls executeTaskTurn when available and gathers structured result', async () => {
+    const executeTaskTurn = vi.fn().mockResolvedValue({
+      response: 'Turn finished',
+      executionDetails: {
+        summary: 'Modified 1 file',
+        changedFiles: ['src/index.ts'],
+        commandsExecuted: [{ command: 'npm test', exitCode: 0 }],
+        testsExecuted: [{ command: 'npm test', outcome: 'passed' }],
+      },
+    });
+
+    (mockAntigravityManager as any).executeTaskTurn = executeTaskTurn;
+
+    const task = dbService.tasks.create({
+      sessionId,
+      title: 'Structured Task',
+      status: 'queued',
+      approvalStatus: 'approved',
+    });
+
+    const completed = await dispatcher.executeTask(task);
+    expect(completed.status).toBe('succeeded');
+    expect(executeTaskTurn).toHaveBeenCalledWith(sessionId, expect.stringContaining('Structured Task'), { taskId: task.id });
+  });
 });

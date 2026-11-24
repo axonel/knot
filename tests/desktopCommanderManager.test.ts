@@ -202,7 +202,9 @@ describe('DesktopCommanderManager', () => {
       await new Promise((r) => setTimeout(r, 70));
       expect(manager.getStatus().state).toBe('Running');
 
-      await new Promise((r) => setTimeout(r, 180));
+      for (let i = 0; i < 20 && manager.getStatus().state === 'Running'; i++) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
 
       const status = manager.getStatus();
       expect(status.state).toBe('Stopped');

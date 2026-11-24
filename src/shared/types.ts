@@ -325,6 +325,9 @@ export type BridgeEventType =
   | 'message-rejected'
   | 'connection-test-started'
   | 'connection-verified'
+  | 'activity-received'
+  | 'task-assignment-received'
+  | 'workspace-index-updated'
   | 'error';
 
 export interface BridgeEvent {

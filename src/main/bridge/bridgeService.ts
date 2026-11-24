@@ -6,6 +6,7 @@ import {
   initSessionWorkspace,
   resolveSessionPaths,
   writeCanonicalConversation,
+  writeWorkspaceIndex,
 } from './workspace.js';
 import { writeOutboundMessage } from './outboundWriter.js';
 import { InboxWatcher } from './inboxWatcher.js';
@@ -23,7 +24,7 @@ import type {
   BridgeMessageType,
   MessageSender,
 } from './types.js';
-import type { Message } from '../../shared/types.js';
+import type { Message, Session, Task } from '../../shared/types.js';
 
 export interface BridgeServiceOptions {
   customBridgeRoot?: string;
@@ -40,6 +41,7 @@ export class BridgeService {
   private activeSessionId: string | null = null;
   private activeProjectId: string | null = null;
   private eventListeners = new Set<(event: BridgeEvent) => void>();
+  private inboundListeners = new Set<(message: ParsedBridgeMessage) => Promise<void> | void>();
   private lastInboundMessage: { id: string; timestamp: string; sender: string } | null = null;
   private lastOutboundMessage: { id: string; timestamp: string; sender: string } | null = null;
 
@@ -55,6 +57,8 @@ export class BridgeService {
       onMessageAccepted: (msg) => this.handleInboundAccepted(msg),
       onMessageRejected: (rej) => this.handleInboundRejected(rej),
     });
+
+    this.syncWorkspaceIndex();
   }
 
   public getBridgeRoot(): string {
@@ -65,6 +69,13 @@ export class BridgeService {
     this.eventListeners.add(callback);
     return () => {
       this.eventListeners.delete(callback);
+    };
+  }
+
+  public onInboundAccepted(callback: (message: ParsedBridgeMessage) => Promise<void> | void): () => void {
+    this.inboundListeners.add(callback);
+    return () => {
+      this.inboundListeners.delete(callback);
     };
   }
 
@@ -100,6 +111,9 @@ export class BridgeService {
     // Update canonical conversation file with current database state
     this.syncCanonicalConversation(projectId, sessionId, paths.sessionDir);
 
+    // Sync workspace index
+    this.syncWorkspaceIndex();
+
     this.emitEvent('workspace-ready', {
       bridgeRoot: this.bridgeRoot,
       projectId,
@@ -108,6 +122,47 @@ export class BridgeService {
     });
 
     return paths;
+  }
+
+  public watchAllSessions(): void {
+    try {
+      const projects = this.dbService.projects.list();
+      for (const p of projects) {
+        const sessions = this.dbService.sessions.listByProject(p.id);
+        for (const s of sessions) {
+          const paths = resolveSessionPaths(this.bridgeRoot, p.id, s.id);
+          this.watcher.watchInbox(paths.inboxDir);
+        }
+      }
+      this.syncWorkspaceIndex();
+    } catch (err) {
+      console.error('[BridgeService] Error in watchAllSessions:', err);
+    }
+  }
+
+  public syncWorkspaceIndex(): void {
+    try {
+      const projects = this.dbService.projects.list();
+      const sessionsByProject = new Map<string, Session[]>();
+      const tasksBySession = new Map<string, Task[]>();
+
+      for (const p of projects) {
+        const sessions = this.dbService.sessions.listByProject(p.id);
+        sessionsByProject.set(p.id, sessions);
+        for (const s of sessions) {
+          const tasks = this.dbService.tasks.listBySession(s.id);
+          tasksBySession.set(s.id, tasks);
+        }
+      }
+
+      writeWorkspaceIndex(this.bridgeRoot, projects, sessionsByProject, tasksBySession);
+      this.emitEvent('workspace-index-updated', {
+        bridgeRoot: this.bridgeRoot,
+        projectCount: projects.length,
+      });
+    } catch (err) {
+      console.error('[BridgeService] Failed to sync workspace index:', err);
+    }
   }
 
   public getStatus(sessionId?: string): BridgeStatusInfo {
@@ -166,10 +221,16 @@ export class BridgeService {
 
   public getInstructions(projectId: string, sessionId: string): BridgeInstructions {
     const paths = initSessionWorkspace(this.bridgeRoot, projectId, sessionId);
+    const project = this.dbService.projects.get(projectId);
+
+    const allowedDirs = [this.bridgeRoot];
+    if (project?.repositoryPath && !allowedDirs.includes(project.repositoryPath)) {
+      allowedDirs.push(project.repositoryPath);
+    }
 
     const allowedConfigSnippet = JSON.stringify(
       {
-        allowedDirectories: [this.bridgeRoot],
+        allowedDirectories: allowedDirs,
       },
       null,
       2
@@ -178,11 +239,13 @@ export class BridgeService {
     const chatgptPrompt = `Use Desktop Commander to communicate with Knot:
 1. First, read the instructions at:
    ${path.join(this.bridgeRoot, 'bridge-instructions.md')}
-2. Read the current conversation snapshot at:
+2. Read the workspace index at:
+   ${path.join(this.bridgeRoot, 'workspace-index.md')}
+3. Read the current conversation snapshot at:
    ${paths.conversationFile}
-3. When sending messages, write Markdown files to the inbox:
+4. When sending messages, writing activities or assigning tasks, write Markdown files to the inbox:
    ${paths.inboxDir}/<unique-message-id>.md
-4. To check for Knot's responses, read from the outbox:
+5. To check for Knot's responses and task results, read from the outbox:
    ${paths.outboxDir}/
 `;
 
@@ -351,6 +414,52 @@ export class BridgeService {
       return;
     }
 
+    // Update internal status
+    this.lastInboundMessage = {
+      id,
+      timestamp: parsedMessage.metadata.createdAt,
+      sender,
+    };
+
+    // If type === 'activity', record in events table only (do not pollute messages table or conversation.md)
+    if (type === 'activity') {
+      const meta = parsedMessage.metadata.metadata || {};
+      this.dbService.events.append({
+        sessionId,
+        eventType: 'chatgpt_activity',
+        actor: sender,
+        data: {
+          messageId: id,
+          category: meta.category || 'other',
+          reference: meta.reference || null,
+          taskId: meta.taskId || null,
+          summary: parsedMessage.bodyMarkdown,
+        },
+      });
+
+      this.emitEvent('activity-received', {
+        messageId: id,
+        sessionId,
+        projectId,
+        category: meta.category || 'other',
+        reference: meta.reference || null,
+        taskId: meta.taskId || null,
+        summary: parsedMessage.bodyMarkdown,
+      });
+
+      // Notify external inbound subscribers (e.g. Orchestrator)
+      for (const listener of this.inboundListeners) {
+        try {
+          await listener(parsedMessage);
+        } catch (err) {
+          console.error('[BridgeService] Error in inbound listener:', err);
+        }
+      }
+
+      this.syncWorkspaceIndex();
+      return;
+    }
+
     // 1. Idempotently insert into SQLite messages table
     const savedMessage = this.dbService.messages.append({
       id,
@@ -375,18 +484,11 @@ export class BridgeService {
       },
     });
 
-    // 3. Update internal status
-    this.lastInboundMessage = {
-      id,
-      timestamp: parsedMessage.metadata.createdAt,
-      sender,
-    };
-
-    // 4. Update canonical conversation
+    // 3. Update canonical conversation
     const paths = resolveSessionPaths(this.bridgeRoot, projectId, sessionId);
     this.syncCanonicalConversation(projectId, sessionId, paths.sessionDir);
 
-    // 5. Check if this is a handshake response
+    // 4. Check if this is a handshake response
     if (type === 'handshake_response') {
       const validation = this.handshakeManager.validateResponse(parsedMessage);
       if (validation.valid) {
@@ -403,11 +505,31 @@ export class BridgeService {
       }
     }
 
+    if (type === 'task_assignment') {
+      this.emitEvent('task-assignment-received', {
+        messageId: id,
+        sessionId,
+        projectId,
+        message: savedMessage,
+      });
+    }
+
     this.emitEvent('message-received', {
       message: savedMessage,
       sessionId,
       projectId,
     });
+
+    // Notify external inbound subscribers (e.g. Orchestrator)
+    for (const listener of this.inboundListeners) {
+      try {
+        await listener(parsedMessage);
+      } catch (err) {
+        console.error('[BridgeService] Error in inbound listener:', err);
+      }
+    }
+
+    this.syncWorkspaceIndex();
   }
 
   public handleInboundRejected(data: {
@@ -456,5 +578,6 @@ export class BridgeService {
   public async close(): Promise<void> {
     await this.watcher.close();
     this.eventListeners.clear();
+    this.inboundListeners.clear();
   }
 }

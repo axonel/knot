@@ -13,7 +13,10 @@ import { App } from '../src/renderer/App.js';
 import { ConnectionStatusCard } from '../src/renderer/components/Bridge/ConnectionStatusCard.js';
 import { HandshakeModal } from '../src/renderer/components/Bridge/HandshakeModal.js';
 import { BridgeMessagesPanel } from '../src/renderer/components/Bridge/BridgeMessagesPanel.js';
-import { ProcessStatusInfo, LogEntry, Project, Session, Message, BridgeStatusInfo } from '../src/shared/types.js';
+import { AgentStatusCard } from '../src/renderer/components/Antigravity/AgentStatusCard.js';
+import { ConversationTimeline } from '../src/renderer/components/Antigravity/ConversationTimeline.js';
+import { Composer } from '../src/renderer/components/Antigravity/Composer.js';
+import { ProcessStatusInfo, LogEntry, Project, Session, Message, BridgeStatusInfo, AntigravityStatus } from '../src/shared/types.js';
 
 describe('UI and Branding Components', () => {
   describe('KnotLogo', () => {
@@ -173,6 +176,47 @@ describe('UI and Branding Components', () => {
             allowedDirectoriesConfig: '{\n  "allowedDirectories": ["/mock/bridge/v1"]\n}',
             chatgptPrompt: 'ChatGPT prompt snippet',
           }),
+          onEvent: vi.fn().mockReturnValue(() => {}),
+        },
+        antigravity: {
+          detect: vi.fn().mockResolvedValue({
+            installed: true,
+            executablePath: '/usr/bin/agy',
+            version: '1.5.14',
+            supportedModes: ['default', 'accept-edits', 'auto', 'plan'],
+            supportsStreaming: true,
+            supportsResumption: true,
+            readiness: 'ready',
+          }),
+          getStatus: vi.fn().mockResolvedValue({
+            sessionId: 's-1',
+            state: 'ready',
+            pid: 12345,
+            cliConversationId: 'agy-conv-1',
+            workingDirectory: '/home/user/project',
+            executionMode: 'default',
+            model: null,
+            effort: null,
+            lastStartedAt: new Date().toISOString(),
+            lastExitCode: null,
+            capabilities: {
+              installed: true,
+              executablePath: '/usr/bin/agy',
+              version: '1.5.14',
+              supportedModes: ['default', 'accept-edits', 'auto', 'plan'],
+              supportsStreaming: true,
+              supportsResumption: true,
+              readiness: 'ready',
+            },
+            currentTurnPending: false,
+            lastResult: null,
+          }),
+          start: vi.fn().mockResolvedValue(undefined),
+          sendMessage: vi.fn().mockResolvedValue(undefined),
+          stop: vi.fn().mockResolvedValue(undefined),
+          interrupt: vi.fn().mockResolvedValue(undefined),
+          resume: vi.fn().mockResolvedValue(undefined),
+          getHistory: vi.fn().mockResolvedValue([]),
           onEvent: vi.fn().mockReturnValue(() => {}),
         },
       };
@@ -678,6 +722,182 @@ describe('UI and Branding Components', () => {
           );
           expect(handleRefresh).toHaveBeenCalled();
         });
+      });
+    });
+  });
+
+  describe('Google Antigravity UI Components', () => {
+    describe('AgentStatusCard', () => {
+      const mockStatus: AntigravityStatus = {
+        sessionId: 'sess-1',
+        state: 'ready',
+        pid: 24680,
+        cliConversationId: 'conv-knot-001',
+        workingDirectory: '/home/user/my-repo',
+        executionMode: 'auto',
+        model: 'gemini-3.8-flash',
+        effort: 'high',
+        lastStartedAt: new Date().toISOString(),
+        lastExitCode: null,
+        capabilities: {
+          installed: true,
+          executablePath: '/usr/local/bin/agy',
+          version: '1.5.14',
+          supportedModes: ['default', 'accept-edits', 'auto', 'plan'],
+          supportsStreaming: true,
+          supportsResumption: true,
+          readiness: 'ready',
+        },
+        currentTurnPending: false,
+        lastResult: null,
+      };
+
+      it('renders capabilities, ready status, PID, and controls', () => {
+        const handleStart = vi.fn();
+        const handleStop = vi.fn();
+
+        render(
+          <AgentStatusCard
+            status={mockStatus}
+            onStart={handleStart}
+            onStop={handleStop}
+            onInterrupt={vi.fn()}
+            onResume={vi.fn()}
+            onModeChange={vi.fn()}
+            selectedMode="auto"
+          />
+        );
+
+        expect(screen.getByText('Google Antigravity Agent')).toBeInTheDocument();
+        expect(screen.getByText(/agy v1.5.14/)).toBeInTheDocument();
+        expect(screen.getByText('Ready')).toBeInTheDocument();
+        expect(screen.getByText('Active / Idle')).toBeInTheDocument();
+        expect(screen.getByText(/conv-knot-001/)).toBeInTheDocument();
+        expect(screen.getByText(/PID: 24680/)).toBeInTheDocument();
+
+        const stopBtn = screen.getByTitle('Stop persistent process');
+        fireEvent.click(stopBtn);
+        expect(handleStop).toHaveBeenCalled();
+      });
+
+      it('renders authentication banner when auth is required', () => {
+        const authStatus: AntigravityStatus = {
+          ...mockStatus,
+          state: 'authentication_required',
+          capabilities: {
+            ...mockStatus.capabilities,
+            readiness: 'auth_required',
+          },
+        };
+
+        render(
+          <AgentStatusCard
+            status={authStatus}
+            onStart={vi.fn()}
+            onStop={vi.fn()}
+            onInterrupt={vi.fn()}
+            onResume={vi.fn()}
+            onModeChange={vi.fn()}
+            selectedMode="default"
+          />
+        );
+
+        expect(screen.getByText(/Google Antigravity authentication is required/)).toBeInTheDocument();
+        expect(screen.getByText('agy')).toBeInTheDocument();
+      });
+    });
+
+    describe('ConversationTimeline', () => {
+      const mockMessages: Message[] = [
+        {
+          id: 'm-1',
+          sessionId: 's-1',
+          sequence: 1,
+          sender: 'user',
+          recipient: 'antigravity',
+          messageType: 'text',
+          contentMarkdown: 'Run the test suite and verify coverage.',
+          correlationId: null,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'm-2',
+          sessionId: 's-1',
+          sequence: 2,
+          sender: 'antigravity',
+          recipient: 'chatgpt',
+          messageType: 'text',
+          contentMarkdown: 'All 15 tests passed with 100% code coverage.',
+          correlationId: null,
+          createdAt: new Date().toISOString(),
+        },
+      ];
+
+      it('renders messages, sender badges, and active streaming indicator', () => {
+        render(
+          <ConversationTimeline
+            messages={mockMessages}
+            streamingText="Generating test report..."
+            activeTools={[
+              {
+                tool: {
+                  name: 'run_command',
+                  parameters: { CommandLine: 'npm test' },
+                  status: 'done',
+                },
+                stepIndex: 1,
+              },
+            ]}
+            isThinking={true}
+          />
+        );
+
+        expect(screen.getByText('Run the test suite and verify coverage.')).toBeInTheDocument();
+        expect(screen.getByText('All 15 tests passed with 100% code coverage.')).toBeInTheDocument();
+        expect(screen.getByText('run_command')).toBeInTheDocument();
+        expect(screen.getByText('completed')).toBeInTheDocument();
+        expect(screen.getByText('Antigravity (Streaming)')).toBeInTheDocument();
+        expect(screen.getByText(/Generating test report.../)).toBeInTheDocument();
+      });
+    });
+
+    describe('Composer', () => {
+      it('triggers onSendMessage on submit click and Enter key', () => {
+        const handleSend = vi.fn();
+        const handleInterrupt = vi.fn();
+
+        render(
+          <Composer
+            onSendMessage={handleSend}
+            onInterrupt={handleInterrupt}
+            isThinking={false}
+            workingDirectory="/path/to/project"
+          />
+        );
+
+        const textarea = screen.getByPlaceholderText(/Send instruction to Antigravity/);
+        fireEvent.change(textarea, { target: { value: 'Inspect code quality' } });
+
+        const sendBtn = screen.getByTitle('Send prompt');
+        fireEvent.click(sendBtn);
+
+        expect(handleSend).toHaveBeenCalledWith('Inspect code quality');
+      });
+
+      it('shows interrupt button when thinking', () => {
+        const handleInterrupt = vi.fn();
+        render(
+          <Composer
+            onSendMessage={vi.fn()}
+            onInterrupt={handleInterrupt}
+            isThinking={true}
+            workingDirectory="/path/to/project"
+          />
+        );
+
+        const interruptBtn = screen.getByTitle('Interrupt agent execution');
+        fireEvent.click(interruptBtn);
+        expect(handleInterrupt).toHaveBeenCalled();
       });
     });
   });

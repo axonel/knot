@@ -68,11 +68,17 @@ describe('SQLite Database Layer & Migrations', () => {
       // Open second time
       const db2 = initDatabase(dbPath);
       const count = db2.prepare('SELECT COUNT(*) as count FROM schema_migrations').get() as { count: number };
-      expect(count.count).toBe(4);
+      expect(count.count).toBe(5);
 
-      // Verify migration 004 is applied and git_boundary_json exists on tasks table
+      // Verify migration 004 & 005 are applied
       const taskColumns = db2.prepare('PRAGMA table_info(tasks)').all() as { name: string }[];
       expect(taskColumns.some((col) => col.name === 'git_boundary_json')).toBe(true);
+      expect(taskColumns.some((col) => col.name === 'context_references_json')).toBe(true);
+
+      const contextTables = db2.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'context_%'").all() as { name: string }[];
+      expect(contextTables.map((t) => t.name)).toContain('context_documents');
+      expect(contextTables.map((t) => t.name)).toContain('context_revisions');
+      expect(contextTables.map((t) => t.name)).toContain('context_conflicts');
 
       db2.close();
     });

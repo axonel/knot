@@ -7,6 +7,7 @@ import {
   resolveSessionPaths,
   writeCanonicalConversation,
   writeWorkspaceIndex,
+  writeContextManifest,
 } from './workspace.js';
 import { writeOutboundMessage } from './outboundWriter.js';
 import { InboxWatcher } from './inboxWatcher.js';
@@ -25,7 +26,7 @@ import type {
   BridgeMessageType,
   MessageSender,
 } from './types.js';
-import type { Message, Session, Task } from '../../shared/types.js';
+import type { Message, Session, Task, ContextDocument, ContextManifest } from '../../shared/types.js';
 
 export interface BridgeServiceOptions {
   customBridgeRoot?: string;
@@ -119,6 +120,9 @@ export class BridgeService {
     // Update canonical conversation file with current database state
     this.syncCanonicalConversation(projectId, sessionId, paths.sessionDir);
 
+    // Sync context manifest and materialized documents
+    this.syncContextWorkspace(projectId);
+
     // Sync workspace index
     this.syncWorkspaceIndex();
 
@@ -172,6 +176,34 @@ export class BridgeService {
     } catch (err) {
       console.error('[BridgeService] Failed to sync workspace index:', err);
     }
+  }
+
+  public syncContextWorkspace(projectId: string): ContextManifest | null {
+    try {
+      const project = this.dbService.projects.get(projectId);
+      if (!project) return null;
+
+      const docs = this.dbService.context.list({ projectId, includeArchived: true });
+      const sessions = this.dbService.sessions.listByProject(projectId);
+
+      const manifest = writeContextManifest(this.bridgeRoot, project, docs, sessions);
+      this.emitEvent('context-manifest-updated', {
+        projectId,
+        manifest,
+      });
+      return manifest;
+    } catch (err) {
+      console.error(`[BridgeService] Failed to sync context workspace for project ${projectId}:`, err);
+      return null;
+    }
+  }
+
+  public getContextManifest(projectId: string): ContextManifest | null {
+    const project = this.dbService.projects.get(projectId);
+    if (!project) return null;
+    const docs = this.dbService.context.list({ projectId, includeArchived: true });
+    const sessions = this.dbService.sessions.listByProject(projectId);
+    return writeContextManifest(this.bridgeRoot, project, docs, sessions);
   }
 
   public getStatus(sessionId?: string): BridgeStatusInfo {
@@ -568,6 +600,135 @@ export class BridgeService {
       });
 
       // Notify external inbound subscribers (e.g. Orchestrator)
+      for (const listener of this.inboundListeners) {
+        try {
+          await listener(parsedMessage);
+        } catch (err) {
+          console.error('[BridgeService] Error in inbound listener:', err);
+        }
+      }
+
+      this.syncWorkspaceIndex();
+      return;
+    }
+
+    // If type === 'context_update', validate, store, version in Context Vault, sync files, and emit
+    if (type === 'context_update') {
+      const meta = (parsedMessage.metadata.metadata || {}) as Record<string, unknown>;
+      const rawContextId = typeof meta.contextId === 'string' && meta.contextId ? meta.contextId : undefined;
+      const scope = (meta.scope as any) || (rawContextId ? undefined : sessionId ? 'session' : 'project');
+      const category = (typeof meta.category === 'string' && meta.category.trim()) || 'recorded_decisions';
+      const expectedRevision = typeof meta.expectedRevision === 'number' ? meta.expectedRevision : undefined;
+      const expectedContentHash = typeof meta.expectedContentHash === 'string' ? meta.expectedContentHash : undefined;
+      const changeSummary = typeof meta.changeSummary === 'string' ? meta.changeSummary : undefined;
+      const requiresVerification = typeof meta.requiresVerification === 'boolean' ? meta.requiresVerification : false;
+
+      // Extract title from metadata.title or first markdown heading or default
+      let title = typeof meta.title === 'string' && meta.title.trim() ? meta.title.trim() : '';
+      if (!title) {
+        const headingMatch = parsedMessage.bodyMarkdown.match(/^#{1,3}\s+(.+)$/m);
+        if (headingMatch && headingMatch[1].trim()) {
+          title = headingMatch[1].trim();
+        } else {
+          title = 'Context Document';
+        }
+      }
+
+      let existingDoc = rawContextId ? this.dbService.context.get(rawContextId) : null;
+      let resultDoc: ContextDocument | null = null;
+
+      try {
+        if (existingDoc) {
+          resultDoc = this.dbService.context.update(existingDoc.id, {
+            title,
+            contentMarkdown: parsedMessage.bodyMarkdown,
+            category,
+            author: sender,
+            provenance: 'chatgpt-authored',
+            expectedRevision,
+            expectedContentHash,
+            changeSummary,
+            requiresVerification,
+          });
+
+          this.dbService.events.append({
+            sessionId,
+            eventType: 'context_updated',
+            actor: sender,
+            data: {
+              contextId: resultDoc.id,
+              revision: resultDoc.currentRevision,
+              title: resultDoc.title,
+              category: resultDoc.category,
+              scope: resultDoc.scope,
+            },
+          });
+
+          this.emitEvent('context-updated' as any, {
+            context: resultDoc,
+            projectId,
+            sessionId,
+          });
+        } else {
+          resultDoc = this.dbService.context.create({
+            id: rawContextId,
+            projectId,
+            sessionId: scope === 'session' ? sessionId : null,
+            scope: scope || 'project',
+            category,
+            title,
+            contentMarkdown: parsedMessage.bodyMarkdown,
+            author: sender,
+            provenance: 'chatgpt-authored',
+            changeSummary: changeSummary || 'Document created from ChatGPT context update',
+            requiresVerification,
+          });
+
+          this.dbService.events.append({
+            sessionId,
+            eventType: 'context_created',
+            actor: sender,
+            data: {
+              contextId: resultDoc.id,
+              revision: resultDoc.currentRevision,
+              title: resultDoc.title,
+              category: resultDoc.category,
+              scope: resultDoc.scope,
+            },
+          });
+
+          this.emitEvent('context-created' as any, {
+            context: resultDoc,
+            projectId,
+            sessionId,
+          });
+        }
+
+        // Sync context manifest and materialized documents to bridge
+        this.syncContextWorkspace(projectId);
+      } catch (err: unknown) {
+        console.warn(`[BridgeService] Context update conflict/error:`, err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        this.dbService.events.append({
+          sessionId,
+          eventType: 'context_conflict_detected',
+          actor: 'knot',
+          data: {
+            contextId: rawContextId,
+            expectedRevision,
+            error: errMsg,
+          },
+        });
+
+        this.emitEvent('context-conflict' as any, {
+          contextId: rawContextId,
+          projectId,
+          sessionId,
+          reason: errMsg,
+        });
+      }
+
+      // Notify external inbound subscribers
       for (const listener of this.inboundListeners) {
         try {
           await listener(parsedMessage);

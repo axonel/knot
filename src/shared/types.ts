@@ -134,10 +134,18 @@ export interface Task {
   retryCount?: number;
   payload?: Record<string, unknown> | null;
   gitBoundary?: TaskGitBoundary | null;
+  contextReferences?: TaskContextReference[] | null;
   createdAt: string;
   updatedAt: string;
   startedAt: string | null;
   completedAt: string | null;
+}
+
+export interface TaskContextReference {
+  contextId: string;
+  revision?: number;
+  title?: string;
+  category?: string;
 }
 
 export interface CreateTaskInput {
@@ -158,6 +166,7 @@ export interface CreateTaskInput {
   retryCount?: number;
   payload?: Record<string, unknown> | null;
   gitBoundary?: TaskGitBoundary | null;
+  contextReferences?: TaskContextReference[] | null;
 }
 
 export interface UpdateTaskInput {
@@ -176,6 +185,7 @@ export interface UpdateTaskInput {
   retryCount?: number;
   payload?: Record<string, unknown> | null;
   gitBoundary?: TaskGitBoundary | null;
+  contextReferences?: TaskContextReference[] | null;
 }
 
 export interface EventItem {
@@ -253,7 +263,8 @@ export type BridgeMessageType =
   | 'task_assignment'
   | 'activity'
   | 'task_result'
-  | 'task_control';
+  | 'task_control'
+  | 'context_update';
 
 export type HandshakeState =
   | 'not_configured'
@@ -359,6 +370,8 @@ export type BridgeEventType =
   | 'activity-received'
   | 'task-assignment-received'
   | 'workspace-index-updated'
+  | 'context-manifest-updated'
+  | 'context-updated'
   | 'error';
 
 export interface BridgeEvent {
@@ -405,6 +418,9 @@ export interface KnotApi {
 
   // Read-Only Git Inspection API
   git: GitApi;
+
+  // Context Vault API
+  context: ContextApi;
 }
 
 export interface OrchestrationEvent {
@@ -679,5 +695,171 @@ export interface GitApi {
   getFileDiff: (taskId: string, filePath: string) => Promise<FileDiffEntry>;
   getRepoStatus: (projectId: string) => Promise<GitRepoStatusResult>;
 }
+
+// ==========================================
+// Project Context Vault & Session Continuity Types
+// ==========================================
+
+export type ContextScope = 'project' | 'session';
+
+export type ProjectContextCategory =
+  | 'project_overview'
+  | 'product_requirements'
+  | 'architecture_decisions'
+  | 'technical_constraints'
+  | 'coding_conventions'
+  | 'environment_setup'
+  | 'known_issues'
+  | 'important_references'
+  | 'user_notes'
+  | 'recorded_decisions';
+
+export type SessionContextCategory =
+  | 'session_objective'
+  | 'current_focus'
+  | 'recorded_decisions'
+  | 'active_constraints'
+  | 'unresolved_questions'
+  | 'important_findings'
+  | 'pending_verification'
+  | 'session_handoff';
+
+export type ContextCategory = ProjectContextCategory | SessionContextCategory | string;
+
+export type ContextProvenance =
+  | 'user-authored'
+  | 'chatgpt-authored'
+  | 'antigravity-reported'
+  | 'knot-derived';
+
+export interface ContextDocument {
+  id: string;
+  projectId: string;
+  sessionId?: string | null;
+  scope: ContextScope;
+  category: ContextCategory;
+  title: string;
+  contentMarkdown: string;
+  author: string;
+  provenance: ContextProvenance;
+  contentHash: string;
+  currentRevision: number;
+  isArchived: boolean;
+  requiresVerification: boolean;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string | null;
+}
+
+export interface ContextRevision {
+  id: string;
+  contextId: string;
+  revision: number;
+  title: string;
+  contentMarkdown: string;
+  contentHash: string;
+  author: string;
+  provenance: ContextProvenance;
+  requiresVerification: boolean;
+  changeSummary?: string | null;
+  createdAt: string;
+}
+
+export interface ContextConflict {
+  id: string;
+  contextId: string;
+  projectId: string;
+  sessionId?: string | null;
+  expectedRevision?: number | null;
+  actualRevision: number;
+  incomingTitle: string;
+  incomingContent: string;
+  incomingAuthor: string;
+  conflictReason: string;
+  isResolved: boolean;
+  resolvedAt?: string | null;
+  createdAt: string;
+}
+
+export interface CreateContextInput {
+  id?: string;
+  projectId: string;
+  sessionId?: string | null;
+  scope?: ContextScope;
+  category: ContextCategory;
+  title: string;
+  contentMarkdown: string;
+  author?: string;
+  provenance?: ContextProvenance;
+  requiresVerification?: boolean;
+  changeSummary?: string | null;
+}
+
+export interface UpdateContextInput {
+  title?: string;
+  contentMarkdown?: string;
+  category?: ContextCategory;
+  author?: string;
+  provenance?: ContextProvenance;
+  expectedRevision?: number;
+  expectedContentHash?: string;
+  requiresVerification?: boolean;
+  changeSummary?: string | null;
+}
+
+export interface ContextFilterOptions {
+  projectId: string;
+  sessionId?: string | null;
+  scope?: ContextScope;
+  category?: ContextCategory;
+  includeArchived?: boolean;
+  searchQuery?: string;
+}
+
+export interface ContextManifestItem {
+  id: string;
+  scope: ContextScope;
+  category: ContextCategory;
+  title: string;
+  author: string;
+  provenance: ContextProvenance;
+  currentRevision: number;
+  updatedAt: string;
+  isArchived: boolean;
+  requiresVerification: boolean;
+  filePath: string;
+}
+
+export interface ContextManifest {
+  projectId: string;
+  projectName: string;
+  generatedAt: string;
+  handoff?: {
+    sessionId: string;
+    sessionTitle: string;
+    contextId: string;
+    title: string;
+    updatedAt: string;
+    filePath: string;
+  } | null;
+  projectContext: ContextManifestItem[];
+  sessionContext: ContextManifestItem[];
+}
+
+export interface ContextApi {
+  list: (filter: ContextFilterOptions) => Promise<ContextDocument[]>;
+  get: (id: string) => Promise<ContextDocument | null>;
+  create: (input: CreateContextInput) => Promise<ContextDocument>;
+  update: (id: string, input: UpdateContextInput) => Promise<ContextDocument>;
+  archive: (id: string) => Promise<ContextDocument>;
+  restore: (id: string) => Promise<ContextDocument>;
+  getRevisions: (contextId: string) => Promise<ContextRevision[]>;
+  getRevision: (contextId: string, revision: number) => Promise<ContextRevision | null>;
+  listConflicts: (projectId: string, unresolvedOnly?: boolean) => Promise<ContextConflict[]>;
+  resolveConflict: (conflictId: string) => Promise<void>;
+  getHandoff: (sessionId: string) => Promise<ContextDocument | null>;
+  getManifest: (projectId: string) => Promise<ContextManifest | null>;
+}
+
 
 

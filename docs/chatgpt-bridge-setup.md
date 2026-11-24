@@ -88,6 +88,14 @@ This file is maintained continuously by Knot and provides a structured overview:
 - Active sessions per project and their IDs.
 - Worker status (e.g. Antigravity idle/running).
 - In-flight and queued tasks.
+- Pointer to the project's **Context Manifest**: `[bridgeRoot]/projects/<projectId>/context-manifest.md`.
+
+### Step 1b: Inspect the Project Context Manifest
+Before formulating tasks, ChatGPT should inspect the project context index:
+`[bridgeRoot]/projects/<projectId>/context-manifest.md`
+
+This provides an up-to-date manifest of all active architectural decisions, technical constraints, coding standards, domain concepts, and session handoff notes, along with relative links to materialized markdown files in `projects/<projectId>/context/`.
+For in-depth details, see [Project Context Vault Specification](context-management.md).
 
 ### Step 2: Locate the Session Directory
 
@@ -172,6 +180,10 @@ allowedOperations:
   - "read"
   - "write"
   - "bash"
+contextReferences:
+  - id: "ctx-4f8a-91b2"
+    revision: 2
+  - id: "ctx-7a8b-9c0d"
 ---
 
 ## Objective
@@ -186,6 +198,61 @@ Implement structured outbox publishing when Antigravity completes a delegated ta
 ## Expected Outcomes
 - Clean execution result Markdown published to `outbox/knot/task-<taskId>-result.md`.
 ```
+
+> **Context Injection**: When `contextReferences` are provided, Knot verifies project ownership and active status, then injects read-only context sections into the task contract dispatched to Antigravity (`## Attached Project & Session Context (Read-Only)`).
+
+#### C. Context Updates (`context_update`)
+
+Use `context_update` when ChatGPT establishes architectural decisions, records technical constraints, updates domain models, or deposits session handoff notes for the next active session.
+
+Knot validates the payload, applies **Optimistic Concurrency Control (OCC)**, versions changes in SQLite (`context_documents` and `context_revisions`), materializes individual markdown documents to disk, and updates `context-manifest.md`.
+
+##### Creating a Document:
+```markdown
+---
+id: "ctx-msg-202611250300"
+protocol: "v1"
+projectId: "p-4f8a-91b2"
+sessionId: "s-1234-abcd"
+sender: "chatgpt"
+recipient: "knot"
+type: "context_update"
+createdAt: "2026-11-25T03:00:00.000Z"
+metadata:
+  scope: "project"
+  category: "architecture_decisions"
+  title: "Database Architecture: SQLite WAL Mode"
+  changeSummary: "Adopted SQLite with WAL mode"
+---
+# Database Architecture: SQLite WAL Mode
+
+All persistent storage must use `node:sqlite` with WAL mode enabled.
+```
+
+##### Updating a Document (OCC Protected):
+```markdown
+---
+id: "ctx-msg-202611250310"
+protocol: "v1"
+projectId: "p-4f8a-91b2"
+sessionId: "s-1234-abcd"
+sender: "chatgpt"
+recipient: "knot"
+type: "context_update"
+createdAt: "2026-11-25T03:10:00.000Z"
+metadata:
+  contextId: "ctx-4f8a-91b2"
+  expectedRevision: 1
+  category: "architecture_decisions"
+  title: "Database Architecture: SQLite WAL Mode with Busy Timeout"
+  changeSummary: "Configured 5000ms busy timeout"
+---
+# Database Architecture: SQLite WAL Mode with Busy Timeout
+
+Configure `PRAGMA busy_timeout = 5000` to prevent concurrent locks.
+```
+
+> **Concurrency Conflicts**: If `expectedRevision` does not match the current revision in Knot's SQLite vault, the current document is preserved intact, the collision is stored in `context_conflicts`, and a warning banner appears in Knot's Context Vault Panel for user review.
 
 ---
 

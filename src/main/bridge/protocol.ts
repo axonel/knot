@@ -210,6 +210,7 @@ export function parseBridgeMessage(
     'activity',
     'task_result',
     'task_control',
+    'context_update',
   ];
   if (typeof type !== 'string' || !validTypes.includes(type as BridgeMessageType)) {
     return {
@@ -242,6 +243,62 @@ export function parseBridgeMessage(
         error: {
           code: 'INVALID_ACCEPTANCE_CRITERIA',
           message: 'Task acceptanceCriteria must be an array of strings.',
+        },
+      };
+    }
+    if (meta.contextReferences !== undefined) {
+      if (!Array.isArray(meta.contextReferences)) {
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_CONTEXT_REFERENCES',
+            message: 'Task contextReferences must be an array of reference objects.',
+          },
+        };
+      }
+      for (const ref of meta.contextReferences) {
+        if (typeof ref !== 'object' || ref === null || typeof ref.contextId !== 'string') {
+          return {
+            success: false,
+            error: {
+              code: 'INVALID_CONTEXT_REFERENCE_ITEM',
+              message: 'Each item in contextReferences must contain a string contextId.',
+            },
+          };
+        }
+      }
+    }
+  }
+
+  // Validate context_update specific metadata if provided
+  if (type === 'context_update' && parsedJson.metadata && typeof parsedJson.metadata === 'object') {
+    const meta = parsedJson.metadata as Record<string, unknown>;
+    if (meta.scope !== undefined && meta.scope !== 'project' && meta.scope !== 'session') {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_CONTEXT_SCOPE',
+          message: `Invalid context scope '${meta.scope}'. Allowed: project, session.`,
+        },
+      };
+    }
+    if (meta.expectedRevision !== undefined) {
+      if (typeof meta.expectedRevision !== 'number' || !Number.isInteger(meta.expectedRevision) || meta.expectedRevision < 1) {
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_EXPECTED_REVISION',
+            message: 'expectedRevision must be a positive integer.',
+          },
+        };
+      }
+    }
+    if (meta.expectedContentHash !== undefined && typeof meta.expectedContentHash !== 'string') {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_EXPECTED_HASH',
+          message: 'expectedContentHash must be a string.',
         },
       };
     }

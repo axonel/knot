@@ -2,7 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { app } from 'electron';
 import type { SessionBridgePaths } from './types.js';
-import type { Project, Session, Task } from '../../shared/types.js';
+import type {
+  Project,
+  Session,
+  Task,
+  ContextDocument,
+  ContextManifest,
+  ContextManifestItem,
+} from '../../shared/types.js';
 
 export function resolveBridgeRoot(customPath?: string): string {
   if (customPath) {
@@ -32,17 +39,20 @@ bridge/
     ├── workspace-index.md       <-- Real-time registry of projects, sessions, tasks
     ├── projects/
     │   └── <project-id>/
+    │       ├── context-manifest.md   <-- Context Vault manifest (decisions, constraints, handoffs)
+    │       ├── context/              <-- Project-scoped context documents
     │       └── sessions/
     │           └── <session-id>/
+    │               ├── context/       <-- Session-scoped context documents & handoffs
     │               ├── inbox/
-    │               │   └── chatgpt/       <-- ChatGPT writes inbound messages & task assignments here
+    │               │   └── chatgpt/   <-- ChatGPT writes inbound messages & task assignments here
     │               ├── processed/
-    │               │   └── chatgpt/       <-- Accepted messages moved here
+    │               │   └── chatgpt/   <-- Accepted messages moved here
     │               ├── rejected/
-    │               │   └── chatgpt/       <-- Malformed messages moved here
+    │               │   └── chatgpt/   <-- Malformed messages moved here
     │               ├── outbox/
-    │               │   └── knot/          <-- Knot publishes outbound responses & task results here
-    │               └── conversation.md    <-- Authoritative conversation log
+    │               │   └── knot/      <-- Knot publishes outbound responses & task results here
+    │               └── conversation.md<-- Authoritative conversation log
     └── README.md
 \`\`\`
 
@@ -83,9 +93,59 @@ Ensure Desktop Commander has access to BOTH:
 
 ---
 
-## Workspace Index
-Read the real-time project and session index at:
-\`${path.join(bridgeRoot, 'workspace-index.md')}\`
+## Workspace Index & Context Manifest
+1. Read the real-time project and session index at:
+   \`${path.join(bridgeRoot, 'workspace-index.md')}\`
+2. Read the project's Context Vault manifest at:
+   \`<bridge-root>/projects/<project-id>/context-manifest.md\`
+
+---
+
+## Project Context Vault & Session Continuity
+Knot provides a durable, versioned Context Vault with two scopes:
+- **Project Context**: Architecture decisions, product requirements, technical constraints, coding conventions. Survives across sessions.
+- **Session Context**: Session objectives, current focus, active constraints, and session handoff notes.
+
+### How to Create or Update Context Documents
+Write to: \`<bridge-root>/projects/<project-id>/sessions/<session-id>/inbox/chatgpt/<unique-uuid>.md\`
+
+\`\`\`markdown
+<!-- KNOT_MESSAGE_V1
+{
+  "id": "<uuid-v4>",
+  "protocol": "v1",
+  "projectId": "<project-id>",
+  "sessionId": "<session-id>",
+  "sender": "chatgpt",
+  "recipient": "knot",
+  "type": "context_update",
+  "createdAt": "<iso-8601-timestamp>",
+  "metadata": {
+    "contextId": "<optional-existing-context-id>",
+    "scope": "project",
+    "category": "architecture_decisions",
+    "title": "Database Architecture Decisions",
+    "expectedRevision": 1,
+    "changeSummary": "Documented SQLite WAL mode and foreign key constraints",
+    "requiresVerification": false
+  }
+}
+-->
+
+# Database Architecture Decisions
+
+We use SQLite via Node 22 built-in \`node:sqlite\` with WAL mode enabled...
+\`\`\`
+
+### Safe Updates via Optimistic Concurrency Control
+When updating an existing document, always supply \`"expectedRevision": <number>\`.
+If another update was recorded since you last read the document, Knot will safely reject the update, record the conflict in SQLite, and keep the existing document intact.
+
+### How to Write Session Handoff Notes
+When ending or pausing a session, write a \`session_handoff\` document so the next session can resume seamlessly:
+- \`"scope": "session"\`
+- \`"category": "session_handoff"\`
+- \`"title": "Handoff: <Summary of current state>"\`
 
 ---
 
@@ -140,6 +200,12 @@ Write to: \`<bridge-root>/projects/<project-id>/sessions/<session-id>/inbox/chat
     "acceptanceCriteria": [
       "Unit tests pass for expired tokens",
       "No regression in login flow"
+    ],
+    "contextReferences": [
+      {
+        "contextId": "<context-id>",
+        "revision": 1
+      }
     ]
   }
 }
@@ -294,6 +360,7 @@ export function writeWorkspaceIndex(
       if (project.repositoryRemote) {
         content += `- **Repository Remote**: \`${project.repositoryRemote}\`\n`;
       }
+      content += `- **Context Manifest**: \`projects/${project.id}/context-manifest.md\`\n`;
       content += `\n`;
 
       const sessions = sessionsByProject.get(project.id) || [];
@@ -328,3 +395,145 @@ export function writeWorkspaceIndex(
   fs.writeFileSync(tempFile, content, 'utf-8');
   fs.renameSync(tempFile, indexPath);
 }
+
+export function writeContextManifest(
+  bridgeRoot: string,
+  project: { id: string; name: string },
+  contextDocs: ContextDocument[],
+  sessions: Session[] = []
+): ContextManifest {
+  ensureBridgeRoot(bridgeRoot);
+
+  const projectDir = path.join(bridgeRoot, 'projects', project.id);
+  const projectContextDir = path.join(projectDir, 'context');
+  fs.mkdirSync(projectContextDir, { recursive: true });
+
+  const manifestPath = path.join(projectDir, 'context-manifest.md');
+  const tempManifestFile = path.join(projectDir, `context-manifest.tmp.${Date.now()}`);
+
+  const projectManifestItems: ContextManifestItem[] = [];
+  const sessionManifestItems: ContextManifestItem[] = [];
+
+  let handoffItem: ContextManifest['handoff'] = null;
+
+  for (const doc of contextDocs) {
+    let docDir = projectContextDir;
+    let relPath = `projects/${project.id}/context/${doc.id}.md`;
+
+    if (doc.scope === 'session' && doc.sessionId) {
+      docDir = path.join(projectDir, 'sessions', doc.sessionId, 'context');
+      relPath = `projects/${project.id}/sessions/${doc.sessionId}/context/${doc.id}.md`;
+    }
+
+    fs.mkdirSync(docDir, { recursive: true });
+    const docFilePath = path.join(docDir, `${doc.id}.md`);
+    const tempDocFile = path.join(docDir, `${doc.id}.tmp.${Date.now()}`);
+
+    const headerObj = {
+      id: doc.id,
+      projectId: doc.projectId,
+      sessionId: doc.sessionId || null,
+      scope: doc.scope,
+      category: doc.category,
+      revision: doc.currentRevision,
+      contentHash: doc.contentHash,
+      author: doc.author,
+      provenance: doc.provenance,
+      requiresVerification: doc.requiresVerification,
+      updatedAt: doc.updatedAt,
+    };
+
+    const docFileContent = `<!-- KNOT_CONTEXT_V1\n${JSON.stringify(headerObj, null, 2)}\n-->\n\n# ${doc.title}\n\n${doc.contentMarkdown.trim()}\n`;
+
+    fs.writeFileSync(tempDocFile, docFileContent, 'utf-8');
+    fs.renameSync(tempDocFile, docFilePath);
+
+    const item: ContextManifestItem = {
+      id: doc.id,
+      scope: doc.scope,
+      category: doc.category,
+      title: doc.title,
+      author: doc.author,
+      provenance: doc.provenance,
+      currentRevision: doc.currentRevision,
+      updatedAt: doc.updatedAt,
+      isArchived: doc.isArchived,
+      requiresVerification: doc.requiresVerification,
+      filePath: relPath,
+    };
+
+    if (doc.scope === 'project') {
+      projectManifestItems.push(item);
+    } else {
+      sessionManifestItems.push(item);
+      if (doc.category === 'session_handoff' && !doc.isArchived && !handoffItem) {
+        const session = sessions.find((s) => s.id === doc.sessionId);
+        handoffItem = {
+          sessionId: doc.sessionId!,
+          sessionTitle: session?.title || 'Session',
+          contextId: doc.id,
+          title: doc.title,
+          updatedAt: doc.updatedAt,
+          filePath: relPath,
+        };
+      }
+    }
+  }
+
+  const manifestData: ContextManifest = {
+    projectId: project.id,
+    projectName: project.name,
+    generatedAt: new Date().toISOString(),
+    handoff: handoffItem,
+    projectContext: projectManifestItems,
+    sessionContext: sessionManifestItems,
+  };
+
+  // Build markdown representation
+  let md = `# Knot Context Manifest: ${project.name}\n\n`;
+  md += `> Authoritative project decisions, technical constraints, architecture, and session handoffs.\n\n`;
+  md += `- **Project ID**: \`${project.id}\`\n`;
+  md += `- **Generated At**: \`${manifestData.generatedAt}\`\n`;
+  md += `- **Total Context Documents**: ${contextDocs.length}\n\n`;
+  md += `---\n\n`;
+
+  if (handoffItem) {
+    md += `## Latest Session Handoff\n\n`;
+    md += `- **Session**: ${handoffItem.sessionTitle} (\`${handoffItem.sessionId}\`)\n`;
+    md += `- **Document**: [${handoffItem.title}](${handoffItem.filePath})\n`;
+    md += `- **Updated At**: \`${handoffItem.updatedAt}\`\n`;
+    md += `- **Status**: Active Handoff Note\n\n`;
+    md += `---\n\n`;
+  }
+
+  md += `## Project Context (Survives Sessions)\n\n`;
+  if (projectManifestItems.length === 0) {
+    md += `*No project-level context documents yet.*\n\n`;
+  } else {
+    md += `| ID | Category | Title | Rev | Provenance | File Path |\n`;
+    md += `|---|---|---|---|---|---|\n`;
+    for (const item of projectManifestItems) {
+      md += `| \`${item.id}\` | \`${item.category}\` | ${item.title} | ${item.currentRevision} | \`${item.provenance}\` | \`${item.filePath}\` |\n`;
+    }
+    md += `\n`;
+  }
+
+  md += `---\n\n`;
+  md += `## Session Context\n\n`;
+  if (sessionManifestItems.length === 0) {
+    md += `*No session-level context documents yet.*\n\n`;
+  } else {
+    md += `| Session ID | Category | Title | Rev | Provenance | File Path |\n`;
+    md += `|---|---|---|---|---|---|\n`;
+    for (const item of sessionManifestItems) {
+      md += `| \`${item.id}\` | \`${item.category}\` | ${item.title} | ${item.currentRevision} | \`${item.provenance}\` | \`${item.filePath}\` |\n`;
+    }
+    md += `\n`;
+  }
+
+  fs.writeFileSync(tempManifestFile, md, 'utf-8');
+  fs.renameSync(tempManifestFile, manifestPath);
+
+  return manifestData;
+}
+

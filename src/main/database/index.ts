@@ -6,6 +6,7 @@ import { MessageRepository } from './repositories/messageRepository.js';
 import { TaskRepository } from './repositories/taskRepository.js';
 import { EventRepository } from './repositories/eventRepository.js';
 import { AgentSessionRepository } from './repositories/agentSessionRepository.js';
+import { ContextRepository } from './repositories/contextRepository.js';
 
 export interface DatabaseService {
   db: DatabaseSync;
@@ -15,6 +16,7 @@ export interface DatabaseService {
   tasks: TaskRepository;
   events: EventRepository;
   agentSessions: AgentSessionRepository;
+  context: ContextRepository;
   close: () => void;
 }
 
@@ -29,6 +31,7 @@ export function createDatabaseService(customDbPath?: string): DatabaseService {
   const tasks = new TaskRepository(db);
   const events = new EventRepository(db);
   const agentSessions = new AgentSessionRepository(db);
+  const context = new ContextRepository(db);
 
   return {
     db,
@@ -38,6 +41,7 @@ export function createDatabaseService(customDbPath?: string): DatabaseService {
     tasks,
     events,
     agentSessions,
+    context,
     close: () => {
       try {
         db.close();

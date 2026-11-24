@@ -86,6 +86,13 @@ export function ingestTaskAssignment(
   const executionMode = (metadata.executionMode as string) || 'default';
   const explicitApproval = metadata.requiresApproval === true;
 
+  let contextReferences: any[] | null = null;
+  if (Array.isArray(metadata.contextReferences)) {
+    contextReferences = metadata.contextReferences.filter(
+      (ref: any) => typeof ref === 'object' && ref !== null && typeof ref.contextId === 'string'
+    );
+  }
+
   // 3. Safety policy evaluation
   const policy = TaskPolicy.evaluate(title, parsedMessage.bodyMarkdown, {
     priority,
@@ -109,6 +116,7 @@ export function ingestTaskAssignment(
     priority,
     executionMode,
     acceptanceCriteria: acceptanceCriteria.length > 0 ? acceptanceCriteria : null,
+    contextReferences: contextReferences && contextReferences.length > 0 ? contextReferences : null,
     payload: {
       inboundMessageId: sourceMessageId,
       policyCategory: policy.category,

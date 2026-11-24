@@ -190,6 +190,66 @@ function createMockKnotApi() {
       getFileDiff: vi.fn().mockResolvedValue(null),
       getRepoStatus: vi.fn().mockResolvedValue(null),
     },
+    context: {
+      list: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockImplementation((d) =>
+        Promise.resolve({
+          id: 'ctx-1',
+          ...d,
+          currentRevision: 1,
+          isArchived: false,
+          requiresVerification: false,
+          contentHash: 'hash',
+          createdAt: '',
+          updatedAt: '',
+          archivedAt: null,
+        })
+      ),
+      update: vi.fn().mockImplementation((id, d) =>
+        Promise.resolve({
+          id,
+          ...d,
+          currentRevision: 2,
+          isArchived: false,
+          requiresVerification: false,
+          contentHash: 'hash2',
+          createdAt: '',
+          updatedAt: '',
+          archivedAt: null,
+        })
+      ),
+      archive: vi.fn().mockImplementation((id) =>
+        Promise.resolve({
+          id,
+          isArchived: true,
+          currentRevision: 1,
+          requiresVerification: false,
+          contentHash: 'hash',
+          createdAt: '',
+          updatedAt: '',
+          archivedAt: new Date().toISOString(),
+        })
+      ),
+      restore: vi.fn().mockImplementation((id) =>
+        Promise.resolve({
+          id,
+          isArchived: false,
+          currentRevision: 1,
+          requiresVerification: false,
+          contentHash: 'hash',
+          createdAt: '',
+          updatedAt: '',
+          archivedAt: null,
+        })
+      ),
+      getRevisions: vi.fn().mockResolvedValue([]),
+      getRevision: vi.fn().mockResolvedValue(null),
+      listConflicts: vi.fn().mockResolvedValue([]),
+      resolveConflict: vi.fn().mockResolvedValue(undefined),
+      getHandoff: vi.fn().mockResolvedValue(null),
+      getManifest: vi.fn().mockResolvedValue(null),
+    },
   };
 }
 

@@ -104,9 +104,9 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
     switch (type) {
       case 'added':
       case 'untracked':
-        return <FilePlus size={14} className="text-emerald-400 shrink-0" />;
+        return <FilePlus size={14} className="text-[#F9F9F9] shrink-0" />;
       case 'deleted':
-        return <FileMinus size={14} className="text-rose-400 shrink-0" />;
+        return <FileMinus size={14} className="text-[#FF6E42] shrink-0" />;
       case 'renamed':
       case 'modified':
       default:
@@ -118,7 +118,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
     switch (provenance) {
       case 'git-derived':
         return (
-          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#004E72]/30 text-cyan-300 border border-[#004E72]/60">
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#004E72]/30 text-[#F9F9F9] border border-[#004E72]/60">
             Git-derived
           </span>
         );
@@ -130,7 +130,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
         );
       case 'attribution-uncertain':
         return (
-          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800">
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#092634] text-[#FF6E42] border border-[#FF6E42]/60">
             Attribution uncertain
           </span>
         );
@@ -210,14 +210,14 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                   {/* Commit Hash if verified */}
                   {inspection.verifiedCommitHash && (
                     <div className="flex items-center gap-1 font-mono text-[#F9F9F9]/80">
-                      <GitCommit size={13} className="text-emerald-400" />
+                      <GitCommit size={13} className="text-[#004E72]" />
                       <span>{inspection.verifiedCommitHash.slice(0, 8)}</span>
                       <button
                         onClick={() => handleCopyCommit(inspection.verifiedCommitHash!)}
                         className="p-1 hover:text-[#F9F9F9] text-[#F9F9F9]/40 rounded"
                         title="Copy commit hash"
                       >
-                        {copiedCommit ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                        {copiedCommit ? <Check size={11} className="text-[#F9F9F9]" /> : <Copy size={11} />}
                       </button>
                     </div>
                   )}
@@ -226,14 +226,14 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                   <span
                     className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
                       inspection.attributionConfidence === 'high'
-                        ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
+                        ? 'bg-[#004E72]/40 text-[#F9F9F9] border-[#004E72]'
                         : inspection.attributionConfidence === 'medium'
-                        ? 'bg-amber-950/80 text-amber-300 border-amber-800'
-                        : 'bg-rose-950/80 text-rose-300 border-rose-800'
+                        ? 'bg-[#092634] text-[#F9F9F9]/80 border-[#F9F9F9]/20'
+                        : 'bg-[#FF6E42]/20 text-[#FF6E42] border-[#FF6E42]/60'
                     }`}
                   >
                     {inspection.attributionConfidence === 'high'
-                      ? 'High Attribution (Clean Baseline)'
+                      ? 'Likely Task-Derived (Clean Baseline)'
                       : inspection.attributionConfidence === 'medium'
                       ? 'Medium Attribution'
                       : 'Attribution Uncertain (Dirty Baseline)'}
@@ -243,18 +243,18 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                 {/* Summary Metrics */}
                 <div className="flex items-center gap-2.5 font-mono text-[11px] text-[#F9F9F9]/70">
                   <span>{inspection.summary.totalFiles} files</span>
-                  <span className="text-emerald-400 font-semibold">+{inspection.summary.totalAdditions}</span>
-                  <span className="text-rose-400 font-semibold">-{inspection.summary.totalDeletions}</span>
+                  <span className="text-[#F9F9F9] font-semibold">+{inspection.summary.totalAdditions}</span>
+                  <span className="text-[#FF6E42] font-semibold">-{inspection.summary.totalDeletions}</span>
                   {inspection.summary.uncertainCount > 0 && (
-                    <span className="text-amber-400">({inspection.summary.uncertainCount} uncertain)</span>
+                    <span className="text-[#FF6E42]">({inspection.summary.uncertainCount} uncertain)</span>
                   )}
                 </div>
               </div>
 
               {/* Warnings and Attribution Notes */}
               {inspection.repositoryChangedSinceCompletion && (
-                <div className="flex items-center gap-2 p-1.5 rounded bg-amber-950/40 border border-amber-800/60 text-[11px] text-amber-300">
-                  <AlertTriangle size={13} className="shrink-0 text-amber-400" />
+                <div className="flex items-center gap-2 p-1.5 rounded bg-[#092634] border border-[#FF6E42]/60 text-[11px] text-[#F9F9F9]">
+                  <AlertTriangle size={13} className="shrink-0 text-[#FF6E42]" />
                   <span>
                     <strong>Repository state moved:</strong> HEAD or working tree has changed since this task completed.
                     Current diff may reflect subsequent edits.
@@ -264,7 +264,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
 
               {inspection.attributionNotes && inspection.attributionNotes.length > 0 && !inspection.repositoryChangedSinceCompletion && (
                 <div className="flex items-start gap-1.5 text-[11px] text-[#F9F9F9]/60 font-mono">
-                  <HelpCircle size={12} className="text-amber-400 mt-0.5 shrink-0" />
+                  <HelpCircle size={12} className="text-[#004E72] mt-0.5 shrink-0" />
                   <span>{inspection.attributionNotes.join(' ')}</span>
                 </div>
               )}
@@ -338,13 +338,37 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                       >
                         Deleted
                       </button>
+                      {inspection.summary.stagedCount > 0 && (
+                        <button
+                          onClick={() => setActiveFilter('staged')}
+                          className={`px-1.5 py-0.5 rounded border transition-colors ${
+                            activeFilter === 'staged'
+                              ? 'bg-[#004E72] text-[#F9F9F9] border-[#004E72]'
+                              : 'bg-[#090B0D] text-[#F9F9F9]/60 border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
+                          }`}
+                        >
+                          Staged ({inspection.summary.stagedCount})
+                        </button>
+                      )}
+                      {inspection.summary.unstagedCount > 0 && (
+                        <button
+                          onClick={() => setActiveFilter('unstaged')}
+                          className={`px-1.5 py-0.5 rounded border transition-colors ${
+                            activeFilter === 'unstaged'
+                              ? 'bg-[#004E72] text-[#F9F9F9] border-[#004E72]'
+                              : 'bg-[#090B0D] text-[#F9F9F9]/60 border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
+                          }`}
+                        >
+                          Unstaged ({inspection.summary.unstagedCount})
+                        </button>
+                      )}
                       {inspection.summary.uncertainCount > 0 && (
                         <button
                           onClick={() => setActiveFilter('uncertain')}
                           className={`px-1.5 py-0.5 rounded border transition-colors ${
                             activeFilter === 'uncertain'
-                              ? 'bg-amber-900 text-amber-200 border-amber-700'
-                              : 'bg-[#090B0D] text-amber-400 border-amber-900/60 hover:text-amber-200'
+                              ? 'bg-[#FF6E42] text-[#090B0D] border-[#FF6E42]'
+                              : 'bg-[#090B0D] text-[#FF6E42] border-[#FF6E42]/60 hover:text-[#F9F9F9]'
                           }`}
                         >
                           Uncertain ({inspection.summary.uncertainCount})
@@ -382,13 +406,13 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                             <div className="flex items-center justify-between text-[10px] font-mono text-[#F9F9F9]/40 pl-5">
                               <div className="flex items-center gap-1.5">
                                 {file.additions > 0 && (
-                                  <span className="text-emerald-400 font-semibold">+{file.additions}</span>
+                                  <span className="text-[#F9F9F9] font-semibold">+{file.additions}</span>
                                 )}
                                 {file.deletions > 0 && (
-                                  <span className="text-rose-400 font-semibold">-{file.deletions}</span>
+                                  <span className="text-[#FF6E42] font-semibold">-{file.deletions}</span>
                                 )}
-                                {file.isStaged && <span className="text-cyan-300">[staged]</span>}
-                                {file.isUntracked && <span className="text-amber-300">[untracked]</span>}
+                                {file.isStaged && <span className="text-[#004E72] font-semibold">[staged]</span>}
+                                {file.isUntracked && <span className="text-[#FF6E42]">[untracked]</span>}
                               </div>
                               {renderProvenanceBadge(file.provenance)}
                             </div>
@@ -420,10 +444,10 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1.5 font-mono text-xs">
                             {selectedFile.additions > 0 && (
-                              <span className="text-emerald-400 font-semibold">+{selectedFile.additions}</span>
+                              <span className="text-[#F9F9F9] font-semibold">+{selectedFile.additions}</span>
                             )}
                             {selectedFile.deletions > 0 && (
-                              <span className="text-rose-400 font-semibold">-{selectedFile.deletions}</span>
+                              <span className="text-[#FF6E42] font-semibold">-{selectedFile.deletions}</span>
                             )}
                           </div>
                           {renderProvenanceBadge(selectedFile.provenance)}
@@ -462,7 +486,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                               </>
                             ) : selectedFile.omittedReason === 'large_file' ? (
                               <>
-                                <AlertTriangle size={36} className="text-amber-400 mb-3" />
+                                <AlertTriangle size={36} className="text-[#FF6E42] mb-3" />
                                 <h4 className="text-sm font-bold text-[#F9F9F9] mb-1">Large File</h4>
                                 <p className="text-xs text-[#F9F9F9]/60">
                                   Diff omitted: File exceeds display threshold.
@@ -483,7 +507,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                           {selectedFile.hunks.map((hunk, hIdx) => (
                             <div key={hIdx} className="border border-[#F9F9F9]/10 rounded overflow-hidden">
                               {/* Hunk Header */}
-                              <div className="px-3 py-1 bg-[#004E72]/30 text-cyan-200 font-bold text-[11px] border-b border-[#F9F9F9]/10">
+                              <div className="px-3 py-1 bg-[#004E72]/40 text-[#F9F9F9] font-bold text-[11px] border-b border-[#F9F9F9]/10">
                                 {hunk.header}
                               </div>
 
@@ -499,9 +523,9 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                                         key={lIdx}
                                         className={
                                           isAdd
-                                            ? 'bg-emerald-950/40 text-emerald-200'
+                                            ? 'bg-[#004E72]/30 text-[#F9F9F9]'
                                             : isDel
-                                            ? 'bg-rose-950/40 text-rose-200'
+                                            ? 'bg-[#FF6E42]/20 text-[#FF6E42]'
                                             : 'hover:bg-[#F9F9F9]/5 text-[#F9F9F9]/80'
                                         }
                                       >

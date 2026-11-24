@@ -20,6 +20,9 @@ import type {
   TaskStatus,
   AppendEventInput,
   EventFilterOptions,
+  CreateContextInput,
+  UpdateContextInput,
+  ContextFilterOptions,
 } from '../shared/types.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -644,6 +647,83 @@ ipcMain.handle('git:get-repo-status', async (_event, projectId: string) => {
   if (!project) throw new Error(`Project not found with id: "${projectId}".`);
   if (!project.repositoryPath) throw new Error(`Project "${project.name}" has no repository path configured.`);
   return await gitService.getRepoStatus(project.repositoryPath, project.repositoryPath);
+});
+
+// Context Vault IPC Handlers
+ipcMain.handle('context:list', (_event, filter: ContextFilterOptions) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  return dbService.context.list(filter);
+});
+
+ipcMain.handle('context:get', (_event, id: string) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  return dbService.context.get(id);
+});
+
+ipcMain.handle('context:create', (_event, input: CreateContextInput) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  const doc = dbService.context.create(input);
+  if (bridgeService && doc.projectId) {
+    bridgeService.syncContextWorkspace(doc.projectId);
+  }
+  return doc;
+});
+
+ipcMain.handle('context:update', (_event, id: string, input: UpdateContextInput) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  const doc = dbService.context.update(id, input);
+  if (bridgeService && doc.projectId) {
+    bridgeService.syncContextWorkspace(doc.projectId);
+  }
+  return doc;
+});
+
+ipcMain.handle('context:archive', (_event, id: string) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  const doc = dbService.context.archive(id);
+  if (bridgeService && doc.projectId) {
+    bridgeService.syncContextWorkspace(doc.projectId);
+  }
+  return doc;
+});
+
+ipcMain.handle('context:restore', (_event, id: string) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  const doc = dbService.context.restore(id);
+  if (bridgeService && doc.projectId) {
+    bridgeService.syncContextWorkspace(doc.projectId);
+  }
+  return doc;
+});
+
+ipcMain.handle('context:getRevisions', (_event, contextId: string) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  return dbService.context.getRevisions(contextId);
+});
+
+ipcMain.handle('context:getRevision', (_event, contextId: string, revision: number) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  return dbService.context.getRevision(contextId, revision);
+});
+
+ipcMain.handle('context:listConflicts', (_event, projectId: string, unresolvedOnly?: boolean) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  return dbService.context.listConflicts(projectId, unresolvedOnly);
+});
+
+ipcMain.handle('context:resolveConflict', (_event, conflictId: string) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  return dbService.context.resolveConflict(conflictId);
+});
+
+ipcMain.handle('context:getHandoff', (_event, sessionId: string) => {
+  if (!dbService) throw new Error('Database service not initialized');
+  return dbService.context.getHandoff(sessionId);
+});
+
+ipcMain.handle('context:getManifest', (_event, projectId: string) => {
+  if (!bridgeService) throw new Error('Bridge service not initialized');
+  return bridgeService.getContextManifest(projectId);
 });
 
 // App lifecycle & shutdown cleanup

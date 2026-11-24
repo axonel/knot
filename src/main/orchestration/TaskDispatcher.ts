@@ -5,7 +5,7 @@ import type { TaskQueue } from './TaskQueue.js';
 import type { AntigravityManager } from '../antigravity/antigravityManager.js';
 import type { GitService } from '../git/gitService.js';
 import type { Task, TaskExecutionDetails, TaskGitBoundary } from '../../shared/types.js';
-import { formatTaskContract } from './taskContract.js';
+import { formatTaskContract, type AttachedTaskContext } from './taskContract.js';
 
 export interface TaskDispatcherOptions {
   dbService: DatabaseService;
@@ -174,8 +174,41 @@ export class TaskDispatcher extends EventEmitter {
 
     this.emit('task_dispatched', runningTask);
 
-    // 2. Format task prompt contract
-    const prompt = formatTaskContract(runningTask, workingDirectory);
+    // Resolve referenced context documents if any
+    const referencedContexts: AttachedTaskContext[] = [];
+    if (runningTask.contextReferences && runningTask.contextReferences.length > 0 && this.dbService.context) {
+      for (const ref of runningTask.contextReferences) {
+        try {
+          const doc = this.dbService.context.get(ref.contextId);
+          // Boundary enforcement: validate project ownership and non-archived status
+          if (doc && doc.projectId === project.id && !doc.isArchived) {
+            let content = doc.contentMarkdown;
+            let revNum = doc.currentRevision;
+            let docTitle = doc.title;
+            if (ref.revision !== undefined && ref.revision !== doc.currentRevision) {
+              const revDoc = this.dbService.context.getRevision(doc.id, ref.revision);
+              if (revDoc) {
+                content = revDoc.contentMarkdown;
+                revNum = revDoc.revision;
+                docTitle = revDoc.title;
+              }
+            }
+            referencedContexts.push({
+              id: doc.id,
+              title: docTitle,
+              category: doc.category,
+              contentMarkdown: content,
+              revision: revNum,
+            });
+          }
+        } catch (err) {
+          console.warn(`[TaskDispatcher] Could not resolve context reference ${ref.contextId}:`, err);
+        }
+      }
+    }
+
+    // 2. Format task prompt contract with read-only referenced context
+    const prompt = formatTaskContract(runningTask, workingDirectory, referencedContexts);
 
     // 3. Send prompt to AntigravityManager
     try {

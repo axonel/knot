@@ -7,6 +7,7 @@ import {
   Plus,
   RefreshCw,
   FolderGit2,
+  BookOpen,
 } from 'lucide-react';
 import type {
   Project,
@@ -20,6 +21,7 @@ import { DirectoryAccessDiagnostic } from './DirectoryAccessDiagnostic.js';
 import { SharedConversationPanel } from './SharedConversationPanel.js';
 import { ChatGptActivityPanel } from './ChatGptActivityPanel.js';
 import { AntigravityExecutionPanel } from './AntigravityExecutionPanel.js';
+import { ContextVaultPanel } from './ContextVaultPanel.js';
 
 export const CollaborationWorkspace: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -34,6 +36,10 @@ export const CollaborationWorkspace: React.FC = () => {
   const [showLeftActivity, setShowLeftActivity] = useState(true);
   const [showRightExecution, setShowRightExecution] = useState(true);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
+
+  // View state: conversation vs context vault
+  const [centerView, setCenterView] = useState<'conversation' | 'context'>('conversation');
+  const [unresolvedConflictsCount, setUnresolvedConflictsCount] = useState(0);
 
   // Modals
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -64,6 +70,13 @@ export const CollaborationWorkspace: React.FC = () => {
 
       setSessionsByProject(sMap);
       setTasksBySession(tMap);
+
+      // Check unresolved conflicts for selected project
+      const targetP = selectedProject || (projList.length > 0 ? projList[0] : null);
+      if (targetP && window.knotApi.context) {
+        const conflicts = await window.knotApi.context.listConflicts(targetP.id, true);
+        setUnresolvedConflictsCount(conflicts.length);
+      }
 
       // Restore or auto-select active project and session
       if (!selectedProject && projList.length > 0) {
@@ -218,6 +231,36 @@ export const CollaborationWorkspace: React.FC = () => {
                 )}
               </div>
             )}
+
+            {/* View Switcher: Conversation vs Context Vault */}
+            <div className="flex items-center bg-[#090B0D] p-0.5 rounded-lg border border-[#F9F9F9]/10 ml-2">
+              <button
+                onClick={() => setCenterView('conversation')}
+                className={`px-3 py-1 rounded text-xs font-medium transition-all ${
+                  centerView === 'conversation'
+                    ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
+                    : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                }`}
+              >
+                Conversation
+              </button>
+              <button
+                onClick={() => setCenterView('context')}
+                className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  centerView === 'context'
+                    ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
+                    : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                }`}
+              >
+                <BookOpen size={12} />
+                <span>Context Vault</span>
+                {unresolvedConflictsCount > 0 && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#FF6E42] text-[#090B0D] font-bold">
+                    {unresolvedConflictsCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Panel Toggle Actions */}
@@ -293,14 +336,22 @@ export const CollaborationWorkspace: React.FC = () => {
             </div>
           )}
 
-          {/* Center Panel: Canonical Shared Conversation */}
+          {/* Center Panel: Canonical Shared Conversation or Context Vault */}
           <div className="flex-1 h-full min-w-0">
-            <SharedConversationPanel
-              project={selectedProject}
-              session={selectedSession}
-              sessionPaths={sessionPaths}
-              onRefresh={loadWorkspace}
-            />
+            {centerView === 'conversation' ? (
+              <SharedConversationPanel
+                project={selectedProject}
+                session={selectedSession}
+                sessionPaths={sessionPaths}
+                onRefresh={loadWorkspace}
+              />
+            ) : (
+              <ContextVaultPanel
+                project={selectedProject}
+                session={selectedSession}
+                onRefresh={loadWorkspace}
+              />
+            )}
           </div>
 
           {/* Right Panel: Antigravity Execution Worker */}

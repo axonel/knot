@@ -391,6 +391,37 @@ Knot includes a read-only Git change inspection service and modal diff viewer th
 
 ---
 
+## 📚 Project Context Vault & Session Continuity
+
+Knot features a persistent, versioned context-management engine that ensures ChatGPT maintains continuous awareness of architecture guidelines, technical constraints, coding standards, and session handoffs across multiple working sessions.
+
+For complete documentation, see 👉 **[Project Context Vault Specification](docs/context-management.md)**.
+
+### Key Capabilities
+
+- **Two Distinct Scopes**:
+  - **Project Context (`scope: "project"`)**: Durable records (ADRs, constraints, domain models, coding standards) that survive individual sessions.
+  - **Session Context (`scope: "session"`)**: Ephemeral handoff notes and next steps tied to the active session.
+- **Optimistic Concurrency Control (OCC)**:
+  - Updates require matching `expectedRevision` numbers.
+  - Rejects stale writes without overwriting current data.
+  - Records conflict details in SQLite (`context_conflicts`) and alerts users with interactive conflict resolution banners.
+- **Materialized Markdown & Atomic Manifest**:
+  - Automatically writes and updates `context-manifest.md` and individual markdown documents (`projects/<projectId>/context/`) on disk.
+  - Enables zero-latency inspection for ChatGPT via Desktop Commander Remote MCP.
+- **Task Contract Context Injection**:
+  - ChatGPT references context document IDs and revisions in `task_assignment` frontmatter (`metadata.contextReferences`).
+  - Knot validates project ownership and non-archived status, then injects read-only context into the task prompt for Antigravity under `## Attached Project & Session Context (Read-Only)`.
+  - Unreferenced documents are never injected; Antigravity cannot modify context vault records.
+- **Interactive UI Context Vault Panel**:
+  - Strictly adheres to Knot's 5-color palette (`#F9F9F9`, `#004E72`, `#FF6E42`, `#092634`, `#090B0D`).
+  - Active session handoff note card and conflict resolution banner.
+  - Category filters, real-time search, and archive toggle.
+  - 3-tab document view: rendered Markdown Content, Revision Timeline (History), and line-by-line Diff comparison (`diffLines`).
+  - User modals: Create, Edit with required change summary, and explicit Archive confirmation.
+
+---
+
 ## 🔒 Security Architecture
 
 1. **Strict Context Isolation**: Renderer runs with `contextIsolation: true` and `nodeIntegration: false`.
@@ -402,6 +433,7 @@ Knot includes a read-only Git change inspection service and modal diff viewer th
 7. **No Auto-Approvals for Dangerous Operations**: Antigravity is executed with standard permission requirements; automated execution never bypasses tool confirmation policies. Knot **NEVER** passes `--dangerously-skip-permissions` or `--always-proceed`.
 8. **Sensitive Task Gating**: Potentially destructive commands and operations are held behind an explicit human approval gate.
 9. **Read-Only Git Inspection Invariant**: The Git inspection engine executes whitelisted read-only Git commands exclusively (`status`, `diff`, `log`, `rev-parse`, `cat-file`), rejecting all state-mutating operations. Paths are constrained to repository bounds with symlink escape validation, argument arrays with `shell: false`, and automatic suppression of sensitive credential files and binary payloads.
+10. **Context Integrity & Concurrency Guarantees**: Optimistic Concurrency Control (OCC) prevents stale writes from overwriting valid project context. Conflicts are strictly preserved and isolated in SQLite (`context_conflicts`) without data loss. Antigravity operates strictly in read-only mode regarding project context; only ChatGPT and user input can update the vault.
 
 ---
 

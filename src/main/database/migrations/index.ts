@@ -3,6 +3,7 @@ import { migration001 } from './001-initial-schema.js';
 import { migration002 } from './002-agent-sessions.js';
 import { migration003 } from './003-orchestration-enhancements.js';
 import { migration004 } from './004-task-git-boundary.js';
+import { migration005 } from './005-context-vault.js';
 
 export interface Migration {
   version: number;
@@ -10,7 +11,7 @@ export interface Migration {
   up: (db: DatabaseSync) => void;
 }
 
-const allMigrations: Migration[] = [migration001, migration002, migration003, migration004];
+const allMigrations: Migration[] = [migration001, migration002, migration003, migration004, migration005];
 
 export function runMigrations(db: DatabaseSync, migrations: Migration[] = allMigrations): void {
   // Ensure schema_migrations table exists

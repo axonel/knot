@@ -67,6 +67,7 @@ export interface TaskRecord {
   acceptance_criteria_json?: string | null;
   retry_count?: number | null;
   git_boundary_json?: string | null;
+  context_references_json?: string | null;
   created_at: string;
   updated_at: string;
   started_at: string | null;
@@ -98,5 +99,54 @@ export interface AgentSessionRecord {
   last_started_at: string | null;
   last_exit_code: number | null;
   metadata_json: string | null;
+}
+
+export interface ContextDocumentRecord {
+  id: string;
+  project_id: string;
+  session_id: string | null;
+  scope: string;
+  category: string;
+  title: string;
+  content_markdown: string;
+  author: string;
+  provenance: string;
+  content_hash: string;
+  current_revision: number;
+  is_archived: number;
+  requires_verification: number;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+}
+
+export interface ContextRevisionRecord {
+  id: string;
+  context_id: string;
+  revision: number;
+  title: string;
+  content_markdown: string;
+  content_hash: string;
+  author: string;
+  provenance: string;
+  requires_verification: number;
+  change_summary: string | null;
+  created_at: string;
+}
+
+export interface ContextConflictRecord {
+  id: string;
+  context_id: string;
+  project_id: string;
+  session_id: string | null;
+  expected_revision: number | null;
+  actual_revision: number;
+  incoming_title: string;
+  incoming_content: string;
+  incoming_author: string;
+  conflict_reason: string;
+  is_resolved: number;
+  resolved_at: string | null;
+  created_at: string;
 }
 

@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import type { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskGitBoundary } from '../../../shared/types.js';
+import type { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskGitBoundary, TaskContextReference } from '../../../shared/types.js';
 import type { TaskRecord } from '../types.js';
 
 export class TaskRepository {
@@ -34,6 +34,15 @@ export class TaskRepository {
       }
     }
 
+    let contextReferences: TaskContextReference[] | null = null;
+    if (row.context_references_json) {
+      try {
+        contextReferences = JSON.parse(row.context_references_json);
+      } catch {
+        contextReferences = null;
+      }
+    }
+
     return {
       id: row.id,
       sessionId: row.session_id,
@@ -53,6 +62,7 @@ export class TaskRepository {
       retryCount: row.retry_count ?? 0,
       payload,
       gitBoundary,
+      contextReferences,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       startedAt: row.started_at,
@@ -84,14 +94,15 @@ export class TaskRepository {
     const acceptanceCriteriaJson = data.acceptanceCriteria ? JSON.stringify(data.acceptanceCriteria) : null;
 
     const gitBoundaryJson = data.gitBoundary ? JSON.stringify(data.gitBoundary) : null;
+    const contextReferencesJson = data.contextReferences ? JSON.stringify(data.contextReferences) : null;
 
     const stmt = this.db.prepare(`
       INSERT INTO tasks (
         id, session_id, title, description, created_by, assigned_to, status, approval_status, payload_json,
         source_message_id, result_message_id, dispatched_at, failure_reason, priority, execution_mode,
-        acceptance_criteria_json, retry_count, git_boundary_json,
+        acceptance_criteria_json, retry_count, git_boundary_json, context_references_json,
         created_at, updated_at, started_at, completed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -113,6 +124,7 @@ export class TaskRepository {
       acceptanceCriteriaJson,
       data.retryCount ?? 0,
       gitBoundaryJson,
+      contextReferencesJson,
       now,
       now,
       startedAt,
@@ -138,6 +150,7 @@ export class TaskRepository {
       retryCount: data.retryCount ?? 0,
       payload: data.payload || null,
       gitBoundary: data.gitBoundary || null,
+      contextReferences: data.contextReferences || null,
       createdAt: now,
       updatedAt: now,
       startedAt,
@@ -336,6 +349,8 @@ export class TaskRepository {
     const retryCount = data.retryCount !== undefined ? data.retryCount : (existing.retryCount ?? 0);
     const gitBoundary = data.gitBoundary !== undefined ? data.gitBoundary : existing.gitBoundary;
     const gitBoundaryJson = gitBoundary ? JSON.stringify(gitBoundary) : null;
+    const contextReferences = data.contextReferences !== undefined ? data.contextReferences : existing.contextReferences;
+    const contextReferencesJson = contextReferences ? JSON.stringify(contextReferences) : null;
 
     const now = new Date().toISOString();
     let startedAt = existing.startedAt;
@@ -352,7 +367,7 @@ export class TaskRepository {
       SET title = ?, description = ?, assigned_to = ?, status = ?, approval_status = ?, payload_json = ?,
           source_message_id = ?, result_message_id = ?, dispatched_at = ?, failure_reason = ?,
           priority = ?, execution_mode = ?, acceptance_criteria_json = ?, retry_count = ?,
-          git_boundary_json = ?, started_at = ?, completed_at = ?, updated_at = ?
+          git_boundary_json = ?, context_references_json = ?, started_at = ?, completed_at = ?, updated_at = ?
       WHERE id = ?
     `);
 
@@ -372,6 +387,7 @@ export class TaskRepository {
       acceptanceCriteriaJson ?? null,
       retryCount,
       gitBoundaryJson,
+      contextReferencesJson,
       startedAt ?? null,
       completedAt ?? null,
       now,
@@ -395,6 +411,7 @@ export class TaskRepository {
       acceptanceCriteria,
       retryCount,
       gitBoundary,
+      contextReferences,
       startedAt,
       completedAt,
       updatedAt: now,

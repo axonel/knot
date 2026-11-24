@@ -402,3 +402,74 @@ Knot includes a read-only Git change inspection engine and modal diff viewer tha
    - Displays task title, branch, short verified commit hash with one-click copy button, and attribution confidence badge.
    - Split layout: searchable changed files sidebar with filter chips (All, Added, Modified, Deleted, Uncertain), and unified diff viewer with line numbers, additions/deletions counters, and syntax-highlighted hunk lines.
 
+---
+
+## 7. Project Context Vault & Session Continuity
+
+Knot includes a persistent, versioned context-management system that ensures ChatGPT retains project continuity across session boundaries without requiring manual re-explanation of architecture, domain models, or technical constraints.
+
+> **Architectural Invariant**:
+> **Knot must NOT generate AI summaries, make decisions, plan tasks, or determine what information ChatGPT needs.**
+> ChatGPT is the sole author and decision-maker for project context. Knot's role is strictly limited to schema validation, optimistic concurrency control, SQLite versioning, disk materialization, task contract injection, and visual presentation.
+
+For complete details, see [Project Context Vault Specification](context-management.md).
+
+### 7.1 Architecture & Workflow
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                 ChatGPT (The Orchestrator)                  │
+│  - Inspects context-manifest.md and context/*.md            │
+│  - Authors ADRs, constraints, and session handoffs          │
+│  - Submits updates via context_update bridge messages       │
+│  - References context IDs & revisions in task assignments   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Markdown Bridge (context_update)
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Knot (The Workspace Runtime)               │
+│  - Validates payload schema & expectedRevision (OCC)        │
+│  - Persists current documents & immutable revision history  │
+│  - Detects & isolates concurrency conflicts in SQLite       │
+│  - Materializes markdown docs & atomic context-manifest.md  │
+│  - Injects referenced context into Antigravity task contract│
+│  - Renders Context Vault Panel in Collaboration Workspace   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ Read-Only Context Injection
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 Antigravity (The Executor)                  │
+│  - Receives read-only context in task dispatch contract     │
+│  - Strictly bound to project repository implementation      │
+│  - Cannot modify or overwrite context vault records         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 7.2 Core Capabilities & Guarantees
+
+1. **Two Distinct Scopes**:
+   - **Project Scope (`scope: "project"`)**: Durable context that outlives individual sessions (e.g., `architecture_decisions`, `technical_constraints`, `domain_concepts`, `coding_standards`). Materialized to `projects/<projectId>/context/<contextId>.md`.
+   - **Session Scope (`scope: "session"`)**: Context tied to a specific session (e.g., `session_handoff`, next steps, WIP notes). Materialized to `projects/<projectId>/sessions/<sessionId>/context/<contextId>.md`.
+
+2. **Optimistic Concurrency Control (OCC)**:
+   - When ChatGPT updates a document, it supplies `expectedRevision`.
+   - If `expectedRevision` matches the current SQLite revision, the document is safely updated and revision history incremented.
+   - If a collision occurs (stale revision), the existing document is preserved intact without mutation. The conflict details are recorded in `context_conflicts` and an alert banner is displayed in the Knot desktop UI.
+
+3. **Deterministic Context Manifest**:
+   - Knot atomically writes `projects/<projectId>/context-manifest.md` on every update, cataloging active documents with relative links and category badges.
+   - Linked directly from `workspace-index.md` so ChatGPT can immediately discover project knowledge upon opening the repository.
+
+4. **Task Contract Context Injection**:
+   - In `task_assignment` frontmatter, ChatGPT can specify `metadata.contextReferences: [{ id: "...", revision: ... }]`.
+   - Knot validates that referenced documents belong to the active project and are non-archived.
+   - Knot injects the requested context directly into the task prompt sent to Antigravity under `## Attached Project & Session Context (Read-Only)`.
+   - Documents not explicitly referenced by ChatGPT are never injected. Antigravity cannot modify context documents.
+
+5. **Context Vault User Interface**:
+   - Integrated into the central panel of the Collaboration Workspace with an intuitive Conversation / Context Vault toggle.
+   - Features active session handoff summary cards, unresolved conflict alerts, category filters, real-time search, and Markdown rendering.
+   - Includes full revision history timeline and line-by-line diff comparison powered by `diffLines`.
+   - Strictly built with Knot's 5-color palette: `#090B0D`, `#092634`, `#004E72`, `#FF6E42`, `#F9F9F9`.
+
+

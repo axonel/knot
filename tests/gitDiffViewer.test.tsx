@@ -147,7 +147,7 @@ describe('GitDiffViewer UI Component', () => {
       expect(screen.getByText(/Implement User Authentication/)).toBeInTheDocument();
       expect(screen.getByText('feature/auth')).toBeInTheDocument();
       expect(screen.getByText('a1b2c3d4')).toBeInTheDocument();
-      expect(screen.getByText('High Attribution (Clean Baseline)')).toBeInTheDocument();
+      expect(screen.getByText('Likely Task-Derived (Clean Baseline)')).toBeInTheDocument();
     });
   });
 
@@ -222,20 +222,78 @@ describe('GitDiffViewer UI Component', () => {
     expect(screen.queryByTitle('src/legacyAuth.ts')).not.toBeInTheDocument();
   });
 
-  it('filters files using filter chips', async () => {
+  it('filters files using filter chips including staged and unstaged', async () => {
+    const stagedUnstagedInspection: TaskGitInspectionResult = {
+      ...sampleInspection,
+      summary: {
+        totalFiles: 3,
+        totalAdditions: 45,
+        totalDeletions: 12,
+        stagedCount: 1,
+        unstagedCount: 2,
+        untrackedCount: 0,
+        uncertainCount: 0,
+      },
+      files: [
+        {
+          path: 'src/staged.ts',
+          changeType: 'added',
+          isStaged: true,
+          isUntracked: false,
+          additions: 10,
+          deletions: 0,
+          provenance: 'git-derived',
+          hunks: [],
+        },
+        {
+          path: 'src/unstaged.ts',
+          changeType: 'modified',
+          isStaged: false,
+          isUntracked: false,
+          additions: 5,
+          deletions: 1,
+          provenance: 'git-derived',
+          hunks: [],
+        },
+        {
+          path: 'src/deleted.ts',
+          changeType: 'deleted',
+          isStaged: false,
+          isUntracked: false,
+          additions: 0,
+          deletions: 8,
+          provenance: 'git-derived',
+          hunks: [],
+        },
+      ],
+    };
+    (window as any).knotApi.git.getTaskDiff = vi.fn().mockResolvedValue(stagedUnstagedInspection);
+
     render(<GitDiffViewer taskId="task-123" onClose={mockOnClose} />);
 
     await waitFor(() => {
-      expect(screen.getByTitle('src/auth/jwt.ts')).toBeInTheDocument();
+      expect(screen.getByTitle('src/staged.ts')).toBeInTheDocument();
     });
 
+    // Test Staged filter
+    const stagedChip = screen.getByRole('button', { name: /^Staged \(/i });
+    fireEvent.click(stagedChip);
+    expect(screen.getByTitle('src/staged.ts')).toBeInTheDocument();
+    expect(screen.queryByTitle('src/unstaged.ts')).not.toBeInTheDocument();
+
+    // Test Unstaged filter
+    const unstagedChip = screen.getByRole('button', { name: /^Unstaged \(/i });
+    fireEvent.click(unstagedChip);
+    expect(screen.getByTitle('src/unstaged.ts')).toBeInTheDocument();
+    expect(screen.queryByTitle('src/staged.ts')).not.toBeInTheDocument();
+
     // Click "Deleted" filter chip
-    const deletedChip = screen.getByRole('button', { name: /Deleted/i });
+    const deletedChip = screen.getByRole('button', { name: /^Deleted$/i });
     fireEvent.click(deletedChip);
 
-    expect(screen.getByTitle('src/legacyAuth.ts')).toBeInTheDocument();
-    expect(screen.queryByTitle('src/auth/jwt.ts')).not.toBeInTheDocument();
-    expect(screen.queryByTitle('src/config.ts')).not.toBeInTheDocument();
+    expect(screen.getByTitle('src/deleted.ts')).toBeInTheDocument();
+    expect(screen.queryByTitle('src/staged.ts')).not.toBeInTheDocument();
+    expect(screen.queryByTitle('src/unstaged.ts')).not.toBeInTheDocument();
   });
 
   it('renders sensitive file omission banner when omittedReason is sensitive_file', async () => {

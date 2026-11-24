@@ -13,6 +13,9 @@ import type {
   TaskStatus,
   AppendEventInput,
   EventFilterOptions,
+  CreateContextInput,
+  UpdateContextInput,
+  ContextFilterOptions,
 } from '../shared/types.js';
 
 const api: KnotApi = {
@@ -145,6 +148,22 @@ const api: KnotApi = {
     getTaskDiff: (taskId: string) => ipcRenderer.invoke('git:get-task-diff', taskId),
     getFileDiff: (taskId: string, filePath: string) => ipcRenderer.invoke('git:get-file-diff', taskId, filePath),
     getRepoStatus: (projectId: string) => ipcRenderer.invoke('git:get-repo-status', projectId),
+  },
+
+  // Context Vault API
+  context: {
+    list: (filter: ContextFilterOptions) => ipcRenderer.invoke('context:list', filter),
+    get: (id: string) => ipcRenderer.invoke('context:get', id),
+    create: (input: CreateContextInput) => ipcRenderer.invoke('context:create', input),
+    update: (id: string, input: UpdateContextInput) => ipcRenderer.invoke('context:update', id, input),
+    archive: (id: string) => ipcRenderer.invoke('context:archive', id),
+    restore: (id: string) => ipcRenderer.invoke('context:restore', id),
+    getRevisions: (contextId: string) => ipcRenderer.invoke('context:getRevisions', contextId),
+    getRevision: (contextId: string, revision: number) => ipcRenderer.invoke('context:getRevision', contextId, revision),
+    listConflicts: (projectId: string, unresolvedOnly?: boolean) => ipcRenderer.invoke('context:listConflicts', projectId, unresolvedOnly),
+    resolveConflict: (conflictId: string) => ipcRenderer.invoke('context:resolveConflict', conflictId),
+    getHandoff: (sessionId: string) => ipcRenderer.invoke('context:getHandoff', sessionId),
+    getManifest: (projectId: string) => ipcRenderer.invoke('context:getManifest', projectId),
   },
 };
 

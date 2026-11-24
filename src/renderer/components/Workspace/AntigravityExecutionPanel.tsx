@@ -10,8 +10,10 @@ import {
   Terminal,
   ShieldAlert,
   ListTodo,
+  GitCommit,
 } from 'lucide-react';
 import type { Task, Session, AntigravityStatus, AntigravityUiEvent } from '../../../shared/types.js';
+import { GitDiffViewer } from './GitDiffViewer.js';
 
 interface AntigravityExecutionPanelProps {
   session: Session | null;
@@ -25,6 +27,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
   const [activeTab, setActiveTab] = useState<'queue' | 'stream'>('queue');
   const [streamEvents, setStreamEvents] = useState<Array<{ type: string; timestamp: string; data: Record<string, unknown> }>>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [inspectingTaskId, setInspectingTaskId] = useState<string | null>(null);
 
   const loadData = async () => {
     if (!session || !window.knotApi) {
@@ -257,15 +260,32 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                 </button>
               </>
             ) : highlightedTask.status === 'running' ? (
+              <>
+                <button
+                  onClick={() => handleCancel(highlightedTask.id)}
+                  disabled={actionLoading === highlightedTask.id}
+                  className="px-2.5 py-1 rounded bg-[#090B0D] hover:bg-rose-950/50 text-rose-300 border border-rose-800 text-xs font-medium flex items-center gap-1 transition-all"
+                >
+                  <XCircle size={12} />
+                  <span>Cancel Task</span>
+                </button>
+                <button
+                  onClick={() => setInspectingTaskId(highlightedTask.id)}
+                  className="px-2.5 py-1 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 transition-all"
+                >
+                  <GitCommit size={12} />
+                  <span>Inspect Git Changes</span>
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => handleCancel(highlightedTask.id)}
-                disabled={actionLoading === highlightedTask.id}
-                className="px-2.5 py-1 rounded bg-[#090B0D] hover:bg-rose-950/50 text-rose-300 border border-rose-800 text-xs font-medium flex items-center gap-1 transition-all"
+                onClick={() => setInspectingTaskId(highlightedTask.id)}
+                className="px-2.5 py-1 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 transition-all"
               >
-                <XCircle size={12} />
-                <span>Cancel Task</span>
+                <GitCommit size={12} />
+                <span>Inspect Git Changes</span>
               </button>
-            ) : null}
+            )}
           </div>
         </div>
       )}
@@ -328,9 +348,15 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                   <span>{new Date(task.createdAt).toLocaleTimeString()}</span>
                 </div>
 
-                {/* Retries or cancel buttons for items in list */}
-                {['failed', 'cancelled'].includes(task.status) && (
-                  <div className="pt-1 flex items-center gap-2">
+                {/* Inspect or Retry buttons for items in list */}
+                <div className="pt-1 flex items-center gap-2">
+                  <button
+                    onClick={() => setInspectingTaskId(task.id)}
+                    className="px-2 py-0.5 rounded bg-[#090B0D] hover:bg-[#004E72]/40 text-[#F9F9F9]/80 hover:text-[#F9F9F9] border border-[#F9F9F9]/10 text-[10px] font-mono flex items-center gap-1 transition-all"
+                  >
+                    <GitCommit size={10} /> Inspect Changes
+                  </button>
+                  {['failed', 'cancelled'].includes(task.status) && (
                     <button
                       onClick={() => handleRetry(task.id)}
                       disabled={actionLoading === task.id}
@@ -338,8 +364,8 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                     >
                       <RotateCcw size={10} /> Retry Task
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ))
           )
@@ -366,6 +392,14 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
           )
         )}
       </div>
+
+      {/* Git Diff Viewer Modal */}
+      {inspectingTaskId && (
+        <GitDiffViewer
+          taskId={inspectingTaskId}
+          onClose={() => setInspectingTaskId(null)}
+        />
+      )}
     </div>
   );
 };

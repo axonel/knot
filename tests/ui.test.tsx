@@ -10,7 +10,10 @@ import { ProjectList } from '../src/renderer/components/ProjectManager/ProjectLi
 import { ProjectDetail } from '../src/renderer/components/ProjectManager/ProjectDetail.js';
 import { SessionDetail } from '../src/renderer/components/ProjectManager/SessionDetail.js';
 import { App } from '../src/renderer/App.js';
-import { ProcessStatusInfo, LogEntry, Project, Session } from '../src/shared/types.js';
+import { ConnectionStatusCard } from '../src/renderer/components/Bridge/ConnectionStatusCard.js';
+import { HandshakeModal } from '../src/renderer/components/Bridge/HandshakeModal.js';
+import { BridgeMessagesPanel } from '../src/renderer/components/Bridge/BridgeMessagesPanel.js';
+import { ProcessStatusInfo, LogEntry, Project, Session, Message, BridgeStatusInfo } from '../src/shared/types.js';
 
 describe('UI and Branding Components', () => {
   describe('KnotLogo', () => {
@@ -115,6 +118,62 @@ describe('UI and Branding Components', () => {
         events: {
           list: vi.fn().mockResolvedValue([]),
           append: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'e-1', ...d, createdAt: '' })),
+        },
+        bridge: {
+          getStatus: vi.fn().mockResolvedValue({
+            workspaceInitialized: true,
+            bridgeRoot: '/mock/bridge/v1',
+            desktopCommanderRunning: true,
+            mcpPermissionConfigured: true,
+            handshakeState: 'workspace_ready',
+            activeProjectId: null,
+            activeSessionId: null,
+            lastInboundMessage: null,
+            lastOutboundMessage: null,
+          }),
+          initSessionBridge: vi.fn().mockResolvedValue({
+            projectDir: '/mock/bridge/v1/projects/p-1',
+            sessionDir: '/mock/bridge/v1/projects/p-1/sessions/s-1',
+            inboxDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/inbox/chatgpt',
+            processedDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/processed/chatgpt',
+            rejectedDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/rejected/chatgpt',
+            outboxDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/outbox/knot',
+            conversationFile: '/mock/bridge/v1/projects/p-1/sessions/s-1/conversation.md',
+          }),
+          sendMessage: vi.fn().mockImplementation((_p, s, c) =>
+            Promise.resolve({
+              id: 'm-out-1',
+              sessionId: s,
+              sequence: 1,
+              sender: 'knot',
+              recipient: 'chatgpt',
+              messageType: 'text',
+              contentMarkdown: c,
+              correlationId: null,
+              createdAt: new Date().toISOString(),
+            })
+          ),
+          startConnectionTest: vi.fn().mockResolvedValue({
+            id: 'chal-1',
+            challengeId: 'knot-challenge-1234',
+            projectId: 'p-1',
+            sessionId: 's-1',
+            outboxFilePath: '/mock/outbox/handshake.md',
+            inboxExpectedFilePath: '/mock/inbox/handshake.md',
+            instructions: 'Test instructions',
+            expiresAt: new Date(Date.now() + 600000).toISOString(),
+            status: 'pending',
+          }),
+          openDirectory: vi.fn().mockResolvedValue(true),
+          getInstructions: vi.fn().mockResolvedValue({
+            bridgeRoot: '/mock/bridge/v1',
+            sessionDir: '/mock/bridge/v1/projects/p-1/sessions/s-1',
+            inboxDir: '/mock/inbox',
+            outboxDir: '/mock/outbox',
+            allowedDirectoriesConfig: '{\n  "allowedDirectories": ["/mock/bridge/v1"]\n}',
+            chatgptPrompt: 'ChatGPT prompt snippet',
+          }),
+          onEvent: vi.fn().mockReturnValue(() => {}),
         },
       };
     });
@@ -468,5 +527,160 @@ describe('UI and Branding Components', () => {
       });
     });
   });
+
+  describe('ChatGPT Bridge UI Components', () => {
+    describe('ConnectionStatusCard', () => {
+      const mockStatus: BridgeStatusInfo = {
+        workspaceInitialized: true,
+        bridgeRoot: '/home/user/.config/knot/bridge/v1',
+        desktopCommanderRunning: true,
+        mcpPermissionConfigured: true,
+        handshakeState: 'workspace_ready',
+        activeProjectId: 'proj-1',
+        activeSessionId: 'sess-1',
+        lastInboundMessage: null,
+        lastOutboundMessage: null,
+        lastVerifiedAt: '2026-11-24T10:00:00.000Z',
+        sessionPaths: {
+          projectDir: '/mock/projects/proj-1',
+          sessionDir: '/mock/projects/proj-1/sessions/sess-1',
+          inboxDir: '/mock/projects/proj-1/sessions/sess-1/inbox/chatgpt',
+          processedDir: '/mock/projects/proj-1/sessions/sess-1/processed/chatgpt',
+          rejectedDir: '/mock/projects/proj-1/sessions/sess-1/rejected/chatgpt',
+          outboxDir: '/mock/projects/proj-1/sessions/sess-1/outbox/knot',
+          conversationFile: '/mock/projects/proj-1/sessions/sess-1/conversation.md',
+        },
+      };
+
+      it('renders bridge root and status badges correctly', () => {
+        render(
+          <ConnectionStatusCard
+            status={mockStatus}
+            selectedProjectId="proj-1"
+            selectedSessionId="sess-1"
+            onOpenTestModal={vi.fn()}
+            onInitWorkspace={vi.fn()}
+          />
+        );
+
+        expect(screen.getByText('ChatGPT Filesystem Bridge')).toBeInTheDocument();
+        expect(screen.getByText('Ready for Test')).toBeInTheDocument();
+        expect(screen.getByText('/home/user/.config/knot/bridge/v1')).toBeInTheDocument();
+        expect(screen.getByText('Process Active')).toBeInTheDocument();
+        expect(screen.getByText('Test Connection')).toBeInTheDocument();
+      });
+
+      it('triggers onOpenTestModal when Test Connection button is clicked', () => {
+        const handleOpenTest = vi.fn();
+        render(
+          <ConnectionStatusCard
+            status={mockStatus}
+            selectedProjectId="proj-1"
+            selectedSessionId="sess-1"
+            onOpenTestModal={handleOpenTest}
+            onInitWorkspace={vi.fn()}
+          />
+        );
+
+        const testBtn = screen.getByText('Test Connection');
+        fireEvent.click(testBtn);
+        expect(handleOpenTest).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe('HandshakeModal', () => {
+      it('renders modal with step guidance and challenge details', () => {
+        const mockChallenge = {
+          id: 'chal-1',
+          challengeId: 'knot-challenge-98765432',
+          projectId: 'proj-1',
+          sessionId: 'sess-1',
+          outboxFilePath: '/mock/outbox/handshake.md',
+          inboxExpectedFilePath: '/mock/inbox/handshake.md',
+          instructions: 'Use Desktop Commander to read outbox and reply to inbox.',
+          expiresAt: new Date(Date.now() + 600000).toISOString(),
+          status: 'pending' as const,
+        };
+
+        render(
+          <HandshakeModal
+            isOpen={true}
+            onClose={vi.fn()}
+            projectId="proj-1"
+            sessionId="sess-1"
+            activeChallenge={mockChallenge}
+            handshakeState="awaiting_response"
+            onStartTest={vi.fn()}
+          />
+        );
+
+        expect(screen.getByText('Verify ChatGPT Bridge Connection')).toBeInTheDocument();
+        expect(screen.getByText('Awaiting ChatGPT Response...')).toBeInTheDocument();
+        expect(screen.getByText('knot-challenge-98765432')).toBeInTheDocument();
+        expect(screen.getByText(/Use Desktop Commander to read outbox/)).toBeInTheDocument();
+      });
+    });
+
+    describe('BridgeMessagesPanel', () => {
+      const mockMessages: Message[] = [
+        {
+          id: 'msg-1',
+          sessionId: 'sess-1',
+          sequence: 1,
+          sender: 'knot',
+          recipient: 'chatgpt',
+          messageType: 'text',
+          contentMarkdown: 'Task for ChatGPT: review parser implementation.',
+          correlationId: null,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: 'msg-2',
+          sessionId: 'sess-1',
+          sequence: 2,
+          sender: 'chatgpt',
+          recipient: 'knot',
+          messageType: 'text',
+          contentMarkdown: 'Parser review complete. All syntax checks passed.',
+          correlationId: null,
+          createdAt: new Date().toISOString(),
+        },
+      ];
+
+      it('renders messages and handles tab switching and outbound send', async () => {
+        const handleRefresh = vi.fn();
+        render(
+          <BridgeMessagesPanel
+            projectId="proj-1"
+            sessionId="sess-1"
+            messages={mockMessages}
+            onRefresh={handleRefresh}
+            recentBridgeEvents={[]}
+          />
+        );
+
+        expect(screen.getByText('Bridge Message Stream')).toBeInTheDocument();
+        expect(screen.getByText('Task for ChatGPT: review parser implementation.')).toBeInTheDocument();
+        expect(screen.getByText('Parser review complete. All syntax checks passed.')).toBeInTheDocument();
+
+        // Type and send an outbound message
+        const textarea = screen.getByPlaceholderText('Type your markdown instruction or task for ChatGPT...');
+        fireEvent.change(textarea, { target: { value: 'New task for ChatGPT' } });
+
+        const sendBtn = screen.getByText('Send to Outbox');
+        fireEvent.click(sendBtn);
+
+        await waitFor(() => {
+          expect(window.knotApi?.bridge.sendMessage).toHaveBeenCalledWith(
+            'proj-1',
+            'sess-1',
+            'New task for ChatGPT'
+          );
+          expect(handleRefresh).toHaveBeenCalled();
+        });
+      });
+    });
+  });
 });
+
 

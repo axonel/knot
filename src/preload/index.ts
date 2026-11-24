@@ -120,6 +120,25 @@ const api: KnotApi = {
       };
     },
   },
+
+  // ChatGPT-Led Orchestration API
+  orchestration: {
+    approveTask: (taskId: string) => ipcRenderer.invoke('orchestration:approve-task', taskId),
+    rejectTask: (taskId: string, reason?: string) => ipcRenderer.invoke('orchestration:reject-task', taskId, reason),
+    cancelTask: (taskId: string, reason?: string) => ipcRenderer.invoke('orchestration:cancel-task', taskId, reason),
+    retryTask: (taskId: string) => ipcRenderer.invoke('orchestration:retry-task', taskId),
+    listTasks: (sessionId: string, status?: TaskStatus) => ipcRenderer.invoke('orchestration:list-tasks', sessionId, status),
+    listQueued: (sessionId?: string) => ipcRenderer.invoke('orchestration:list-queued', sessionId),
+    getRunningTask: (sessionId: string) => ipcRenderer.invoke('orchestration:get-running-task', sessionId),
+    dispatchNext: (sessionId: string) => ipcRenderer.invoke('orchestration:dispatch-next', sessionId),
+    onEvent: (callback: (event: any) => void) => {
+      const handler = (_event: IpcRendererEvent, ev: any) => callback(ev);
+      ipcRenderer.on('orchestration:event', handler);
+      return () => {
+        ipcRenderer.removeListener('orchestration:event', handler);
+      };
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('knotApi', api);

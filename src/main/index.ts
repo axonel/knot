@@ -7,6 +7,7 @@ import { logger } from './diagnosticLogger.js';
 import { initDatabaseService, DatabaseService } from './database/index.js';
 import { BridgeService } from './bridge/index.js';
 import { AntigravityManager } from './antigravity/index.js';
+import { Orchestrator } from './orchestration/index.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -25,6 +26,7 @@ const manager = new DesktopCommanderManager();
 let dbService: DatabaseService | null = null;
 let bridgeService: BridgeService | null = null;
 let antigravityManager: AntigravityManager | null = null;
+let orchestrator: Orchestrator | null = null;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -561,10 +563,60 @@ ipcMain.handle('antigravity:getHistory', async (_event, sessionId: string) => {
   return antigravityManager.getHistory(sessionId);
 });
 
+// ChatGPT-Led Orchestration IPC handlers
+ipcMain.handle('orchestration:approve-task', async (_event, taskId: string) => {
+  if (!orchestrator) throw new Error('Orchestrator not initialized');
+  return await orchestrator.approveTask(taskId);
+});
+
+ipcMain.handle('orchestration:reject-task', async (_event, taskId: string, reason?: string) => {
+  if (!orchestrator) throw new Error('Orchestrator not initialized');
+  return orchestrator.rejectTask(taskId, reason);
+});
+
+ipcMain.handle('orchestration:cancel-task', async (_event, taskId: string, reason?: string) => {
+  if (!orchestrator) throw new Error('Orchestrator not initialized');
+  return orchestrator.cancelTask(taskId, reason);
+});
+
+ipcMain.handle('orchestration:retry-task', async (_event, taskId: string) => {
+  if (!orchestrator) throw new Error('Orchestrator not initialized');
+  return await orchestrator.retryTask(taskId);
+});
+
+ipcMain.handle('orchestration:list-tasks', (_event, sessionId: string, status?: TaskStatus) => {
+  if (!orchestrator) throw new Error('Orchestrator not initialized');
+  return orchestrator.listTasks(sessionId, status);
+});
+
+ipcMain.handle('orchestration:list-queued', (_event, sessionId?: string) => {
+  if (!orchestrator) throw new Error('Orchestrator not initialized');
+  return orchestrator.getQueue().listQueuedTasks(sessionId);
+});
+
+ipcMain.handle('orchestration:get-running-task', (_event, sessionId: string) => {
+  if (!orchestrator) throw new Error('Orchestrator not initialized');
+  return orchestrator.getQueue().getRunningTask(sessionId);
+});
+
+ipcMain.handle('orchestration:dispatch-next', async (_event, sessionId: string) => {
+  if (!orchestrator) throw new Error('Orchestrator not initialized');
+  return await orchestrator.getDispatcher().dispatchNext(sessionId);
+});
+
 // App lifecycle & shutdown cleanup
 app.on('before-quit', async (event) => {
   logger.info('Application received before-quit event. Initiating clean termination.');
   event.preventDefault();
+
+  try {
+    if (orchestrator) {
+      orchestrator.close();
+      logger.info('Orchestrator closed cleanly.');
+    }
+  } catch (orchErr) {
+    logger.error('Error closing orchestrator on app quit', orchErr);
+  }
 
   try {
     if (antigravityManager) {
@@ -629,6 +681,55 @@ if (gotTheLock) {
       }
     });
     logger.info('Antigravity manager successfully initialized.');
+
+    orchestrator = new Orchestrator({
+      dbService,
+      bridgeService,
+      antigravityManager,
+    });
+
+    orchestrator.on('task_created', (task) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('orchestration:event', {
+          type: 'task_created',
+          data: { task },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    orchestrator.on('task_completed', (task) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('orchestration:event', {
+          type: 'task_completed',
+          data: { task },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    orchestrator.on('task_failed', (task) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('orchestration:event', {
+          type: 'task_failed',
+          data: { task },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    orchestrator.on('task_status_changed', (task) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('orchestration:event', {
+          type: 'task_status_changed',
+          data: { task },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+
+    orchestrator.start();
+    logger.info('Orchestrator successfully initialized.');
   } catch (err) {
     logger.error('Failed to initialize services at startup', err);
   }

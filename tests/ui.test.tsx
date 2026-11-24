@@ -219,6 +219,17 @@ describe('UI and Branding Components', () => {
           getHistory: vi.fn().mockResolvedValue([]),
           onEvent: vi.fn().mockReturnValue(() => {}),
         },
+        orchestration: {
+          approveTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'queued', approvalStatus: 'approved' }),
+          rejectTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'cancelled', approvalStatus: 'rejected' }),
+          cancelTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'cancelled' }),
+          retryTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'queued', retryCount: 1 }),
+          listTasks: vi.fn().mockResolvedValue([]),
+          listQueued: vi.fn().mockResolvedValue([]),
+          getRunningTask: vi.fn().mockResolvedValue(null),
+          dispatchNext: vi.fn().mockResolvedValue(null),
+          onEvent: vi.fn().mockReturnValue(() => {}),
+        },
       };
     });
 

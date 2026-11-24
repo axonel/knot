@@ -1,6 +1,6 @@
 import React from 'react';
 import { KnotLogo } from './KnotLogo.js';
-import { FolderGit2, Terminal, Users, Cpu, Settings, ShieldCheck, Radio, Sparkles } from 'lucide-react';
+import { FolderGit2, Terminal, Users, Cpu, Settings, ShieldCheck, Radio, Sparkles, Layers } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
@@ -9,6 +9,12 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => {
   const navItems = [
+    {
+      id: 'workspace',
+      label: 'Workspace',
+      icon: Layers,
+      badge: 'Live',
+    },
     {
       id: 'projects',
       label: 'Projects & Sessions',

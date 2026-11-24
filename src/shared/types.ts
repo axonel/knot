@@ -368,6 +368,27 @@ export interface KnotApi {
 
   // Google Antigravity CLI Integration API
   antigravity: AntigravityApi;
+
+  // ChatGPT-Led Orchestration API
+  orchestration: OrchestrationApi;
+}
+
+export interface OrchestrationEvent {
+  type: 'task_created' | 'task_completed' | 'task_failed' | 'task_status_changed';
+  data: Record<string, unknown>;
+  timestamp: string;
+}
+
+export interface OrchestrationApi {
+  approveTask: (taskId: string) => Promise<Task>;
+  rejectTask: (taskId: string, reason?: string) => Promise<Task>;
+  cancelTask: (taskId: string, reason?: string) => Promise<Task>;
+  retryTask: (taskId: string) => Promise<Task>;
+  listTasks: (sessionId: string, status?: TaskStatus) => Promise<Task[]>;
+  listQueued: (sessionId?: string) => Promise<Task[]>;
+  getRunningTask: (sessionId: string) => Promise<Task | null>;
+  dispatchNext: (sessionId: string) => Promise<Task | null>;
+  onEvent: (callback: (event: OrchestrationEvent) => void) => () => void;
 }
 
 // ==========================================

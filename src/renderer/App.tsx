@@ -5,10 +5,11 @@ import { ProcessManager } from './components/DesktopCommander/ProcessManager.js'
 import { ProjectManager } from './components/ProjectManager/ProjectManager.js';
 import { BridgeManager } from './components/Bridge/BridgeManager.js';
 import { AntigravityWorkspace } from './components/Antigravity/AntigravityWorkspace.js';
+import { CollaborationWorkspace } from './components/Workspace/CollaborationWorkspace.js';
 import { Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [currentTab, setCurrentTab] = useState('projects');
+  const [currentTab, setCurrentTab] = useState('workspace');
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#090B0D] text-[#F9F9F9] font-sans">
@@ -19,8 +20,10 @@ export const App: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
-          {currentTab === 'projects' ? (
+        <main className={`flex-1 overflow-hidden ${currentTab === 'workspace' ? 'p-0 flex flex-col' : 'overflow-y-auto p-6 space-y-6'}`}>
+          {currentTab === 'workspace' ? (
+            <CollaborationWorkspace />
+          ) : currentTab === 'projects' ? (
             <section>
               <ProjectManager />
             </section>
@@ -46,16 +49,16 @@ export const App: React.FC = () => {
                   <span>Multi-Agent Architecture</span>
                 </div>
                 <p className="text-xs text-[#F9F9F9]/80 leading-relaxed font-normal">
-                  <strong className="text-[#F9F9F9]">Knot</strong> is designed for multi-agent coordination. The Desktop Commander Remote process acts as the terminal and filesystem MCP bridge, allowing remote autonomous agents to communicate, inspect code, and execute diagnostics within this workspace.
+                  <strong className="text-[#F9F9F9]">Knot</strong> connects the user's existing ChatGPT browser session to their local development environment and Antigravity CLI. ChatGPT is the sole orchestrator and planning agent; Antigravity executes implementation tasks and reports results.
                 </p>
                 <div className="grid grid-cols-2 gap-3 pt-2 text-[11px] text-[#F9F9F9]/60">
                   <div className="p-2.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10">
                     <span className="text-[#004E72] font-semibold block mb-0.5">Process Isolation</span>
-                    Managed directly via Node child process. Strict signal handling and PID tracking prevent orphan processes.
+                    Strict signal handling and PID tracking prevent orphan processes.
                   </div>
                   <div className="p-2.5 rounded-lg bg-[#090B0D] border border-[#FF6E42] font-semibold block mb-0.5">
                     <span className="text-[#FF6E42] font-semibold block mb-0.5">Log Sanitization</span>
-                    All credentials, authorization tokens, and private keys are scrubbed before display in the diagnostic console.
+                    All credentials and authorization tokens are scrubbed.
                   </div>
                 </div>
               </section>

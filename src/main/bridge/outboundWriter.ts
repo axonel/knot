@@ -36,7 +36,7 @@ export function writeOutboundMessage(
     protocol: 'v1',
     projectId,
     sessionId,
-    sender: 'knot',
+    sender: options.sender || 'knot',
     recipient: (options.recipient as any) || 'chatgpt',
     type: options.messageType || 'message',
     challengeId: options.challengeId,

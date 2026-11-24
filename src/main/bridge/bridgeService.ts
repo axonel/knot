@@ -20,6 +20,8 @@ import type {
   BridgeEvent,
   ParsedBridgeMessage,
   MessageValidationError,
+  BridgeMessageType,
+  MessageSender,
 } from './types.js';
 import type { Message } from '../../shared/types.js';
 
@@ -267,6 +269,73 @@ export class BridgeService {
       sessionId,
       filePath: written.filePath,
       content,
+    });
+
+    return message;
+  }
+
+  public async publishAgentMessage(options: {
+    projectId: string;
+    sessionId: string;
+    sender: MessageSender;
+    recipient?: string;
+    contentMarkdown: string;
+    bridgeMessageType?: BridgeMessageType;
+    dbMessageType?: string;
+    correlationId?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<Message> {
+    const { projectId, sessionId, sender, contentMarkdown } = options;
+    const paths = initSessionWorkspace(this.bridgeRoot, projectId, sessionId);
+
+    // 1. Persist to SQLite messages table
+    const message = this.dbService.messages.append({
+      sessionId,
+      sender,
+      recipient: options.recipient || 'chatgpt',
+      contentMarkdown,
+      messageType: (options.dbMessageType as any) || 'text',
+      correlationId: options.correlationId,
+      metadata: options.metadata,
+    });
+
+    // 2. Write atomic Markdown message to outbox/knot/ with proper sender
+    const written = writeOutboundMessage(paths.outboxDir, projectId, sessionId, contentMarkdown, {
+      id: message.id,
+      sender,
+      recipient: options.recipient || 'chatgpt',
+      messageType: options.bridgeMessageType || 'message',
+      metadata: options.metadata,
+    });
+
+    // 3. Record event in SQLite
+    this.dbService.events.append({
+      sessionId,
+      eventType: 'agent_message_published',
+      actor: sender,
+      data: {
+        messageId: message.id,
+        sequence: message.sequence,
+        filePath: written.filePath,
+        agent: sender,
+      },
+    });
+
+    // 4. Update state and canonical conversation
+    this.lastOutboundMessage = {
+      id: message.id,
+      timestamp: message.createdAt,
+      sender,
+    };
+
+    this.syncCanonicalConversation(projectId, sessionId, paths.sessionDir);
+
+    this.emitEvent('message-published', {
+      messageId: message.id,
+      sessionId,
+      filePath: written.filePath,
+      content: contentMarkdown,
+      sender,
     });
 
     return message;

@@ -31,6 +31,7 @@ export interface OutboundMessageOptions {
   fileName?: string;
   messageType?: BridgeMessageType;
   challengeId?: string;
+  sender?: MessageSender;
   recipient?: string;
   metadata?: Record<string, unknown>;
 }

@@ -99,6 +99,27 @@ const api: KnotApi = {
       };
     },
   },
+
+  // Google Antigravity CLI Integration API
+  antigravity: {
+    detect: (customPath?: string) => ipcRenderer.invoke('antigravity:detect', customPath),
+    getStatus: (sessionId: string) => ipcRenderer.invoke('antigravity:getStatus', sessionId),
+    start: (sessionId: string, options?: any) =>
+      ipcRenderer.invoke('antigravity:start', sessionId, options),
+    sendMessage: (sessionId: string, prompt: string) =>
+      ipcRenderer.invoke('antigravity:sendMessage', sessionId, prompt),
+    stop: (sessionId: string) => ipcRenderer.invoke('antigravity:stop', sessionId),
+    interrupt: (sessionId: string) => ipcRenderer.invoke('antigravity:interrupt', sessionId),
+    resume: (sessionId: string) => ipcRenderer.invoke('antigravity:resume', sessionId),
+    getHistory: (sessionId: string) => ipcRenderer.invoke('antigravity:getHistory', sessionId),
+    onEvent: (callback: (event: any) => void) => {
+      const handler = (_event: IpcRendererEvent, ev: any) => callback(ev);
+      ipcRenderer.on('antigravity:event', handler);
+      return () => {
+        ipcRenderer.removeListener('antigravity:event', handler);
+      };
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('knotApi', api);

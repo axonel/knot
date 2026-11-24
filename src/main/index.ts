@@ -6,6 +6,7 @@ import { DesktopCommanderManager } from './desktopCommanderManager.js';
 import { logger } from './diagnosticLogger.js';
 import { initDatabaseService, DatabaseService } from './database/index.js';
 import { BridgeService } from './bridge/index.js';
+import { AntigravityManager } from './antigravity/index.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -23,6 +24,7 @@ let mainWindow: BrowserWindow | null = null;
 const manager = new DesktopCommanderManager();
 let dbService: DatabaseService | null = null;
 let bridgeService: BridgeService | null = null;
+let antigravityManager: AntigravityManager | null = null;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -518,10 +520,61 @@ ipcMain.handle(
   }
 );
 
+// Antigravity CLI Integration IPC Handlers
+ipcMain.handle('antigravity:detect', async (_event, customPath?: string) => {
+  if (!antigravityManager) throw new Error('Antigravity manager not initialized');
+  return antigravityManager.detect(customPath);
+});
+
+ipcMain.handle('antigravity:getStatus', async (_event, sessionId: string) => {
+  if (!antigravityManager) throw new Error('Antigravity manager not initialized');
+  return antigravityManager.getStatus(sessionId);
+});
+
+ipcMain.handle('antigravity:start', async (_event, sessionId: string, options?: any) => {
+  if (!antigravityManager) throw new Error('Antigravity manager not initialized');
+  return antigravityManager.start(sessionId, options);
+});
+
+ipcMain.handle('antigravity:sendMessage', async (_event, sessionId: string, prompt: string) => {
+  if (!antigravityManager) throw new Error('Antigravity manager not initialized');
+  return antigravityManager.sendMessage(sessionId, prompt);
+});
+
+ipcMain.handle('antigravity:stop', async (_event, sessionId: string) => {
+  if (!antigravityManager) throw new Error('Antigravity manager not initialized');
+  return antigravityManager.stop(sessionId);
+});
+
+ipcMain.handle('antigravity:interrupt', async (_event, sessionId: string) => {
+  if (!antigravityManager) throw new Error('Antigravity manager not initialized');
+  return antigravityManager.interrupt(sessionId);
+});
+
+ipcMain.handle('antigravity:resume', async (_event, sessionId: string) => {
+  if (!antigravityManager) throw new Error('Antigravity manager not initialized');
+  return antigravityManager.resume(sessionId);
+});
+
+ipcMain.handle('antigravity:getHistory', async (_event, sessionId: string) => {
+  if (!antigravityManager) throw new Error('Antigravity manager not initialized');
+  return antigravityManager.getHistory(sessionId);
+});
+
 // App lifecycle & shutdown cleanup
 app.on('before-quit', async (event) => {
   logger.info('Application received before-quit event. Initiating clean termination.');
   event.preventDefault();
+
+  try {
+    if (antigravityManager) {
+      await antigravityManager.cleanup();
+      logger.info('Antigravity processes cleaned up.');
+    }
+  } catch (agyErr) {
+    logger.error('Error cleaning up Antigravity processes on quit', agyErr);
+  }
+
   try {
     if (bridgeService) {
       await bridgeService.close();
@@ -564,6 +617,18 @@ if (gotTheLock) {
       }
     });
     logger.info('Bridge service successfully initialized.');
+
+    antigravityManager = new AntigravityManager({
+      dbService,
+      bridgeService,
+    });
+
+    antigravityManager.on('event', (agyEvent) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('antigravity:event', agyEvent);
+      }
+    });
+    logger.info('Antigravity manager successfully initialized.');
   } catch (err) {
     logger.error('Failed to initialize services at startup', err);
   }

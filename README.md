@@ -365,6 +365,32 @@ For complete architectural details, protocol specifications, diagrams, and workf
 
 ---
 
+## 🔍 Task-Linked Git Change Inspection & Diff Viewer
+
+Knot includes a read-only Git change inspection service and modal diff viewer that lets users review the exact code modifications produced by Antigravity during task execution.
+
+### Key Capabilities
+
+- **Task-Boundary Snapshots**: Automatically captures the repository baseline at task dispatch (`HEAD` commit, branch, working-tree status) and verifies completion state upon finish (committed hash vs. uncommitted working-tree edits).
+- **Attribution Confidence & Provenance**:
+  - Calculates confidence ratings (`High`, `Medium`, `Attribution Uncertain`) based on whether the working tree was clean prior to dispatch and whether changes are verified to the task.
+  - Labels files with explicit provenance: `Git-derived`, `Antigravity-reported`, or `Attribution uncertain`.
+- **Repository Drift Detection**: Warns developers if the repository HEAD or working tree has moved since the task completed, preventing misleading diff assumptions.
+- **Strictly Read-Only & Safe**:
+  - Whitelist of read-only Git operations: `rev-parse`, `status --porcelain=v1`, `diff`, `log`, `cat-file`.
+  - Zero mutation risk: `git add`, `commit`, `push`, `pull`, `checkout`, `reset`, `clean`, `rebase` are rejected at the service layer.
+  - Invoked via `spawn` with array arguments, `shell: false`, 10-second execution timeouts, and 5 MB buffer caps.
+  - Repository containment checks and symlink traversal prevention.
+- **Sensitive File & Binary Omission Policy**:
+  - Suppresses diff display for credentials, private keys, and environment files (`.env*`, `*.pem`, `*.key`, `id_rsa*`, `credentials.json`, `secrets.*`). Displays: *"Diff omitted: File may contain sensitive credentials or secrets."*
+  - Suppresses binary files (*"Diff omitted: Binary file detected."*) and files exceeding 250 KB (*"Diff omitted: File exceeds display threshold."*).
+- **Interactive UI Diff Viewer**:
+  - Strictly adheres to Knot's 5-color palette (`#F9F9F9`, `#004E72`, `#FF6E42`, `#092634`, `#090B0D`).
+  - Searchable file sidebar with filter chips (All, Added, Modified, Deleted, Uncertain).
+  - Split line numbers with syntax-highlighted hunk lines and one-click commit hash copying.
+
+---
+
 ## 🔒 Security Architecture
 
 1. **Strict Context Isolation**: Renderer runs with `contextIsolation: true` and `nodeIntegration: false`.
@@ -375,6 +401,7 @@ For complete architectural details, protocol specifications, diagrams, and workf
 6. **Filesystem Bridge Isolation**: Bridge folders are constrained strictly within `app.getPath('userData')/bridge/v1/`. All incoming files are validated for 256 KB size limits, valid JSON headers, and scope UUIDs before SQLite persistence.
 7. **No Auto-Approvals for Dangerous Operations**: Antigravity is executed with standard permission requirements; automated execution never bypasses tool confirmation policies. Knot **NEVER** passes `--dangerously-skip-permissions` or `--always-proceed`.
 8. **Sensitive Task Gating**: Potentially destructive commands and operations are held behind an explicit human approval gate.
+9. **Read-Only Git Inspection Invariant**: The Git inspection engine executes whitelisted read-only Git commands exclusively (`status`, `diff`, `log`, `rev-parse`, `cat-file`), rejecting all state-mutating operations. Paths are constrained to repository bounds with symlink escape validation, argument arrays with `shell: false`, and automatic suppression of sensitive credential files and binary payloads.
 
 ---
 

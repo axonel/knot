@@ -351,3 +351,54 @@ The Knot workspace provides a unified, 3-panel command center:
 5. **Directory Access Diagnostic**:
    - Live checks for bridge folder accessibility and repository directory configuration.
    - One-click copy of the required Desktop Commander `allowedDirectories` JSON.
+
+---
+
+## 6. Task-Linked Git Change Inspection & Diff Viewer
+
+Knot includes a read-only Git change inspection engine and modal diff viewer that lets developers review the exact code changes produced by an Antigravity task execution.
+
+### Architectural Invariants & Safety Guarantees
+
+1. **Strictly Read-Only Execution**:
+   - Git inspection is 100% read-only.
+   - Whitelisted Git commands: `git rev-parse`, `git status --porcelain=v1`, `git diff`, `git log`, `git cat-file`.
+   - Modifying commands (`git add`, `commit`, `push`, `pull`, `checkout`, `switch`, `reset`, `rebase`, `merge`, `clean`) are strictly blocked at the service boundary.
+   - All Git processes are invoked via `child_process.spawn` with explicit argument arrays, `shell: false`, a 10-second timeout, and a 5 MB maximum output buffer.
+
+2. **Security & Boundary Validation**:
+   - **Repository Root Containment**: Validates that target repositories are registered project directories. Absolute paths outside project bounds are rejected.
+   - **Path Traversal Protection**: Rejects file paths containing `..`, null bytes, or directory traversal sequences.
+   - **Symlink Escape Prevention**: Evaluates canonical paths using `fs.realpathSync` to prevent symlinks from escaping repository boundaries.
+   - **Commit Hash Validation**: Validates hashes against strict hex regex (`^[0-9a-fA-F]{4,40}$`) to prevent argument injection.
+
+3. **Task Boundary Snapshots**:
+   - **Start Baseline**: At task dispatch (`TaskDispatcher.dispatch`), Knot captures a snapshot of the repository: HEAD commit, branch, working-tree clean/dirty state, and lists of existing staged, unstaged, and untracked files.
+   - **Completion Snapshot**: When Antigravity completes a task, Knot verifies whether a new commit was made, captures the ending HEAD commit, and records the final working-tree state.
+   - **Database Persistence**: The complete boundary snapshot is persisted in SQLite table `tasks` under `git_boundary_json` (Migration 004).
+
+4. **Task Attribution Confidence & Provenance**:
+   - Knot calculates attribution confidence based on repository state at task dispatch and completion:
+     - **High Confidence**: Clean working tree at task dispatch, and verified commit or uncommitted changes cleanly attributable to the task.
+     - **Medium Confidence**: Clean working tree at start, but changes remain in uncommitted working tree alongside other edits.
+     - **Low / Uncertain**: Dirty working tree existed prior to task dispatch, or the repository has drifted since task completion.
+   - **File Provenance Labels**:
+     - `Git-derived`: Discovered directly from verified Git commit diffs or working-tree status.
+     - `Antigravity-reported`: Matches files explicitly reported in Antigravity's completion summary.
+     - `Attribution uncertain`: Pre-existing uncommitted files at dispatch, or files modified after completion.
+
+5. **Repository Drift Detection**:
+   - When inspecting a previously completed task, Knot compares the current repository HEAD and working-tree state with the task's completion snapshot.
+   - If HEAD has moved or subsequent edits have occurred, a prominent warning banner is displayed: *"Repository state moved: HEAD or working tree has changed since this task completed. Current diff may reflect subsequent edits."*
+
+6. **Sensitive File & Binary Omission Policy**:
+   - **Sensitive Files**: Changed files matching sensitive patterns (`.env*`, `*.pem`, `*.key`, `id_rsa*`, `credentials.json`, `secrets.*`, passwords, tokens) have their raw diff suppressed. The viewer displays: *"Diff omitted: File may contain sensitive credentials or secrets."*
+   - **Binary Files**: Files containing null bytes or binary magic headers are detected and their diff suppressed: *"Diff omitted: Binary file detected."*
+   - **Large Files**: Diffs exceeding the display threshold (250 KB / 5,000 lines) are suppressed with: *"Diff omitted: File exceeds display threshold."*
+
+7. **User Interface & Visual Design**:
+   - Designed strictly within Knot's 5-color palette: `#F9F9F9`, `#004E72`, `#FF6E42`, `#092634`, `#090B0D`.
+   - Accessible via **"Inspect Git Changes"** action on completed task cards and queue items in the Antigravity Execution Panel.
+   - Displays task title, branch, short verified commit hash with one-click copy button, and attribution confidence badge.
+   - Split layout: searchable changed files sidebar with filter chips (All, Added, Modified, Deleted, Uncertain), and unified diff viewer with line numbers, additions/deletions counters, and syntax-highlighted hunk lines.
+

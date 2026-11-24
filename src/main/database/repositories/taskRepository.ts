@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import type { Task, TaskStatus, CreateTaskInput, UpdateTaskInput } from '../../../shared/types.js';
+import type { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskGitBoundary } from '../../../shared/types.js';
 import type { TaskRecord } from '../types.js';
 
 export class TaskRepository {
@@ -25,6 +25,15 @@ export class TaskRepository {
       }
     }
 
+    let gitBoundary: TaskGitBoundary | null = null;
+    if (row.git_boundary_json) {
+      try {
+        gitBoundary = JSON.parse(row.git_boundary_json);
+      } catch {
+        gitBoundary = null;
+      }
+    }
+
     return {
       id: row.id,
       sessionId: row.session_id,
@@ -43,6 +52,7 @@ export class TaskRepository {
       acceptanceCriteria,
       retryCount: row.retry_count ?? 0,
       payload,
+      gitBoundary,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       startedAt: row.started_at,
@@ -73,13 +83,15 @@ export class TaskRepository {
     const payloadJson = data.payload ? JSON.stringify(data.payload) : null;
     const acceptanceCriteriaJson = data.acceptanceCriteria ? JSON.stringify(data.acceptanceCriteria) : null;
 
+    const gitBoundaryJson = data.gitBoundary ? JSON.stringify(data.gitBoundary) : null;
+
     const stmt = this.db.prepare(`
       INSERT INTO tasks (
         id, session_id, title, description, created_by, assigned_to, status, approval_status, payload_json,
         source_message_id, result_message_id, dispatched_at, failure_reason, priority, execution_mode,
-        acceptance_criteria_json, retry_count,
+        acceptance_criteria_json, retry_count, git_boundary_json,
         created_at, updated_at, started_at, completed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -100,6 +112,7 @@ export class TaskRepository {
       data.executionMode || 'default',
       acceptanceCriteriaJson,
       data.retryCount ?? 0,
+      gitBoundaryJson,
       now,
       now,
       startedAt,
@@ -124,6 +137,7 @@ export class TaskRepository {
       acceptanceCriteria: data.acceptanceCriteria || null,
       retryCount: data.retryCount ?? 0,
       payload: data.payload || null,
+      gitBoundary: data.gitBoundary || null,
       createdAt: now,
       updatedAt: now,
       startedAt,
@@ -231,6 +245,7 @@ export class TaskRepository {
       resultMessageId?: string | null;
       retryCount?: number;
       approvalStatus?: string | null;
+      gitBoundary?: TaskGitBoundary | null;
     }
   ): Task {
     const existing = this.get(id);
@@ -254,11 +269,13 @@ export class TaskRepository {
     const resultMessageId = updates.resultMessageId !== undefined ? updates.resultMessageId : existing.resultMessageId;
     const retryCount = updates.retryCount !== undefined ? updates.retryCount : (existing.retryCount ?? 0);
     const approvalStatus = updates.approvalStatus !== undefined ? updates.approvalStatus : existing.approvalStatus;
+    const gitBoundary = updates.gitBoundary !== undefined ? updates.gitBoundary : existing.gitBoundary;
+    const gitBoundaryJson = gitBoundary ? JSON.stringify(gitBoundary) : null;
 
     const stmt = this.db.prepare(`
       UPDATE tasks
       SET status = ?, approval_status = ?, started_at = ?, completed_at = ?, dispatched_at = ?,
-          failure_reason = ?, result_message_id = ?, retry_count = ?, updated_at = ?
+          failure_reason = ?, result_message_id = ?, retry_count = ?, git_boundary_json = ?, updated_at = ?
       WHERE id = ?
     `);
 
@@ -271,6 +288,7 @@ export class TaskRepository {
       failureReason ?? null,
       resultMessageId ?? null,
       retryCount,
+      gitBoundaryJson,
       now,
       id
     );
@@ -285,6 +303,7 @@ export class TaskRepository {
       failureReason,
       resultMessageId,
       retryCount,
+      gitBoundary,
       updatedAt: now,
     };
   }
@@ -315,6 +334,8 @@ export class TaskRepository {
     const acceptanceCriteria = data.acceptanceCriteria !== undefined ? data.acceptanceCriteria : existing.acceptanceCriteria;
     const acceptanceCriteriaJson = acceptanceCriteria ? JSON.stringify(acceptanceCriteria) : null;
     const retryCount = data.retryCount !== undefined ? data.retryCount : (existing.retryCount ?? 0);
+    const gitBoundary = data.gitBoundary !== undefined ? data.gitBoundary : existing.gitBoundary;
+    const gitBoundaryJson = gitBoundary ? JSON.stringify(gitBoundary) : null;
 
     const now = new Date().toISOString();
     let startedAt = existing.startedAt;
@@ -331,7 +352,7 @@ export class TaskRepository {
       SET title = ?, description = ?, assigned_to = ?, status = ?, approval_status = ?, payload_json = ?,
           source_message_id = ?, result_message_id = ?, dispatched_at = ?, failure_reason = ?,
           priority = ?, execution_mode = ?, acceptance_criteria_json = ?, retry_count = ?,
-          started_at = ?, completed_at = ?, updated_at = ?
+          git_boundary_json = ?, started_at = ?, completed_at = ?, updated_at = ?
       WHERE id = ?
     `);
 
@@ -350,6 +371,7 @@ export class TaskRepository {
       executionMode ?? 'default',
       acceptanceCriteriaJson ?? null,
       retryCount,
+      gitBoundaryJson,
       startedAt ?? null,
       completedAt ?? null,
       now,
@@ -372,6 +394,7 @@ export class TaskRepository {
       executionMode,
       acceptanceCriteria,
       retryCount,
+      gitBoundary,
       startedAt,
       completedAt,
       updatedAt: now,

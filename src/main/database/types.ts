@@ -66,6 +66,7 @@ export interface TaskRecord {
   execution_mode?: string | null;
   acceptance_criteria_json?: string | null;
   retry_count?: number | null;
+  git_boundary_json?: string | null;
   created_at: string;
   updated_at: string;
   started_at: string | null;

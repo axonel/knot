@@ -68,7 +68,11 @@ describe('SQLite Database Layer & Migrations', () => {
       // Open second time
       const db2 = initDatabase(dbPath);
       const count = db2.prepare('SELECT COUNT(*) as count FROM schema_migrations').get() as { count: number };
-      expect(count.count).toBe(3);
+      expect(count.count).toBe(4);
+
+      // Verify migration 004 is applied and git_boundary_json exists on tasks table
+      const taskColumns = db2.prepare('PRAGMA table_info(tasks)').all() as { name: string }[];
+      expect(taskColumns.some((col) => col.name === 'git_boundary_json')).toBe(true);
 
       db2.close();
     });

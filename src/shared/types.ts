@@ -133,6 +133,7 @@ export interface Task {
   acceptanceCriteria?: string[] | null;
   retryCount?: number;
   payload?: Record<string, unknown> | null;
+  gitBoundary?: TaskGitBoundary | null;
   createdAt: string;
   updatedAt: string;
   startedAt: string | null;
@@ -156,6 +157,7 @@ export interface CreateTaskInput {
   acceptanceCriteria?: string[] | null;
   retryCount?: number;
   payload?: Record<string, unknown> | null;
+  gitBoundary?: TaskGitBoundary | null;
 }
 
 export interface UpdateTaskInput {
@@ -173,6 +175,7 @@ export interface UpdateTaskInput {
   acceptanceCriteria?: string[] | null;
   retryCount?: number;
   payload?: Record<string, unknown> | null;
+  gitBoundary?: TaskGitBoundary | null;
 }
 
 export interface EventItem {
@@ -399,6 +402,9 @@ export interface KnotApi {
 
   // ChatGPT-Led Orchestration API
   orchestration: OrchestrationApi;
+
+  // Read-Only Git Inspection API
+  git: GitApi;
 }
 
 export interface OrchestrationEvent {
@@ -563,4 +569,115 @@ export interface AntigravityApi {
   getHistory: (sessionId: string) => Promise<Message[]>;
   onEvent: (callback: (event: AntigravityUiEvent) => void) => () => void;
 }
+
+// ==========================================
+// Git Inspection & Diff Viewer Types
+// ==========================================
+
+export interface GitStatusSummary {
+  head: string | null;
+  branch: string | null;
+  isClean: boolean;
+  stagedFiles: string[];
+  unstagedFiles: string[];
+  untrackedFiles: string[];
+}
+
+export interface TaskGitBoundary {
+  taskId: string;
+  start: GitStatusSummary;
+  end?: GitStatusSummary;
+  reportedCommitHash?: string | null;
+  verifiedCommitHash?: string | null;
+  capturedAtStart: string;
+  capturedAtEnd?: string;
+}
+
+export type FileChangeType = 'added' | 'modified' | 'deleted' | 'renamed' | 'untracked';
+export type FileProvenance = 'git-derived' | 'antigravity-reported' | 'attribution-uncertain';
+
+export interface DiffHunkLine {
+  type: 'context' | 'addition' | 'deletion';
+  content: string;
+  oldLineNumber?: number;
+  newLineNumber?: number;
+}
+
+export interface DiffHunk {
+  header: string;
+  oldStart: number;
+  oldLines: number;
+  newStart: number;
+  newLines: number;
+  lines: DiffHunkLine[];
+}
+
+export interface FileDiffEntry {
+  path: string;
+  oldPath?: string;
+  changeType: FileChangeType;
+  additions: number;
+  deletions: number;
+  isStaged: boolean;
+  isUntracked: boolean;
+  provenance: FileProvenance;
+  attributionReason?: string;
+  diff?: string;
+  hunks?: DiffHunk[];
+  omittedReason?: 'binary' | 'large_file' | 'sensitive_file' | 'encoding_error' | 'empty';
+}
+
+export interface TaskGitInspectionResult {
+  taskId: string;
+  taskTitle: string;
+  taskStatus: string;
+  projectId: string;
+  sessionId: string;
+  repositoryPath: string;
+  branch: string | null;
+  startHead: string | null;
+  endHead: string | null;
+  currentHead: string | null;
+  isCleanAtStart: boolean;
+  isCleanAtEnd: boolean;
+  repositoryChangedSinceCompletion: boolean;
+  attributionConfidence: 'high' | 'medium' | 'low';
+  attributionNotes: string[];
+  reportedCommitHash?: string | null;
+  verifiedCommitHash?: string | null;
+  commitMetadata?: {
+    hash: string;
+    authorName?: string;
+    authorEmail?: string;
+    timestamp?: string;
+    message?: string;
+  } | null;
+  files: FileDiffEntry[];
+  summary: {
+    totalFiles: number;
+    totalAdditions: number;
+    totalDeletions: number;
+    stagedCount: number;
+    unstagedCount: number;
+    untrackedCount: number;
+    uncertainCount: number;
+  };
+}
+
+export interface GitRepoStatusResult {
+  repositoryPath: string;
+  branch: string | null;
+  head: string | null;
+  isClean: boolean;
+  stagedFiles: string[];
+  unstagedFiles: string[];
+  untrackedFiles: string[];
+}
+
+export interface GitApi {
+  getTaskDiff: (taskId: string) => Promise<TaskGitInspectionResult>;
+  getFileDiff: (taskId: string, filePath: string) => Promise<FileDiffEntry>;
+  getRepoStatus: (projectId: string) => Promise<GitRepoStatusResult>;
+}
+
 

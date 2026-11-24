@@ -202,7 +202,15 @@ export function parseBridgeMessage(
   }
 
   // Validate Message Type
-  const validTypes: BridgeMessageType[] = ['message', 'handshake_challenge', 'handshake_response'];
+  const validTypes: BridgeMessageType[] = [
+    'message',
+    'handshake_challenge',
+    'handshake_response',
+    'task_assignment',
+    'activity',
+    'task_result',
+    'task_control',
+  ];
   if (typeof type !== 'string' || !validTypes.includes(type as BridgeMessageType)) {
     return {
       success: false,
@@ -211,6 +219,32 @@ export function parseBridgeMessage(
         message: `Invalid message type '${type}'. Allowed: ${validTypes.join(', ')}.`,
       },
     };
+  }
+
+  // Validate task_assignment specific metadata if provided
+  if (type === 'task_assignment' && parsedJson.metadata && typeof parsedJson.metadata === 'object') {
+    const meta = parsedJson.metadata as Record<string, unknown>;
+    if (meta.priority !== undefined) {
+      const validPriorities = ['low', 'normal', 'high', 'urgent'];
+      if (typeof meta.priority !== 'string' || !validPriorities.includes(meta.priority)) {
+        return {
+          success: false,
+          error: {
+            code: 'INVALID_PRIORITY',
+            message: `Invalid task priority '${meta.priority}'. Allowed: ${validPriorities.join(', ')}.`,
+          },
+        };
+      }
+    }
+    if (meta.acceptanceCriteria !== undefined && !Array.isArray(meta.acceptanceCriteria)) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_ACCEPTANCE_CRITERIA',
+          message: 'Task acceptanceCriteria must be an array of strings.',
+        },
+      };
+    }
   }
 
   // Validate Creation Timestamp

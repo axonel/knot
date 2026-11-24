@@ -58,6 +58,14 @@ export interface TaskRecord {
   status: TaskStatus;
   approval_status: string | null;
   payload_json: string | null;
+  source_message_id?: string | null;
+  result_message_id?: string | null;
+  dispatched_at?: string | null;
+  failure_reason?: string | null;
+  priority?: string | null;
+  execution_mode?: string | null;
+  acceptance_criteria_json?: string | null;
+  retry_count?: number | null;
   created_at: string;
   updated_at: string;
   started_at: string | null;

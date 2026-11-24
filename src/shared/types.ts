@@ -111,6 +111,10 @@ export type TaskStatus =
   | 'cancelled'
   | 'needs_attention';
 
+export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
+
+export type TaskApprovalStatus = 'approved' | 'awaiting_approval' | 'rejected';
+
 export interface Task {
   id: string;
   sessionId: string;
@@ -120,6 +124,14 @@ export interface Task {
   assignedTo: string | null;
   status: TaskStatus;
   approvalStatus: string | null;
+  sourceMessageId?: string | null;
+  resultMessageId?: string | null;
+  dispatchedAt?: string | null;
+  failureReason?: string | null;
+  priority?: TaskPriority | string;
+  executionMode?: string;
+  acceptanceCriteria?: string[] | null;
+  retryCount?: number;
   payload?: Record<string, unknown> | null;
   createdAt: string;
   updatedAt: string;
@@ -135,6 +147,14 @@ export interface CreateTaskInput {
   assignedTo?: string | null;
   status?: TaskStatus;
   approvalStatus?: string | null;
+  sourceMessageId?: string | null;
+  resultMessageId?: string | null;
+  dispatchedAt?: string | null;
+  failureReason?: string | null;
+  priority?: TaskPriority | string;
+  executionMode?: string;
+  acceptanceCriteria?: string[] | null;
+  retryCount?: number;
   payload?: Record<string, unknown> | null;
 }
 
@@ -144,6 +164,14 @@ export interface UpdateTaskInput {
   assignedTo?: string | null;
   status?: TaskStatus;
   approvalStatus?: string | null;
+  sourceMessageId?: string | null;
+  resultMessageId?: string | null;
+  dispatchedAt?: string | null;
+  failureReason?: string | null;
+  priority?: TaskPriority | string;
+  executionMode?: string;
+  acceptanceCriteria?: string[] | null;
+  retryCount?: number;
   payload?: Record<string, unknown> | null;
 }
 
@@ -215,7 +243,14 @@ export interface EventsApi {
 
 export type BridgeProtocolVersion = 'v1';
 
-export type BridgeMessageType = 'message' | 'handshake_challenge' | 'handshake_response';
+export type BridgeMessageType =
+  | 'message'
+  | 'handshake_challenge'
+  | 'handshake_response'
+  | 'task_assignment'
+  | 'activity'
+  | 'task_result'
+  | 'task_control';
 
 export type HandshakeState =
   | 'not_configured'

@@ -68,7 +68,7 @@ describe('SQLite Database Layer & Migrations', () => {
       // Open second time
       const db2 = initDatabase(dbPath);
       const count = db2.prepare('SELECT COUNT(*) as count FROM schema_migrations').get() as { count: number };
-      expect(count.count).toBe(1);
+      expect(count.count).toBe(2);
 
       db2.close();
     });

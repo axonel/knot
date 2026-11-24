@@ -73,3 +73,21 @@ export interface EventRecord {
   data_json: string | null;
   created_at: string;
 }
+
+export interface AgentSessionRecord {
+  id: string;
+  session_id: string;
+  agent_type: string;
+  cli_conversation_id: string | null;
+  working_directory: string;
+  status: string;
+  execution_mode: string;
+  model: string | null;
+  effort: string | null;
+  created_at: string;
+  updated_at: string;
+  last_started_at: string | null;
+  last_exit_code: number | null;
+  metadata_json: string | null;
+}
+

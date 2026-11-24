@@ -52,7 +52,7 @@ bridge/
   }
 
   const instructionsPath = path.join(bridgeRoot, 'bridge-instructions.md');
-  const instructionsContent = `# Knot Orchestration Instructions for ChatGPT
+  const instructionsContent = `# Knot Bridge Instructions for ChatGPT
 
 You are the **Lead Orchestrator** in Knot, connected via Desktop Commander Remote MCP.
 

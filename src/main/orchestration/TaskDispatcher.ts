@@ -16,6 +16,15 @@ export class TaskDispatcher extends EventEmitter {
   private queue: TaskQueue;
   private antigravityManager: AntigravityManager;
   private dispatchingSessions = new Set<string>();
+  private pendingTimeouts = new Set<NodeJS.Timeout>();
+
+  public destroy(): void {
+    for (const timer of this.pendingTimeouts) {
+      clearTimeout(timer);
+    }
+    this.pendingTimeouts.clear();
+    this.removeAllListeners();
+  }
 
   constructor(options: TaskDispatcherOptions) {
     super();
@@ -129,11 +138,14 @@ export class TaskDispatcher extends EventEmitter {
       this.emit('task_completed', succeededTask);
 
       // Trigger next task in queue for this session
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        this.pendingTimeouts.delete(timer);
         this.dispatchNext(task.sessionId).catch((err) => {
+          if (err?.message?.includes('database is not open') || err?.code === 'ERR_INVALID_STATE') return;
           console.error('[TaskDispatcher] Error dispatching next task:', err);
         });
       }, 50);
+      this.pendingTimeouts.add(timer);
 
       return succeededTask;
     } catch (err) {

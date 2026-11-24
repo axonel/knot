@@ -16,9 +16,177 @@ import { BridgeMessagesPanel } from '../src/renderer/components/Bridge/BridgeMes
 import { AgentStatusCard } from '../src/renderer/components/Antigravity/AgentStatusCard.js';
 import { ConversationTimeline } from '../src/renderer/components/Antigravity/ConversationTimeline.js';
 import { Composer } from '../src/renderer/components/Antigravity/Composer.js';
+import { CollaborationWorkspace } from '../src/renderer/components/Workspace/CollaborationWorkspace.js';
+import { ChatGptActivityPanel } from '../src/renderer/components/Workspace/ChatGptActivityPanel.js';
+import { AntigravityExecutionPanel } from '../src/renderer/components/Workspace/AntigravityExecutionPanel.js';
+import { SharedConversationPanel } from '../src/renderer/components/Workspace/SharedConversationPanel.js';
+import { DirectoryAccessDiagnostic } from '../src/renderer/components/Workspace/DirectoryAccessDiagnostic.js';
 import { ProcessStatusInfo, LogEntry, Project, Session, Message, BridgeStatusInfo, AntigravityStatus } from '../src/shared/types.js';
 
+function createMockKnotApi() {
+  return {
+    startDesktopCommander: vi.fn().mockResolvedValue({ success: true }),
+    stopDesktopCommander: vi.fn().mockResolvedValue({ success: true }),
+    getStatus: vi.fn().mockResolvedValue({
+      state: 'Stopped' as const,
+      connectionState: 'disconnected' as const,
+      connectionVerified: false,
+      pid: null,
+      startedAt: null,
+      stoppedAt: null,
+      exitCode: null,
+      errorMessage: null,
+    }),
+    getLogs: vi.fn().mockResolvedValue([]),
+    clearLogs: vi.fn().mockResolvedValue(undefined),
+    onStatusChange: vi.fn().mockReturnValue(vi.fn()),
+    onLog: vi.fn().mockReturnValue(vi.fn()),
+    projects: {
+      list: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'p-1', ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+      update: vi.fn().mockImplementation((id, d) => Promise.resolve({ id, ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+      archive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Archived', createdAt: '', updatedAt: '', archivedAt: new Date().toISOString(), sessionCount: 0 })),
+      unarchive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Active', createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+      selectDirectory: vi.fn().mockResolvedValue('/mock/path'),
+    },
+    sessions: {
+      list: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 's-1', ...d, status: 'active', createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
+      updateStatus: vi.fn().mockImplementation((id, status) => Promise.resolve({ id, projectId: 'p-1', title: 'S', status, createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
+      updateTitle: vi.fn().mockImplementation((id, title) => Promise.resolve({ id, projectId: 'p-1', title, status: 'active', createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
+    },
+    messages: {
+      list: vi.fn().mockResolvedValue([]),
+      append: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'm-1', ...d, sequence: 1, createdAt: '' })),
+    },
+    tasks: {
+      list: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 't-1', ...d, status: 'pending', createdAt: '', updatedAt: '', startedAt: null, completedAt: null, payload: null })),
+      updateStatus: vi.fn().mockImplementation((id, status) => Promise.resolve({ id, sessionId: 's-1', title: 'T', status, createdAt: '', updatedAt: '', startedAt: null, completedAt: null, payload: null })),
+    },
+    events: {
+      list: vi.fn().mockResolvedValue([]),
+      append: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'e-1', ...d, createdAt: '' })),
+    },
+    bridge: {
+      getStatus: vi.fn().mockResolvedValue({
+        workspaceInitialized: true,
+        bridgeRoot: '/mock/bridge/v1',
+        desktopCommanderRunning: true,
+        mcpPermissionConfigured: true,
+        handshakeState: 'workspace_ready',
+        activeProjectId: null,
+        activeSessionId: null,
+        lastInboundMessage: null,
+        lastOutboundMessage: null,
+      }),
+      initSessionBridge: vi.fn().mockResolvedValue({
+        projectDir: '/mock/bridge/v1/projects/p-1',
+        sessionDir: '/mock/bridge/v1/projects/p-1/sessions/s-1',
+        inboxDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/inbox/chatgpt',
+        processedDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/processed/chatgpt',
+        rejectedDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/rejected/chatgpt',
+        outboxDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/outbox/knot',
+        conversationFile: '/mock/bridge/v1/projects/p-1/sessions/s-1/conversation.md',
+      }),
+      sendMessage: vi.fn().mockImplementation((_p, s, c) =>
+        Promise.resolve({
+          id: 'm-out-1',
+          sessionId: s,
+          sequence: 1,
+          sender: 'knot',
+          recipient: 'chatgpt',
+          messageType: 'text',
+          contentMarkdown: c,
+          correlationId: null,
+          createdAt: new Date().toISOString(),
+        })
+      ),
+      startConnectionTest: vi.fn().mockResolvedValue({
+        id: 'chal-1',
+        challengeId: 'knot-challenge-1234',
+        projectId: 'p-1',
+        sessionId: 's-1',
+        outboxFilePath: '/mock/outbox/handshake.md',
+        inboxExpectedFilePath: '/mock/inbox/handshake.md',
+        instructions: 'Test instructions',
+        expiresAt: new Date(Date.now() + 600000).toISOString(),
+        status: 'pending',
+      }),
+      openDirectory: vi.fn().mockResolvedValue(true),
+      getInstructions: vi.fn().mockResolvedValue({
+        bridgeRoot: '/mock/bridge/v1',
+        sessionDir: '/mock/bridge/v1/projects/p-1/sessions/s-1',
+        inboxDir: '/mock/inbox',
+        outboxDir: '/mock/outbox',
+        allowedDirectoriesConfig: '{\n  "allowedDirectories": ["/mock/bridge/v1"]\n}',
+        chatgptPrompt: 'ChatGPT prompt snippet',
+      }),
+      onEvent: vi.fn().mockReturnValue(() => {}),
+    },
+    antigravity: {
+      detect: vi.fn().mockResolvedValue({
+        installed: true,
+        executablePath: '/usr/bin/agy',
+        version: '1.5.14',
+        supportedModes: ['default', 'accept-edits', 'auto', 'plan'],
+        supportsStreaming: true,
+        supportsResumption: true,
+        readiness: 'ready',
+      }),
+      getStatus: vi.fn().mockResolvedValue({
+        sessionId: 's-1',
+        state: 'ready',
+        pid: 12345,
+        cliConversationId: 'agy-conv-1',
+        workingDirectory: '/home/user/project',
+        executionMode: 'default',
+        model: null,
+        effort: null,
+        lastStartedAt: new Date().toISOString(),
+        lastExitCode: null,
+        capabilities: {
+          installed: true,
+          executablePath: '/usr/bin/agy',
+          version: '1.5.14',
+          supportedModes: ['default', 'accept-edits', 'auto', 'plan'],
+          supportsStreaming: true,
+          supportsResumption: true,
+          readiness: 'ready',
+        },
+        currentTurnPending: false,
+        lastResult: null,
+      }),
+      start: vi.fn().mockResolvedValue(undefined),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
+      stop: vi.fn().mockResolvedValue(undefined),
+      interrupt: vi.fn().mockResolvedValue(undefined),
+      resume: vi.fn().mockResolvedValue(undefined),
+      getHistory: vi.fn().mockResolvedValue([]),
+      onEvent: vi.fn().mockReturnValue(() => {}),
+    },
+    orchestration: {
+      approveTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'queued', approvalStatus: 'approved' }),
+      rejectTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'cancelled', approvalStatus: 'rejected' }),
+      cancelTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'cancelled' }),
+      retryTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'queued', retryCount: 1 }),
+      listTasks: vi.fn().mockResolvedValue([]),
+      listQueued: vi.fn().mockResolvedValue([]),
+      getRunningTask: vi.fn().mockResolvedValue(null),
+      dispatchNext: vi.fn().mockResolvedValue(null),
+      onEvent: vi.fn().mockReturnValue(() => {}),
+    },
+  };
+}
+
 describe('UI and Branding Components', () => {
+  beforeEach(() => {
+    window.knotApi = createMockKnotApi();
+  });
+
   describe('KnotLogo', () => {
     it('renders the scalable SVG geometric mark', () => {
       render(<KnotLogo />);
@@ -79,8 +247,7 @@ describe('UI and Branding Components', () => {
       mockLogs = [];
 
       window.knotApi = {
-        startDesktopCommander: vi.fn().mockResolvedValue({ success: true }),
-        stopDesktopCommander: vi.fn().mockResolvedValue({ success: true }),
+        ...createMockKnotApi(),
         getStatus: vi.fn().mockImplementation(() => Promise.resolve(mockStatus)),
         getLogs: vi.fn().mockImplementation(() => Promise.resolve(mockLogs)),
         clearLogs: vi.fn().mockResolvedValue(undefined),
@@ -92,144 +259,6 @@ describe('UI and Branding Components', () => {
           logCallback = cb;
           return vi.fn();
         }),
-        projects: {
-          list: vi.fn().mockResolvedValue([]),
-          get: vi.fn().mockResolvedValue(null),
-          create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'p-1', ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
-          update: vi.fn().mockImplementation((id, d) => Promise.resolve({ id, ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
-          archive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Archived', createdAt: '', updatedAt: '', archivedAt: new Date().toISOString(), sessionCount: 0 })),
-          unarchive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Active', createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
-          selectDirectory: vi.fn().mockResolvedValue('/mock/path'),
-        },
-        sessions: {
-          list: vi.fn().mockResolvedValue([]),
-          get: vi.fn().mockResolvedValue(null),
-          create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 's-1', ...d, status: 'active', createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
-          updateStatus: vi.fn().mockImplementation((id, status) => Promise.resolve({ id, projectId: 'p-1', title: 'S', status, createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
-          updateTitle: vi.fn().mockImplementation((id, title) => Promise.resolve({ id, projectId: 'p-1', title, status: 'active', createdAt: '', updatedAt: '', lastActivityAt: '', startedAt: '', endedAt: null, metadata: null })),
-        },
-        messages: {
-          list: vi.fn().mockResolvedValue([]),
-          append: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'm-1', ...d, sequence: 1, createdAt: '' })),
-        },
-        tasks: {
-          list: vi.fn().mockResolvedValue([]),
-          get: vi.fn().mockResolvedValue(null),
-          create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 't-1', ...d, status: 'pending', createdAt: '', updatedAt: '', startedAt: null, completedAt: null, payload: null })),
-          updateStatus: vi.fn().mockImplementation((id, status) => Promise.resolve({ id, sessionId: 's-1', title: 'T', status, createdAt: '', updatedAt: '', startedAt: null, completedAt: null, payload: null })),
-        },
-        events: {
-          list: vi.fn().mockResolvedValue([]),
-          append: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'e-1', ...d, createdAt: '' })),
-        },
-        bridge: {
-          getStatus: vi.fn().mockResolvedValue({
-            workspaceInitialized: true,
-            bridgeRoot: '/mock/bridge/v1',
-            desktopCommanderRunning: true,
-            mcpPermissionConfigured: true,
-            handshakeState: 'workspace_ready',
-            activeProjectId: null,
-            activeSessionId: null,
-            lastInboundMessage: null,
-            lastOutboundMessage: null,
-          }),
-          initSessionBridge: vi.fn().mockResolvedValue({
-            projectDir: '/mock/bridge/v1/projects/p-1',
-            sessionDir: '/mock/bridge/v1/projects/p-1/sessions/s-1',
-            inboxDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/inbox/chatgpt',
-            processedDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/processed/chatgpt',
-            rejectedDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/rejected/chatgpt',
-            outboxDir: '/mock/bridge/v1/projects/p-1/sessions/s-1/outbox/knot',
-            conversationFile: '/mock/bridge/v1/projects/p-1/sessions/s-1/conversation.md',
-          }),
-          sendMessage: vi.fn().mockImplementation((_p, s, c) =>
-            Promise.resolve({
-              id: 'm-out-1',
-              sessionId: s,
-              sequence: 1,
-              sender: 'knot',
-              recipient: 'chatgpt',
-              messageType: 'text',
-              contentMarkdown: c,
-              correlationId: null,
-              createdAt: new Date().toISOString(),
-            })
-          ),
-          startConnectionTest: vi.fn().mockResolvedValue({
-            id: 'chal-1',
-            challengeId: 'knot-challenge-1234',
-            projectId: 'p-1',
-            sessionId: 's-1',
-            outboxFilePath: '/mock/outbox/handshake.md',
-            inboxExpectedFilePath: '/mock/inbox/handshake.md',
-            instructions: 'Test instructions',
-            expiresAt: new Date(Date.now() + 600000).toISOString(),
-            status: 'pending',
-          }),
-          openDirectory: vi.fn().mockResolvedValue(true),
-          getInstructions: vi.fn().mockResolvedValue({
-            bridgeRoot: '/mock/bridge/v1',
-            sessionDir: '/mock/bridge/v1/projects/p-1/sessions/s-1',
-            inboxDir: '/mock/inbox',
-            outboxDir: '/mock/outbox',
-            allowedDirectoriesConfig: '{\n  "allowedDirectories": ["/mock/bridge/v1"]\n}',
-            chatgptPrompt: 'ChatGPT prompt snippet',
-          }),
-          onEvent: vi.fn().mockReturnValue(() => {}),
-        },
-        antigravity: {
-          detect: vi.fn().mockResolvedValue({
-            installed: true,
-            executablePath: '/usr/bin/agy',
-            version: '1.5.14',
-            supportedModes: ['default', 'accept-edits', 'auto', 'plan'],
-            supportsStreaming: true,
-            supportsResumption: true,
-            readiness: 'ready',
-          }),
-          getStatus: vi.fn().mockResolvedValue({
-            sessionId: 's-1',
-            state: 'ready',
-            pid: 12345,
-            cliConversationId: 'agy-conv-1',
-            workingDirectory: '/home/user/project',
-            executionMode: 'default',
-            model: null,
-            effort: null,
-            lastStartedAt: new Date().toISOString(),
-            lastExitCode: null,
-            capabilities: {
-              installed: true,
-              executablePath: '/usr/bin/agy',
-              version: '1.5.14',
-              supportedModes: ['default', 'accept-edits', 'auto', 'plan'],
-              supportsStreaming: true,
-              supportsResumption: true,
-              readiness: 'ready',
-            },
-            currentTurnPending: false,
-            lastResult: null,
-          }),
-          start: vi.fn().mockResolvedValue(undefined),
-          sendMessage: vi.fn().mockResolvedValue(undefined),
-          stop: vi.fn().mockResolvedValue(undefined),
-          interrupt: vi.fn().mockResolvedValue(undefined),
-          resume: vi.fn().mockResolvedValue(undefined),
-          getHistory: vi.fn().mockResolvedValue([]),
-          onEvent: vi.fn().mockReturnValue(() => {}),
-        },
-        orchestration: {
-          approveTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'queued', approvalStatus: 'approved' }),
-          rejectTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'cancelled', approvalStatus: 'rejected' }),
-          cancelTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'cancelled' }),
-          retryTask: vi.fn().mockResolvedValue({ id: 't-1', status: 'queued', retryCount: 1 }),
-          listTasks: vi.fn().mockResolvedValue([]),
-          listQueued: vi.fn().mockResolvedValue([]),
-          getRunningTask: vi.fn().mockResolvedValue(null),
-          dispatchNext: vi.fn().mockResolvedValue(null),
-          onEvent: vi.fn().mockReturnValue(() => {}),
-        },
       };
     });
 
@@ -912,6 +941,191 @@ describe('UI and Branding Components', () => {
       });
     });
   });
+
+  describe('Prompt 07 Multi-Project Collaboration Workspace', () => {
+    beforeEach(() => {
+      window.knotApi = createMockKnotApi();
+    });
+
+    const dummyProject: Project = {
+      id: 'p-orch-1',
+      name: 'Alpha Project',
+      repositoryPath: '/mock/repos/alpha',
+      repositoryRemote: 'git@github.com:axonel/knot.git',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      archivedAt: null,
+    };
+
+    const dummySession: Session = {
+      id: 's-orch-1',
+      projectId: 'p-orch-1',
+      title: 'Auth Orchestration',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastActivityAt: new Date().toISOString(),
+      startedAt: new Date().toISOString(),
+      endedAt: null,
+      metadata: null,
+    };
+
+    describe('DirectoryAccessDiagnostic', () => {
+      it('renders bridge and repository access chips with allowedDirectories copy button', () => {
+        const dummyBridgeStatus: BridgeStatusInfo = {
+          workspaceInitialized: true,
+          bridgeRoot: '/mock/bridge/v1',
+          desktopCommanderRunning: true,
+          mcpPermissionConfigured: true,
+          handshakeState: 'verified',
+          activeProjectId: dummyProject.id,
+          activeSessionId: dummySession.id,
+          lastInboundMessage: null,
+          lastOutboundMessage: null,
+        };
+
+        render(
+          <DirectoryAccessDiagnostic
+            project={dummyProject}
+            bridgeStatus={dummyBridgeStatus}
+          />
+        );
+
+        expect(screen.getByText('Desktop Commander Access Diagnostic')).toBeInTheDocument();
+        expect(screen.getByText('Bridge Directory')).toBeInTheDocument();
+        expect(screen.getByText('Project Repository')).toBeInTheDocument();
+        expect(screen.getByText('Accessible')).toBeInTheDocument();
+        expect(screen.getByText('Configured')).toBeInTheDocument();
+        expect(screen.getByText('Copy allowedDirectories')).toBeInTheDocument();
+      });
+    });
+
+    describe('SharedConversationPanel', () => {
+      it('renders conversation messages with role badges and action buttons', async () => {
+        window.knotApi!.messages.list = vi.fn().mockResolvedValue([
+          {
+            id: 'm-1',
+            sessionId: dummySession.id,
+            sequence: 1,
+            sender: 'chatgpt',
+            recipient: 'knot',
+            messageType: 'text',
+            contentMarkdown: 'Let us plan the auth migration.',
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: 'm-2',
+            sessionId: dummySession.id,
+            sequence: 2,
+            sender: 'antigravity',
+            recipient: 'chatgpt',
+            messageType: 'text',
+            contentMarkdown: 'Executed migration tasks successfully.',
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+
+        render(
+          <SharedConversationPanel
+            project={dummyProject}
+            session={dummySession}
+            sessionPaths={{
+              projectDir: '/p',
+              sessionDir: '/s',
+              inboxDir: '/in',
+              processedDir: '/proc',
+              rejectedDir: '/rej',
+              outboxDir: '/out',
+              conversationFile: '/conv.md',
+            }}
+          />
+        );
+
+        await waitFor(() => {
+          expect(screen.getByText('Auth Orchestration')).toBeInTheDocument();
+          expect(screen.getByText(/Let us plan the auth migration/)).toBeInTheDocument();
+          expect(screen.getByText(/Executed migration tasks successfully/)).toBeInTheDocument();
+          expect(screen.getByText(/ChatGPT \(Orchestrator\)/)).toBeInTheDocument();
+          expect(screen.getByText(/Antigravity \(Executor\)/)).toBeInTheDocument();
+        });
+      });
+    });
+
+    describe('ChatGptActivityPanel', () => {
+      it('renders chronological activities with category filter chips', async () => {
+        window.knotApi!.events.list = vi.fn().mockResolvedValue([
+          {
+            id: 'e-1',
+            sessionId: dummySession.id,
+            taskId: null,
+            eventType: 'chatgpt_activity',
+            actor: 'chatgpt',
+            data: {
+              category: 'repo_inspection',
+              reference: 'src/main/auth.ts',
+              summary: 'Inspected token validation logic',
+            },
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+
+        render(<ChatGptActivityPanel session={dummySession} />);
+
+        await waitFor(() => {
+          expect(screen.getByText('ChatGPT-Reported Activity')).toBeInTheDocument();
+          expect(screen.getByText('Repo Inspection')).toBeInTheDocument();
+          expect(screen.getByText('src/main/auth.ts')).toBeInTheDocument();
+          expect(screen.getByText('Inspected token validation logic')).toBeInTheDocument();
+        });
+      });
+    });
+
+    describe('AntigravityExecutionPanel', () => {
+      it('renders worker status, active task card, and queue', async () => {
+        window.knotApi!.orchestration.listTasks = vi.fn().mockResolvedValue([
+          {
+            id: 't-1',
+            sessionId: dummySession.id,
+            title: 'Deploy Production Release',
+            status: 'awaiting_approval',
+            approvalStatus: 'awaiting_approval',
+            priority: 'urgent',
+            acceptanceCriteria: ['All tests pass'],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ]);
+
+        render(<AntigravityExecutionPanel session={dummySession} />);
+
+        await waitFor(() => {
+          expect(screen.getByText('Antigravity Execution')).toBeInTheDocument();
+          expect(screen.getByText('Requires Approval')).toBeInTheDocument();
+          expect(screen.getAllByText('Deploy Production Release')[0]).toBeInTheDocument();
+          expect(screen.getByText('Approve & Dispatch')).toBeInTheDocument();
+          expect(screen.getByText('Reject')).toBeInTheDocument();
+        });
+      });
+    });
+
+    describe('CollaborationWorkspace', () => {
+      it('renders the 3-panel workspace layout with toolbar buttons', async () => {
+        window.knotApi!.projects.list = vi.fn().mockResolvedValue([dummyProject]);
+        window.knotApi!.sessions.list = vi.fn().mockResolvedValue([dummySession]);
+
+        render(<CollaborationWorkspace />);
+
+        await waitFor(() => {
+          expect(screen.getByText('Multi-Agent Workspace')).toBeInTheDocument();
+          expect(screen.getAllByText('Alpha Project')[0]).toBeInTheDocument();
+          expect(screen.getByText('Activity')).toBeInTheDocument();
+          expect(screen.getByText('Execution')).toBeInTheDocument();
+          expect(screen.getByText('Diagnostic')).toBeInTheDocument();
+        });
+      });
+    });
+  });
 });
+
 
 

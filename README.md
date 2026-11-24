@@ -294,6 +294,42 @@ To verify that ChatGPT and Desktop Commander Remote can successfully read and wr
 
 ---
 
+## 🤖 Google Antigravity CLI Integration
+
+Knot integrates the official Google Antigravity CLI (`agy`) directly as a persistent, multi-turn AI coding partner alongside Desktop Commander and ChatGPT.
+
+### Key Capabilities
+
+- **Automatic Discovery & Telemetry**:
+  - Automatically resolves `agy` across user custom paths, system `PATH`, and standard Linux user locations (`~/.local/bin/agy`, `/usr/local/bin/agy`, `/usr/bin/agy`, etc.).
+  - Extracts CLI version (e.g. `1.5.14`) and capability flags (`stream-json`, `--conversation`, `--mode`).
+  - Evaluates authentication readiness (`Not Installed`, `Installed`, `Authentication Required`, `Ready`, `Error`).
+  - Provides a safe copyable terminal command (`agy`) when authentication is required—never asks for passwords or scrapes credentials.
+- **Persistent Streaming Protocol (`stream-json`)**:
+  - Launches `agy --input-format stream-json --output-format stream-json` in the background with `cwd` set strictly to the active project's repository path.
+  - Maintains a long-running, interactive process per Knot session; sends user prompts via NDJSON stdin lines (`{"event":"user","message":{"content":"..."}}\n`).
+  - Incremental NDJSON stream parser handles chunk boundaries and maps live events (`init`, `step_update`, `result`).
+  - Displays real-time streaming text deltas and live tool execution cards (`tool_started`, `tool_completed`, `tool_denied`).
+- **Session Isolation & Lifecycle Management**:
+  - Enforces strict working directory isolation: `agy` runs directly in the selected project's repository path. Knot never falls back to its own repository.
+  - Single managed agent process per Knot session.
+  - Clean lifecycle management: Start, Stop (graceful `stdin.end()` ➔ `SIGTERM` ➔ `SIGKILL`), and Interrupt (`SIGINT`).
+  - Tracks process PID, conversation ID, and exit codes.
+  - Registers application shutdown cleanup (`before-quit`) to terminate all active agent child processes without leaving orphans.
+- **Conversation Persistence**:
+  - Tracks agent session metadata, conversation IDs, and execution modes in the SQLite `agent_sessions` table (`002-agent-sessions.ts`).
+  - Resumes previous sessions seamlessly via `--conversation <id>`.
+  - Appends user prompts and Antigravity final responses into SQLite `messages` and audit logs in `events`.
+- **Bridge Outbox Publication**:
+  - When Antigravity completes a turn, Knot automatically publishes the response to ChatGPT's filesystem outbox (`outbox/knot/<id>.md`) stamped with `sender: "antigravity"`.
+  - Updates canonical `conversation.md` snapshot so ChatGPT can immediately observe Antigravity's thoughts, suggestions, and tool results.
+- **Strict Security Invariants**:
+  - **Auto-Approve Disabled**: Knot **NEVER** passes `--dangerously-skip-permissions` or `--always-proceed`.
+  - Detects tool permission rejections and soft denials, presenting clear status notifications in the UI.
+  - Strictly isolates execution with `shell: false` and array arguments.
+
+---
+
 ## 🔒 Security Architecture
 
 1. **Strict Context Isolation**: Renderer runs with `contextIsolation: true` and `nodeIntegration: false`.
@@ -302,12 +338,13 @@ To verify that ChatGPT and Desktop Commander Remote can successfully read and wr
 4. **Credential Protection**: The log sanitizer continuously matches and redacts authentication secrets, JWTs, and URLs with embedded credentials.
 5. **Parameterized SQL Queries**: All database queries use parameterized prepared statements (`?`), eliminating SQL injection risks.
 6. **Filesystem Bridge Isolation**: Bridge folders are constrained strictly within `app.getPath('userData')/bridge/v1/`. All incoming files are validated for 256 KB size limits, valid JSON headers, and scope UUIDs before SQLite persistence.
+7. **No Auto-Approvals for Dangerous Operations**: Antigravity is executed with standard permission requirements; automated execution never bypasses tool confirmation policies.
 
 ---
 
 ## ⚠️ Known Limitations
 
 - **Remote Cloud Pairing**: First-time execution of Desktop Commander Remote requires completing device pairing via the browser/terminal prompt provided by `@wonderwhy-er/desktop-commander`.
-- **Milestone Scope**: Milestone 5 establishes the complete ChatGPT ↔ Knot filesystem bridge and handshake verification. Antigravity CLI integration and multi-agent coordination mesh belong to subsequent milestones.
+- **Milestone Scope**: Milestone 6 establishes the complete Google Antigravity CLI integration with persistent streaming, SQLite persistence, timeline UI, and bridge outbox publication. Automated task delegation between ChatGPT and Antigravity belongs to Prompt 07.
 
 

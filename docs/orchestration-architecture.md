@@ -2,6 +2,8 @@
 
 This document specifies the technical architecture, communication protocols, queue lifecycle, safety execution policies, and user interface of **Knot's Orchestration Engine**.
 
+> **Setup Guide**: For practical Desktop Commander MCP configuration, permission snippets, inbound/outbound Markdown schemas, and troubleshooting, see the dedicated [ChatGPT Bridge Setup & Protocol Specification](chatgpt-bridge-setup.md).
+
 ---
 
 ## 1. The 3-Participant Model
@@ -316,7 +318,7 @@ Knot inspects every task assignment's title, body, and acceptance criteria again
 - Concurrency limit is strictly **1 active task per session**.
 - Tasks are ordered by Priority (`urgent` > `high` > `normal` > `low`) and then FIFO (`created_at ASC`).
 - When a task completes, the next eligible approved task in the session queue is dispatched automatically.
-- Upon application restart, tasks left in `running` state are safely reset to `queued` to prevent dropped execution.
+- Upon application restart, in-flight tasks left in `running` state are safely transitioned to `failed` with diagnostic reason preserved (`Interrupted by application restart...`), avoiding unsafe duplicate execution while enabling explicit user inspection or retry.
 
 ---
 

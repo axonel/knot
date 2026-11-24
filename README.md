@@ -336,6 +336,7 @@ Knot coordinates a collaborative multi-agent development workflow between **Chat
 
 For complete architectural details, protocol specifications, diagrams, and workflow lifecycle, refer to:
 👉 **[Orchestration Architecture Guide](docs/orchestration-architecture.md)**
+👉 **[ChatGPT Bridge Setup & Protocol Guide](docs/chatgpt-bridge-setup.md)**
 
 ### Architecture Highlights
 

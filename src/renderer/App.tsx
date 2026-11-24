@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar.js';
 import { Header } from './components/Header.js';
 import { ProcessManager } from './components/DesktopCommander/ProcessManager.js';
 import { ProjectManager } from './components/ProjectManager/ProjectManager.js';
+import { BridgeManager } from './components/Bridge/BridgeManager.js';
 import { Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -21,6 +22,10 @@ export const App: React.FC = () => {
           {currentTab === 'projects' ? (
             <section>
               <ProjectManager />
+            </section>
+          ) : currentTab === 'bridge' ? (
+            <section>
+              <BridgeManager />
             </section>
           ) : (
             <>

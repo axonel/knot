@@ -1,6 +1,6 @@
 import React from 'react';
 import { KnotLogo } from './KnotLogo.js';
-import { FolderGit2, Terminal, Users, Cpu, Settings, ShieldCheck } from 'lucide-react';
+import { FolderGit2, Terminal, Users, Cpu, Settings, ShieldCheck, Radio } from 'lucide-react';
 
 interface SidebarProps {
   currentTab: string;
@@ -19,6 +19,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => 
       label: 'Desktop Commander',
       icon: Terminal,
       badge: 'Active',
+    },
+    {
+      id: 'bridge',
+      label: 'ChatGPT Bridge',
+      icon: Radio,
+      badge: 'Live',
     },
     {
       id: 'threads',

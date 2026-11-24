@@ -1,10 +1,11 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron';
 import * as path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { DesktopCommanderManager } from './desktopCommanderManager.js';
 import { logger } from './diagnosticLogger.js';
 import { initDatabaseService, DatabaseService } from './database/index.js';
+import { BridgeService } from './bridge/index.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -21,6 +22,7 @@ import type {
 let mainWindow: BrowserWindow | null = null;
 const manager = new DesktopCommanderManager();
 let dbService: DatabaseService | null = null;
+let bridgeService: BridgeService | null = null;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -473,10 +475,62 @@ ipcMain.handle('events:append', (_event, data: AppendEventInput) => {
   return dbService.events.append(data);
 });
 
+// Register ChatGPT Bridge IPC handlers
+ipcMain.handle('bridge:status', (_event, sessionId?: string) => {
+  if (!bridgeService) throw new Error('Bridge service not initialized');
+  return bridgeService.getStatus(sessionId);
+});
+
+ipcMain.handle('bridge:initSessionBridge', (_event, projectId: string, sessionId: string) => {
+  if (!bridgeService) throw new Error('Bridge service not initialized');
+  return bridgeService.initSessionBridge(projectId, sessionId);
+});
+
+ipcMain.handle(
+  'bridge:sendMessage',
+  (_event, projectId: string, sessionId: string, content: string) => {
+    if (!bridgeService) throw new Error('Bridge service not initialized');
+    return bridgeService.sendMessage(projectId, sessionId, content);
+  }
+);
+
+ipcMain.handle(
+  'bridge:startConnectionTest',
+  (_event, projectId: string, sessionId: string) => {
+    if (!bridgeService) throw new Error('Bridge service not initialized');
+    return bridgeService.startConnectionTest(projectId, sessionId);
+  }
+);
+
+ipcMain.handle('bridge:openDirectory', async (_event, dirPath: string) => {
+  if (dirPath && fs.existsSync(dirPath)) {
+    await shell.openPath(dirPath);
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle(
+  'bridge:getInstructions',
+  (_event, projectId: string, sessionId: string) => {
+    if (!bridgeService) throw new Error('Bridge service not initialized');
+    return bridgeService.getInstructions(projectId, sessionId);
+  }
+);
+
 // App lifecycle & shutdown cleanup
 app.on('before-quit', async (event) => {
   logger.info('Application received before-quit event. Initiating clean termination.');
   event.preventDefault();
+  try {
+    if (bridgeService) {
+      await bridgeService.close();
+      logger.info('Bridge watchers stopped cleanly.');
+    }
+  } catch (bridgeErr) {
+    logger.error('Error closing bridge service on app quit', bridgeErr);
+  }
+
   try {
     await manager.cleanup();
   } catch (err) {
@@ -498,8 +552,20 @@ if (gotTheLock) {
   try {
     dbService = initDatabaseService();
     logger.info('Database service successfully initialized.');
+
+    bridgeService = new BridgeService({
+      dbService,
+      commanderManager: manager,
+    });
+
+    bridgeService.onEvent((bridgeEvent) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('bridge:event', bridgeEvent);
+      }
+    });
+    logger.info('Bridge service successfully initialized.');
   } catch (err) {
-    logger.error('Failed to initialize database service at startup', err);
+    logger.error('Failed to initialize services at startup', err);
   }
 
   app.whenReady().then(() => {

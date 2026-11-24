@@ -70,7 +70,7 @@ export interface CreateSessionInput {
   metadata?: Record<string, unknown> | null;
 }
 
-export type MessageSender = 'user' | 'chatgpt' | 'antigravity' | 'system';
+export type MessageSender = 'user' | 'chatgpt' | 'antigravity' | 'system' | 'knot';
 
 export interface Message {
   id: string;
@@ -86,6 +86,7 @@ export interface Message {
 }
 
 export interface AppendMessageInput {
+  id?: string;
   sessionId: string;
   sender: MessageSender;
   contentMarkdown: string;
@@ -208,6 +209,105 @@ export interface EventsApi {
   append: (data: AppendEventInput) => Promise<EventItem>;
 }
 
+// ==========================================
+// ChatGPT ↔ Knot Filesystem Bridge Types
+// ==========================================
+
+export type BridgeProtocolVersion = 'v1';
+
+export type BridgeMessageType = 'message' | 'handshake_challenge' | 'handshake_response';
+
+export type HandshakeState =
+  | 'not_configured'
+  | 'workspace_ready'
+  | 'awaiting_response'
+  | 'verified'
+  | 'error';
+
+export interface KnotMessageMetadata {
+  id: string;
+  protocol: BridgeProtocolVersion;
+  projectId: string;
+  sessionId: string;
+  sender: MessageSender;
+  recipient: MessageSender | 'knot' | 'all';
+  type: BridgeMessageType;
+  challengeId?: string;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface SessionBridgePaths {
+  projectDir: string;
+  sessionDir: string;
+  inboxDir: string;
+  processedDir: string;
+  rejectedDir: string;
+  outboxDir: string;
+  conversationFile: string;
+}
+
+export interface HandshakeChallenge {
+  id: string;
+  challengeId: string;
+  projectId: string;
+  sessionId: string;
+  outboxFilePath: string;
+  inboxExpectedFilePath: string;
+  instructions: string;
+  expiresAt: string;
+  status: 'pending' | 'verified' | 'expired' | 'failed';
+}
+
+export interface BridgeStatusInfo {
+  workspaceInitialized: boolean;
+  bridgeRoot: string;
+  desktopCommanderRunning: boolean;
+  mcpPermissionConfigured: boolean;
+  handshakeState: HandshakeState;
+  activeProjectId: string | null;
+  activeSessionId: string | null;
+  lastInboundMessage: { id: string; timestamp: string; sender: string } | null;
+  lastOutboundMessage: { id: string; timestamp: string; sender: string } | null;
+  lastVerifiedAt?: string | null;
+  activeChallenge?: HandshakeChallenge | null;
+  sessionPaths?: SessionBridgePaths | null;
+}
+
+export interface BridgeInstructions {
+  bridgeRoot: string;
+  sessionDir: string;
+  inboxDir: string;
+  outboxDir: string;
+  allowedDirectoriesConfig: string;
+  chatgptPrompt: string;
+}
+
+export type BridgeEventType =
+  | 'workspace-ready'
+  | 'message-received'
+  | 'message-published'
+  | 'message-rejected'
+  | 'connection-test-started'
+  | 'connection-verified'
+  | 'error';
+
+export interface BridgeEvent {
+  type: BridgeEventType;
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
+export interface BridgeApi {
+  getStatus: (sessionId?: string) => Promise<BridgeStatusInfo>;
+  initSessionBridge: (projectId: string, sessionId: string) => Promise<SessionBridgePaths>;
+  sendMessage: (projectId: string, sessionId: string, content: string) => Promise<Message>;
+  startConnectionTest: (projectId: string, sessionId: string) => Promise<HandshakeChallenge>;
+  openDirectory: (dirPath: string) => Promise<boolean>;
+  getInstructions: (projectId: string, sessionId: string) => Promise<BridgeInstructions>;
+  onEvent: (callback: (event: BridgeEvent) => void) => () => void;
+}
+
 export interface KnotApi {
   // Desktop Commander API
   startDesktopCommander: () => Promise<{ success: boolean; message?: string }>;
@@ -224,4 +324,7 @@ export interface KnotApi {
   messages: MessagesApi;
   tasks: TasksApi;
   events: EventsApi;
+
+  // ChatGPT ↔ Knot Filesystem Bridge API
+  bridge: BridgeApi;
 }

@@ -35,13 +35,21 @@ export class MessageRepository {
       throw new Error('Message must belong to a session.');
     }
 
-    const validSenders: MessageSender[] = ['user', 'chatgpt', 'antigravity', 'system'];
+    const validSenders: MessageSender[] = ['user', 'chatgpt', 'antigravity', 'system', 'knot'];
     if (!validSenders.includes(data.sender)) {
       throw new Error(`Invalid message sender: ${data.sender}`);
     }
 
     if (data.contentMarkdown === undefined || data.contentMarkdown === null) {
       throw new Error('Message content_markdown cannot be null or undefined.');
+    }
+
+    // Idempotency: If external ID was provided, return existing message if already inserted
+    if (data.id) {
+      const existing = this.get(data.id);
+      if (existing) {
+        return existing;
+      }
     }
 
     // Verify session exists
@@ -53,7 +61,7 @@ export class MessageRepository {
       throw new Error(`Session not found with id: ${data.sessionId}`);
     }
 
-    const id = randomUUID();
+    const id = data.id || randomUUID();
     const now = new Date().toISOString();
     const messageType = data.messageType || 'text';
     const metadataJson = data.metadata ? JSON.stringify(data.metadata) : null;

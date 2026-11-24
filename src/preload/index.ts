@@ -78,6 +78,27 @@ const api: KnotApi = {
     list: (sessionId: string, options?: EventFilterOptions) => ipcRenderer.invoke('events:list', sessionId, options),
     append: (data: AppendEventInput) => ipcRenderer.invoke('events:append', data),
   },
+
+  // ChatGPT ↔ Knot Filesystem Bridge API
+  bridge: {
+    getStatus: (sessionId?: string) => ipcRenderer.invoke('bridge:status', sessionId),
+    initSessionBridge: (projectId: string, sessionId: string) =>
+      ipcRenderer.invoke('bridge:initSessionBridge', projectId, sessionId),
+    sendMessage: (projectId: string, sessionId: string, content: string) =>
+      ipcRenderer.invoke('bridge:sendMessage', projectId, sessionId, content),
+    startConnectionTest: (projectId: string, sessionId: string) =>
+      ipcRenderer.invoke('bridge:startConnectionTest', projectId, sessionId),
+    openDirectory: (dirPath: string) => ipcRenderer.invoke('bridge:openDirectory', dirPath),
+    getInstructions: (projectId: string, sessionId: string) =>
+      ipcRenderer.invoke('bridge:getInstructions', projectId, sessionId),
+    onEvent: (callback: (event: any) => void) => {
+      const handler = (_event: IpcRendererEvent, ev: any) => callback(ev);
+      ipcRenderer.on('bridge:event', handler);
+      return () => {
+        ipcRenderer.removeListener('bridge:event', handler);
+      };
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('knotApi', api);

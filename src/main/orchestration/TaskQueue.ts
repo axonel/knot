@@ -18,27 +18,40 @@ export class TaskQueue extends EventEmitter {
 
   /**
    * Recovers orphaned or interrupted tasks on application startup.
-   * Tasks that were left in 'running' state are marked as 'failed' with an explanatory message.
+   * Tasks that were left in 'running' state are marked as 'failed' with an explanatory message,
+   * preserving diagnostic state and enabling explicit retry without automatic rerun.
    */
-  public recover(sessionId?: string): { recoveredCount: number } {
+  public recover(sessionId?: string): { recoveredCount: number; recoveredTasks: Task[] } {
     let recoveredCount = 0;
-    const tasks = sessionId
-      ? this.dbService.tasks.listBySession(sessionId)
-      : this.dbService.tasks.listQueued(); // or all running
+    const recoveredTasks: Task[] = [];
+    const runningTasks = this.dbService.tasks.listRunning(sessionId);
 
-    // Look for running tasks in session
-    for (const task of tasks) {
-      if (task.status === 'running') {
-        this.dbService.tasks.updateExecution(task.id, {
-          status: 'failed',
-          failureReason: 'Interrupted by application restart',
-          completedAt: new Date().toISOString(),
-        });
-        recoveredCount++;
-      }
+    for (const task of runningTasks) {
+      const updated = this.dbService.tasks.updateExecution(task.id, {
+        status: 'failed',
+        failureReason: 'Interrupted by application restart: task was in-flight when Knot closed. State preserved for diagnostic inspection or explicit retry.',
+        completedAt: new Date().toISOString(),
+      });
+
+      this.dbService.events.append({
+        sessionId: task.sessionId,
+        taskId: task.id,
+        eventType: 'task_interrupted',
+        actor: 'knot',
+        data: {
+          taskId: task.id,
+          title: task.title,
+          interruptedAt: new Date().toISOString(),
+          reason: 'Application restarted while task was executing',
+        },
+      });
+
+      this.emit('task_status_changed', updated);
+      recoveredTasks.push(updated);
+      recoveredCount++;
     }
 
-    return { recoveredCount };
+    return { recoveredCount, recoveredTasks };
   }
 
   /**

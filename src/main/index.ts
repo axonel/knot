@@ -423,7 +423,15 @@ ipcMain.handle('sessions:get', (_event, id: string) => {
 
 ipcMain.handle('sessions:create', (_event, data: CreateSessionInput) => {
   if (!dbService) throw new Error('Database not initialized');
-  return dbService.sessions.create(data);
+  const session = dbService.sessions.create(data);
+  if (bridgeService) {
+    try {
+      bridgeService.initSessionBridge(session.projectId, session.id);
+    } catch (err) {
+      logger.error('Failed to initialize session bridge workspace on session create', err);
+    }
+  }
+  return session;
 });
 
 ipcMain.handle('sessions:updateStatus', (_event, id: string, status: SessionStatus) => {
@@ -674,6 +682,7 @@ if (gotTheLock) {
       dbService,
       bridgeService,
     });
+    bridgeService.setAntigravityManager(antigravityManager);
 
     antigravityManager.on('event', (agyEvent) => {
       if (mainWindow && !mainWindow.isDestroyed()) {

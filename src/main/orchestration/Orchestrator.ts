@@ -79,21 +79,28 @@ export class Orchestrator extends EventEmitter {
     });
 
     // 3. Dispatcher task completion listener
-    this.dispatcher.on('task_completed', async (task: Task) => {
-      const response = this.lastAgentResponses.get(task.sessionId);
-      try {
-        await this.publisher.publish({
-          task,
-          agentResponse: response,
-        });
-      } catch (err) {
-        console.error('[Orchestrator] Error publishing task result:', err);
-      } finally {
-        this.lastAgentResponses.delete(task.sessionId);
-        this.bridgeService.syncWorkspaceIndex();
+    this.dispatcher.on(
+      'task_completed',
+      async (
+        task: Task,
+        turnResult?: { response?: string; executionDetails?: any }
+      ) => {
+        const response = turnResult?.response || this.lastAgentResponses.get(task.sessionId);
+        try {
+          await this.publisher.publish({
+            task,
+            agentResponse: response,
+            executionDetails: turnResult?.executionDetails,
+          });
+        } catch (err) {
+          console.error('[Orchestrator] Error publishing task result:', err);
+        } finally {
+          this.lastAgentResponses.delete(task.sessionId);
+          this.bridgeService.syncWorkspaceIndex();
+        }
+        this.emit('task_completed', task);
       }
-      this.emit('task_completed', task);
-    });
+    );
 
     // 4. Dispatcher task failure listener
     this.dispatcher.on('task_failed', async (task: Task) => {

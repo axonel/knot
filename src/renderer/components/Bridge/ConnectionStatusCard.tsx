@@ -218,6 +218,41 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Real-time Diagnostics Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-[#090B0D]/80 border border-[#F9F9F9]/10 text-[11px] font-mono text-[#F9F9F9]/70">
+        <div className="flex items-center gap-2">
+          <span
+            className={`w-2 h-2 rounded-full ${
+              status?.watcherActive ? 'bg-emerald-400' : 'bg-amber-400'
+            }`}
+          />
+          <span>
+            Watcher:{' '}
+            <strong className="text-[#F9F9F9]">
+              {status?.watcherActive
+                ? `${status.watchedSessionsCount ?? 1} session inbox(es) active`
+                : 'Offline'}
+            </strong>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {status?.antigravityRunning && (
+            <span className="text-[#FF6E42] font-semibold">● Antigravity Executing</span>
+          )}
+          {typeof status?.unreadResultsCount === 'number' && status.unreadResultsCount > 0 && (
+            <span className="px-2 py-0.5 rounded bg-[#004E72]/40 text-[#F9F9F9] border border-[#004E72]/60">
+              {status.unreadResultsCount} unread outbox result(s)
+            </span>
+          )}
+          {status?.latestDispatchedTask && (
+            <span className="text-[#F9F9F9]/50 truncate max-w-xs" title={status.latestDispatchedTask.title}>
+              Dispatched: {status.latestDispatchedTask.title}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

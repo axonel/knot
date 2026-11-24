@@ -217,6 +217,14 @@ export class InboxWatcher {
     }
   }
 
+  public isWatching(): boolean {
+    return this.watcher !== null;
+  }
+
+  public getWatchedPaths(): string[] {
+    return Array.from(this.watchedPaths);
+  }
+
   public async close(): Promise<void> {
     if (this.watcher) {
       await this.watcher.close();

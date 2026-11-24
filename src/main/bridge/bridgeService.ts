@@ -13,6 +13,7 @@ import { InboxWatcher } from './inboxWatcher.js';
 import { HandshakeManager } from './handshake.js';
 import type { DatabaseService } from '../database/index.js';
 import type { DesktopCommanderManager } from '../desktopCommanderManager.js';
+import type { AntigravityManager } from '../antigravity/antigravityManager.js';
 import type {
   BridgeStatusInfo,
   BridgeInstructions,
@@ -30,12 +31,14 @@ export interface BridgeServiceOptions {
   customBridgeRoot?: string;
   dbService: DatabaseService;
   commanderManager?: DesktopCommanderManager;
+  antigravityManager?: AntigravityManager;
 }
 
 export class BridgeService {
   private bridgeRoot: string;
   private dbService: DatabaseService;
   private commanderManager?: DesktopCommanderManager;
+  private antigravityManager?: AntigravityManager;
   private watcher: InboxWatcher;
   private handshakeManager: HandshakeManager;
   private activeSessionId: string | null = null;
@@ -49,6 +52,7 @@ export class BridgeService {
     this.bridgeRoot = resolveBridgeRoot(options.customBridgeRoot);
     this.dbService = options.dbService;
     this.commanderManager = options.commanderManager;
+    this.antigravityManager = options.antigravityManager;
 
     ensureBridgeRoot(this.bridgeRoot);
 
@@ -63,6 +67,10 @@ export class BridgeService {
 
   public getBridgeRoot(): string {
     return this.bridgeRoot;
+  }
+
+  public setAntigravityManager(mgr: AntigravityManager): void {
+    this.antigravityManager = mgr;
   }
 
   public onEvent(callback: (event: BridgeEvent) => void): () => void {
@@ -124,14 +132,15 @@ export class BridgeService {
     return paths;
   }
 
-  public watchAllSessions(): void {
+  public async watchAllSessions(): Promise<void> {
     try {
       const projects = this.dbService.projects.list();
       for (const p of projects) {
         const sessions = this.dbService.sessions.listByProject(p.id);
         for (const s of sessions) {
-          const paths = resolveSessionPaths(this.bridgeRoot, p.id, s.id);
+          const paths = initSessionWorkspace(this.bridgeRoot, p.id, s.id);
           this.watcher.watchInbox(paths.inboxDir);
+          await this.watcher.scanInbox(paths.inboxDir, { projectId: p.id, sessionId: s.id });
         }
       }
       this.syncWorkspaceIndex();
@@ -171,15 +180,28 @@ export class BridgeService {
       ? this.commanderManager.getStatus().state === 'Running'
       : true;
 
-    let hasPermissions = false;
+    const exists = fs.existsSync(this.bridgeRoot);
+    let readable = false;
+    let writable = false;
     try {
-      if (fs.existsSync(this.bridgeRoot)) {
-        fs.accessSync(this.bridgeRoot, fs.constants.R_OK | fs.constants.W_OK);
-        hasPermissions = true;
+      if (exists) {
+        fs.accessSync(this.bridgeRoot, fs.constants.R_OK);
+        readable = true;
       }
     } catch {
-      hasPermissions = false;
+      readable = false;
     }
+
+    try {
+      if (exists) {
+        fs.accessSync(this.bridgeRoot, fs.constants.W_OK);
+        writable = true;
+      }
+    } catch {
+      writable = false;
+    }
+
+    const hasPermissions = readable && writable;
 
     const handshakeState = this.handshakeManager.getState(
       targetSessionId || undefined,
@@ -192,10 +214,18 @@ export class BridgeService {
       : null;
 
     let sessionPaths: SessionBridgePaths | null = null;
-    if (this.activeProjectId && targetSessionId) {
+    let effectiveProjectId = this.activeProjectId;
+    if (targetSessionId && !effectiveProjectId) {
+      const sess = this.dbService.sessions.get(targetSessionId);
+      if (sess) {
+        effectiveProjectId = sess.projectId;
+      }
+    }
+
+    if (effectiveProjectId && targetSessionId) {
       const candidatePaths = resolveSessionPaths(
         this.bridgeRoot,
-        this.activeProjectId,
+        effectiveProjectId,
         targetSessionId
       );
       if (fs.existsSync(candidatePaths.sessionDir)) {
@@ -203,16 +233,106 @@ export class BridgeService {
       }
     }
 
+    // Watched sessions diagnostics
+    const watchedPaths = this.watcher.getWatchedPaths();
+    const watchedSessionIds: string[] = [];
+    for (const p of watchedPaths) {
+      const parts = p.split(path.sep);
+      const inboxIdx = parts.lastIndexOf('inbox');
+      if (inboxIdx >= 1) {
+        watchedSessionIds.push(parts[inboxIdx - 1]);
+      }
+    }
+
+    // Latest dispatched task
+    let latestDispatchedTask: { taskId: string; title: string; timestamp: string } | null = null;
+    try {
+      const params = targetSessionId ? [targetSessionId] : [];
+      const row = this.dbService.db.prepare(`
+        SELECT id, title, dispatched_at FROM tasks
+        WHERE dispatched_at IS NOT NULL
+        ${targetSessionId ? 'AND session_id = ?' : ''}
+        ORDER BY dispatched_at DESC
+        LIMIT 1
+      `).get(...params) as { id: string; title: string; dispatched_at: string } | undefined;
+      if (row) {
+        latestDispatchedTask = {
+          taskId: row.id,
+          title: row.title,
+          timestamp: row.dispatched_at,
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    // Antigravity running state
+    const antigravityRunning = this.antigravityManager
+      ? this.antigravityManager.isProcessRunning(targetSessionId || undefined)
+      : false;
+
+    // Latest published result
+    let latestPublishedResult: { taskId: string; messageId: string; timestamp: string } | null = null;
+    try {
+      const params = targetSessionId ? [targetSessionId] : [];
+      const row = this.dbService.db.prepare(`
+        SELECT task_id, data_json, created_at FROM events
+        WHERE event_type = 'task_result_published'
+        ${targetSessionId ? 'AND session_id = ?' : ''}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `).get(...params) as { task_id: string; data_json: string; created_at: string } | undefined;
+      if (row) {
+        let msgId = '';
+        try {
+          const parsed = JSON.parse(row.data_json);
+          msgId = parsed.messageId || '';
+        } catch {
+          // ignore
+        }
+        latestPublishedResult = {
+          taskId: row.task_id,
+          messageId: msgId,
+          timestamp: row.created_at,
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    // Unread outbox results
+    let unreadResultsCount = 0;
+    try {
+      if (sessionPaths && fs.existsSync(sessionPaths.outboxDir)) {
+        const outboxFiles = fs.readdirSync(sessionPaths.outboxDir);
+        unreadResultsCount = outboxFiles.filter(
+          (f) => f.endsWith('-result.md') || (f.endsWith('.md') && !f.includes('.tmp.'))
+        ).length;
+      }
+    } catch {
+      unreadResultsCount = 0;
+    }
+
     return {
-      workspaceInitialized: fs.existsSync(this.bridgeRoot),
+      workspaceInitialized: exists,
       bridgeRoot: this.bridgeRoot,
+      exists,
+      readable,
+      writable,
+      watcherActive: this.watcher.isWatching(),
+      watchedSessionsCount: watchedSessionIds.length,
+      watchedSessionIds,
       desktopCommanderRunning: isRunning,
       mcpPermissionConfigured: hasPermissions,
       handshakeState,
-      activeProjectId: this.activeProjectId,
+      activeProjectId: effectiveProjectId,
       activeSessionId: targetSessionId,
       lastInboundMessage: this.lastInboundMessage,
       lastOutboundMessage: this.lastOutboundMessage,
+      latestDispatchedTask,
+      antigravityRunning,
+      latestPublishedResult,
+      unreadResultsCount,
       lastVerifiedAt: this.handshakeManager.getLastVerifiedAt(targetSessionId || undefined),
       activeChallenge,
       sessionPaths,

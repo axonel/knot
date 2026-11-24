@@ -175,6 +175,19 @@ export class TaskRepository {
     return rows.map((r) => this.mapRow(r));
   }
 
+  public listRunning(sessionId?: string): Task[] {
+    const query = `
+      SELECT * FROM tasks
+      WHERE status = 'running'
+      ${sessionId ? 'AND session_id = ?' : ''}
+      ORDER BY dispatched_at ASC
+    `;
+
+    const stmt = this.db.prepare(query);
+    const rows = (sessionId ? stmt.all(sessionId) : stmt.all()) as unknown as TaskRecord[];
+    return rows.map((r) => this.mapRow(r));
+  }
+
   public updateStatus(id: string, status: TaskStatus): Task {
     const existing = this.get(id);
     if (!existing) {

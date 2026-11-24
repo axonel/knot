@@ -1,8 +1,9 @@
+import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
 import type { DatabaseService } from '../database/index.js';
 import type { TaskQueue } from './TaskQueue.js';
 import type { AntigravityManager } from '../antigravity/antigravityManager.js';
-import type { Task } from '../../shared/types.js';
+import type { Task, TaskExecutionDetails } from '../../shared/types.js';
 import { formatTaskContract } from './taskContract.js';
 
 export interface TaskDispatcherOptions {
@@ -78,6 +79,29 @@ export class TaskDispatcher extends EventEmitter {
       throw new Error(`Session "${task.sessionId}" not found.`);
     }
 
+    if (session.status === 'archived') {
+      const completedAt = new Date().toISOString();
+      const failureReason = 'Session is archived. Tasks cannot be executed in archived sessions.';
+      const cancelledTask = this.dbService.tasks.updateExecution(task.id, {
+        status: 'cancelled',
+        failureReason,
+        completedAt,
+      });
+      this.dbService.events.append({
+        sessionId: task.sessionId,
+        taskId: task.id,
+        eventType: 'task_cancelled',
+        actor: 'knot',
+        data: {
+          taskId: task.id,
+          reason: failureReason,
+          completedAt,
+        },
+      });
+      this.emit('task_status_changed', cancelledTask);
+      return cancelledTask;
+    }
+
     const project = this.dbService.projects.get(session.projectId);
     if (!project) {
       throw new Error(`Project "${session.projectId}" not found.`);
@@ -86,6 +110,29 @@ export class TaskDispatcher extends EventEmitter {
     const workingDirectory = project.repositoryPath || '';
     if (!workingDirectory) {
       throw new Error(`Project "${project.name}" does not have a repository path configured.`);
+    }
+
+    if (!fs.existsSync(workingDirectory)) {
+      const completedAt = new Date().toISOString();
+      const errorMsg = `Project repository directory is inaccessible or missing: "${workingDirectory}".`;
+      const failedTask = this.dbService.tasks.updateExecution(task.id, {
+        status: 'failed',
+        failureReason: errorMsg,
+        completedAt,
+      });
+      this.dbService.events.append({
+        sessionId: task.sessionId,
+        taskId: task.id,
+        eventType: 'task_failed',
+        actor: 'knot',
+        data: {
+          taskId: task.id,
+          error: errorMsg,
+          completedAt,
+        },
+      });
+      this.emit('task_failed', failedTask, errorMsg);
+      throw new Error(errorMsg);
     }
 
     // 1. Transition task to running
@@ -115,7 +162,16 @@ export class TaskDispatcher extends EventEmitter {
 
     // 3. Send prompt to AntigravityManager
     try {
-      await this.antigravityManager.sendMessage(task.sessionId, prompt);
+      let turnResult: { response?: string; executionDetails?: TaskExecutionDetails } | undefined;
+      if (typeof (this.antigravityManager as any).executeTaskTurn === 'function') {
+        turnResult = await (this.antigravityManager as any).executeTaskTurn(
+          task.sessionId,
+          prompt,
+          { taskId: task.id }
+        );
+      } else {
+        await this.antigravityManager.sendMessage(task.sessionId, prompt);
+      }
 
       // Succeeded
       const completedAt = new Date().toISOString();
@@ -135,7 +191,7 @@ export class TaskDispatcher extends EventEmitter {
         },
       });
 
-      this.emit('task_completed', succeededTask);
+      this.emit('task_completed', succeededTask, turnResult);
 
       // Trigger next task in queue for this session
       const timer = setTimeout(() => {

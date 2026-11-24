@@ -8,6 +8,8 @@ import type {
   AntigravityStatus,
   AntigravityUiEvent,
   AntigravityExecutionMode,
+  AntigravityToolCall,
+  TaskExecutionDetails,
   Message,
   StartAgentOptions,
 } from '../../shared/types.js';
@@ -233,6 +235,172 @@ export class AntigravityManager extends EventEmitter {
 
       this.emitEvent('error', sessionId, { error: errorMsg });
       throw err;
+    }
+  }
+
+  public isProcessRunning(sessionId?: string): boolean {
+    if (sessionId) {
+      const proc = this.activeProcesses.get(sessionId);
+      return Boolean(proc && proc.state !== 'stopped' && proc.state !== 'error');
+    }
+    for (const proc of this.activeProcesses.values()) {
+      if (proc.state !== 'stopped' && proc.state !== 'error') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Executes a task assignment turn from the orchestrator.
+   * Unlike direct interactive chat via sendMessage, this:
+   * 1. Does NOT insert a duplicate user prompt message to the database.
+   * 2. Does NOT publish raw intermediate chat messages to outbox.
+   * 3. Aggregates tool events (modified files, executed commands, test results, git commits)
+   *    and returns structured execution details for the TaskResultPublisher.
+   */
+  public async executeTaskTurn(
+    sessionId: string,
+    prompt: string,
+    options?: { taskId?: string }
+  ): Promise<{
+    response: string;
+    durationSeconds?: number;
+    numTurns?: number;
+    conversationId?: string;
+    executionDetails: TaskExecutionDetails;
+  }> {
+    const trimmed = prompt.trim();
+    if (!trimmed) {
+      throw new Error('Prompt cannot be empty');
+    }
+
+    let proc = this.activeProcesses.get(sessionId);
+    if (!proc || proc.state === 'stopped' || proc.state === 'error') {
+      await this.start(sessionId);
+      proc = this.activeProcesses.get(sessionId);
+    }
+
+    if (!proc) {
+      throw new Error('Failed to start Antigravity process');
+    }
+
+    const session = this.dbService.sessions.get(sessionId);
+    if (!session) {
+      throw new Error(`Session ${sessionId} not found`);
+    }
+
+    // Accumulate tool events and structured execution telemetry during turn
+    const changedFiles = new Set<string>();
+    const commandsExecuted: Array<{ command: string; exitCode?: number; output?: string }> = [];
+    const testsExecuted: Array<{ command: string; outcome?: 'passed' | 'failed' | 'skipped'; exitCode?: number }> = [];
+    let detectedCommitHash: string | undefined;
+    const errors: string[] = [];
+
+    const toolListener = ({ tool }: { tool: AntigravityToolCall }) => {
+      // 1. Files modified/written/edited
+      const toolName = (tool.name || '').toLowerCase();
+      const params = tool.parameters || {};
+      const filePath = params.TargetFile || params.file_path || params.path || params.filePath;
+      if (
+        typeof filePath === 'string' &&
+        (toolName.includes('write') || toolName.includes('edit') || toolName.includes('replace') || toolName.includes('file'))
+      ) {
+        changedFiles.add(filePath);
+      }
+
+      // 2. Command / test execution
+      const command = params.CommandLine || params.command || params.cmd;
+      if (typeof command === 'string') {
+        const cmdStr = command.trim();
+        commandsExecuted.push({
+          command: cmdStr,
+          output: tool.output ? tool.output.slice(0, 1000) : undefined,
+        });
+
+        // Test outcome detection
+        const isTest = cmdStr.includes('test') || cmdStr.includes('vitest') || cmdStr.includes('jest') || cmdStr.includes('pytest');
+        if (isTest) {
+          const isFailure = tool.status === 'error' || tool.output?.toLowerCase().includes('fail');
+          testsExecuted.push({
+            command: cmdStr,
+            outcome: isFailure ? 'failed' : 'passed',
+          });
+        }
+
+        // Commit hash detection
+        if (cmdStr.includes('git commit') && tool.output) {
+          const match = tool.output.match(/\[[a-zA-Z0-9_\-./]+\s+([a-f0-9]{7,40})\]/);
+          if (match) {
+            detectedCommitHash = match[1];
+          }
+        }
+      }
+
+      if (tool.status === 'error' && tool.output) {
+        errors.push(`${tool.name}: ${tool.output.slice(0, 300)}`);
+      }
+    };
+
+    proc.on('tool_event', toolListener);
+
+    try {
+      const result = await proc.sendMessage(trimmed);
+
+      if (result.conversationId) {
+        this.dbService.agentSessions.updateConversationIdBySession(sessionId, 'antigravity', result.conversationId);
+      }
+
+      this.dbService.events.append({
+        sessionId,
+        taskId: options?.taskId,
+        eventType: 'antigravity_turn_completed',
+        actor: 'antigravity',
+        data: {
+          status: result.status,
+          durationSeconds: result.durationSeconds,
+          numTurns: result.numTurns,
+          conversationId: result.conversationId,
+        },
+      });
+
+      this.emitEvent('turn_completed', sessionId, {
+        status: result.status,
+        response: result.response,
+        durationSeconds: result.durationSeconds,
+      });
+
+      const executionDetails: TaskExecutionDetails = {
+        summary: result.response || (result.status === 'SUCCESS' ? 'Task execution completed successfully.' : 'Task execution failed.'),
+        changedFiles: Array.from(changedFiles),
+        commandsExecuted,
+        testsExecuted,
+        commitHash: detectedCommitHash,
+        errors: result.error ? [result.error, ...errors] : errors,
+        limitations: [],
+      };
+
+      return {
+        response: result.response || '',
+        durationSeconds: result.durationSeconds,
+        numTurns: result.numTurns,
+        conversationId: result.conversationId,
+        executionDetails,
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      this.dbService.events.append({
+        sessionId,
+        taskId: options?.taskId,
+        eventType: 'antigravity_turn_failed',
+        actor: 'antigravity',
+        data: { error: errorMsg },
+      });
+
+      this.emitEvent('error', sessionId, { error: errorMsg });
+      throw err;
+    } finally {
+      proc.off('tool_event', toolListener);
     }
   }
 

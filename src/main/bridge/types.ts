@@ -11,6 +11,7 @@ import type {
   BridgeEvent,
   BridgeApi,
   MessageSender,
+  TaskExecutionDetails,
 } from '../../shared/types.js';
 
 export interface ParsedBridgeMessage {
@@ -49,4 +50,5 @@ export type {
   BridgeEvent,
   BridgeApi,
   MessageSender,
+  TaskExecutionDetails,
 };

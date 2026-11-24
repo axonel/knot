@@ -294,9 +294,33 @@ export interface HandshakeChallenge {
   status: 'pending' | 'verified' | 'expired' | 'failed';
 }
 
+export interface TaskExecutionDetails {
+  summary?: string;
+  changedFiles?: string[];
+  commandsExecuted?: Array<{
+    command: string;
+    exitCode?: number;
+    output?: string;
+  }>;
+  testsExecuted?: Array<{
+    command: string;
+    outcome?: 'passed' | 'failed' | 'skipped';
+    exitCode?: number;
+  }>;
+  commitHash?: string;
+  errors?: string[];
+  limitations?: string[];
+}
+
 export interface BridgeStatusInfo {
   workspaceInitialized: boolean;
   bridgeRoot: string;
+  exists?: boolean;
+  readable?: boolean;
+  writable?: boolean;
+  watcherActive?: boolean;
+  watchedSessionsCount?: number;
+  watchedSessionIds?: string[];
   desktopCommanderRunning: boolean;
   mcpPermissionConfigured: boolean;
   handshakeState: HandshakeState;
@@ -304,6 +328,10 @@ export interface BridgeStatusInfo {
   activeSessionId: string | null;
   lastInboundMessage: { id: string; timestamp: string; sender: string } | null;
   lastOutboundMessage: { id: string; timestamp: string; sender: string } | null;
+  latestDispatchedTask?: { taskId: string; title: string; timestamp: string } | null;
+  antigravityRunning?: boolean;
+  latestPublishedResult?: { taskId: string; messageId: string; timestamp: string } | null;
+  unreadResultsCount?: number;
   lastVerifiedAt?: string | null;
   activeChallenge?: HandshakeChallenge | null;
   sessionPaths?: SessionBridgePaths | null;

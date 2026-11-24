@@ -8,6 +8,9 @@ export function resolveBridgeRoot(customPath?: string): string {
   if (customPath) {
     return path.resolve(customPath);
   }
+  if (process.env.KNOT_BRIDGE_ROOT) {
+    return path.resolve(process.env.KNOT_BRIDGE_ROOT);
+  }
   return path.join(app.getPath('userData'), 'bridge', 'v1');
 }
 

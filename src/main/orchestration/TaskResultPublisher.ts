@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { DatabaseService } from '../database/index.js';
-import type { Task } from '../../shared/types.js';
+import type { Task, TaskExecutionDetails } from '../../shared/types.js';
 import { initSessionWorkspace, writeCanonicalConversation } from '../bridge/workspace.js';
 import { formatBridgeMessage } from '../bridge/protocol.js';
 
@@ -10,6 +10,7 @@ export interface PublishTaskResultOptions {
   task: Task;
   agentResponse?: string;
   durationSeconds?: number;
+  executionDetails?: TaskExecutionDetails;
 }
 
 export class TaskResultPublisher {
@@ -37,8 +38,10 @@ export class TaskResultPublisher {
     const paths = initSessionWorkspace(this.bridgeRoot, project.id, session.id);
     const messageId = randomUUID();
     const now = new Date().toISOString();
+    const details = options.executionDetails;
+    const summary = details?.summary || (agentResponse ? agentResponse.trim() : task.status === 'succeeded' ? 'Task execution completed successfully.' : 'Task execution failed.');
 
-    const bodyContent = `# Task Result: ${task.title}
+    let bodyContent = `# Task Result: ${task.title}
 
 - **Task ID**: \`${task.id}\`
 - **Status**: **${task.status.toUpperCase()}**
@@ -46,14 +49,32 @@ export class TaskResultPublisher {
 - **Execution Mode**: \`${task.executionMode || 'default'}\`
 - **Dispatched At**: \`${task.dispatchedAt || 'N/A'}\`
 - **Completed At**: \`${task.completedAt || now}\`
-${task.failureReason ? `- **Failure Reason**: ${task.failureReason}\n` : ''}
-
-## Execution Summary
-${agentResponse ? agentResponse.trim() : task.status === 'succeeded' ? 'Task execution completed successfully.' : 'Task execution failed.'}
-
----
-*Published by Knot Orchestration Runtime*
+${task.failureReason ? `- **Failure Reason**: ${task.failureReason}\n` : ''}${details?.commitHash ? `- **Commit Hash**: \`${details.commitHash}\`\n` : ''}
+## Summary of Changes
+${summary}
 `;
+
+    if (details?.changedFiles && details.changedFiles.length > 0) {
+      bodyContent += `\n## Changed Files\n${details.changedFiles.map((f) => `- \`${f}\``).join('\n')}\n`;
+    }
+
+    if (details?.commandsExecuted && details.commandsExecuted.length > 0) {
+      bodyContent += `\n## Executed Commands\n${details.commandsExecuted.map((c) => `- \`${c.command}\`${c.exitCode !== undefined ? ` (exit code ${c.exitCode})` : ''}`).join('\n')}\n`;
+    }
+
+    if (details?.testsExecuted && details.testsExecuted.length > 0) {
+      bodyContent += `\n## Test Outcomes\n${details.testsExecuted.map((t) => `- \`${t.command}\`: **${t.outcome?.toUpperCase() || 'COMPLETED'}**`).join('\n')}\n`;
+    }
+
+    if (details?.errors && details.errors.length > 0) {
+      bodyContent += `\n## Errors & Incomplete Work\n${details.errors.map((e) => `- ${e}`).join('\n')}\n`;
+    }
+
+    if (details?.limitations && details.limitations.length > 0) {
+      bodyContent += `\n## Limitations\n${details.limitations.map((l) => `- ${l}`).join('\n')}\n`;
+    }
+
+    bodyContent += `\n---\n*Published by Knot Orchestration Runtime*\n`;
 
     const formattedMessage = formatBridgeMessage(
       {
@@ -73,6 +94,10 @@ ${agentResponse ? agentResponse.trim() : task.status === 'succeeded' ? 'Task exe
           executionMode: task.executionMode,
           failureReason: task.failureReason || undefined,
           durationSeconds: options.durationSeconds,
+          changedFiles: details?.changedFiles,
+          commitHash: details?.commitHash,
+          commandsCount: details?.commandsExecuted?.length,
+          testsCount: details?.testsExecuted?.length,
         },
       },
       bodyContent

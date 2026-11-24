@@ -8,6 +8,7 @@ import { initDatabaseService, DatabaseService } from './database/index.js';
 import { BridgeService } from './bridge/index.js';
 import { AntigravityManager } from './antigravity/index.js';
 import { Orchestrator } from './orchestration/index.js';
+import { GitService } from './git/gitService.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -27,6 +28,7 @@ let dbService: DatabaseService | null = null;
 let bridgeService: BridgeService | null = null;
 let antigravityManager: AntigravityManager | null = null;
 let orchestrator: Orchestrator | null = null;
+let gitService: GitService | null = null;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -612,6 +614,38 @@ ipcMain.handle('orchestration:dispatch-next', async (_event, sessionId: string) 
   return await orchestrator.getDispatcher().dispatchNext(sessionId);
 });
 
+// Read-Only Git Inspection IPC Handlers
+ipcMain.handle('git:get-task-diff', async (_event, taskId: string) => {
+  if (!gitService) throw new Error('Git inspection service not initialized');
+  if (!taskId || typeof taskId !== 'string') {
+    throw new Error('Task ID must be a non-empty string.');
+  }
+  return await gitService.getTaskDiff(taskId);
+});
+
+ipcMain.handle('git:get-file-diff', async (_event, taskId: string, filePath: string) => {
+  if (!gitService) throw new Error('Git inspection service not initialized');
+  if (!taskId || typeof taskId !== 'string') {
+    throw new Error('Task ID must be a non-empty string.');
+  }
+  if (!filePath || typeof filePath !== 'string') {
+    throw new Error('File path must be a non-empty string.');
+  }
+  return await gitService.getFileDiff(taskId, filePath);
+});
+
+ipcMain.handle('git:get-repo-status', async (_event, projectId: string) => {
+  if (!gitService) throw new Error('Git inspection service not initialized');
+  if (!dbService) throw new Error('Database service not initialized');
+  if (!projectId || typeof projectId !== 'string') {
+    throw new Error('Project ID must be a non-empty string.');
+  }
+  const project = dbService.projects.get(projectId);
+  if (!project) throw new Error(`Project not found with id: "${projectId}".`);
+  if (!project.repositoryPath) throw new Error(`Project "${project.name}" has no repository path configured.`);
+  return await gitService.getRepoStatus(project.repositoryPath, project.repositoryPath);
+});
+
 // App lifecycle & shutdown cleanup
 app.on('before-quit', async (event) => {
   logger.info('Application received before-quit event. Initiating clean termination.');
@@ -691,10 +725,14 @@ if (gotTheLock) {
     });
     logger.info('Antigravity manager successfully initialized.');
 
+    gitService = new GitService(dbService);
+    logger.info('Git inspection service successfully initialized.');
+
     orchestrator = new Orchestrator({
       dbService,
       bridgeService,
       antigravityManager,
+      gitService,
     });
 
     orchestrator.on('task_created', (task) => {

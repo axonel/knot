@@ -3,19 +3,22 @@ import { EventEmitter } from 'node:events';
 import type { DatabaseService } from '../database/index.js';
 import type { TaskQueue } from './TaskQueue.js';
 import type { AntigravityManager } from '../antigravity/antigravityManager.js';
-import type { Task, TaskExecutionDetails } from '../../shared/types.js';
+import type { GitService } from '../git/gitService.js';
+import type { Task, TaskExecutionDetails, TaskGitBoundary } from '../../shared/types.js';
 import { formatTaskContract } from './taskContract.js';
 
 export interface TaskDispatcherOptions {
   dbService: DatabaseService;
   queue: TaskQueue;
   antigravityManager: AntigravityManager;
+  gitService?: GitService;
 }
 
 export class TaskDispatcher extends EventEmitter {
   private dbService: DatabaseService;
   private queue: TaskQueue;
   private antigravityManager: AntigravityManager;
+  private gitService?: GitService;
   private dispatchingSessions = new Set<string>();
   private pendingTimeouts = new Set<NodeJS.Timeout>();
 
@@ -32,6 +35,7 @@ export class TaskDispatcher extends EventEmitter {
     this.dbService = options.dbService;
     this.queue = options.queue;
     this.antigravityManager = options.antigravityManager;
+    this.gitService = options.gitService;
   }
 
   /**
@@ -135,11 +139,22 @@ export class TaskDispatcher extends EventEmitter {
       throw new Error(errorMsg);
     }
 
+    // Capture Git boundary start snapshot if gitService is available
+    let gitBoundary: TaskGitBoundary | null = null;
+    if (this.gitService) {
+      try {
+        gitBoundary = await this.gitService.captureTaskBoundaryStart(task.id, workingDirectory, workingDirectory);
+      } catch (err) {
+        console.warn(`[TaskDispatcher] Could not capture Git boundary start for task "${task.id}":`, err);
+      }
+    }
+
     // 1. Transition task to running
     const dispatchedAt = new Date().toISOString();
     const runningTask = this.dbService.tasks.updateExecution(task.id, {
       status: 'running',
       dispatchedAt,
+      gitBoundary,
     });
 
     this.dbService.events.append({
@@ -152,6 +167,8 @@ export class TaskDispatcher extends EventEmitter {
         title: task.title,
         dispatchedAt,
         workingDirectory,
+        gitStartHead: gitBoundary?.start.head || null,
+        gitStartClean: gitBoundary?.start.isClean ?? null,
       },
     });
 
@@ -173,11 +190,27 @@ export class TaskDispatcher extends EventEmitter {
         await this.antigravityManager.sendMessage(task.sessionId, prompt);
       }
 
+      // Capture Git boundary completion snapshot
+      if (this.gitService && gitBoundary) {
+        try {
+          const reportedHash = turnResult?.executionDetails?.commitHash;
+          gitBoundary = await this.gitService.captureTaskBoundaryEnd(
+            gitBoundary,
+            workingDirectory,
+            reportedHash,
+            workingDirectory
+          );
+        } catch (err) {
+          console.warn(`[TaskDispatcher] Could not capture Git boundary end for task "${task.id}":`, err);
+        }
+      }
+
       // Succeeded
       const completedAt = new Date().toISOString();
       const succeededTask = this.dbService.tasks.updateExecution(task.id, {
         status: 'succeeded',
         completedAt,
+        gitBoundary,
       });
 
       this.dbService.events.append({
@@ -188,6 +221,8 @@ export class TaskDispatcher extends EventEmitter {
         data: {
           taskId: task.id,
           completedAt,
+          gitEndHead: gitBoundary?.end?.head || null,
+          gitVerifiedCommit: gitBoundary?.verifiedCommitHash || null,
         },
       });
 
@@ -208,10 +243,24 @@ export class TaskDispatcher extends EventEmitter {
       const errorMsg = err instanceof Error ? err.message : String(err);
       const completedAt = new Date().toISOString();
 
+      if (this.gitService && gitBoundary) {
+        try {
+          gitBoundary = await this.gitService.captureTaskBoundaryEnd(
+            gitBoundary,
+            workingDirectory,
+            null,
+            workingDirectory
+          );
+        } catch (gitErr) {
+          console.warn(`[TaskDispatcher] Could not capture Git boundary end for failed task "${task.id}":`, gitErr);
+        }
+      }
+
       const failedTask = this.dbService.tasks.updateExecution(task.id, {
         status: 'failed',
         failureReason: errorMsg,
         completedAt,
+        gitBoundary,
       });
 
       this.dbService.events.append({

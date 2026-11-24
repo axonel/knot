@@ -139,6 +139,13 @@ const api: KnotApi = {
       };
     },
   },
+
+  // Read-Only Git Inspection API
+  git: {
+    getTaskDiff: (taskId: string) => ipcRenderer.invoke('git:get-task-diff', taskId),
+    getFileDiff: (taskId: string, filePath: string) => ipcRenderer.invoke('git:get-file-diff', taskId, filePath),
+    getRepoStatus: (projectId: string) => ipcRenderer.invoke('git:get-repo-status', projectId),
+  },
 };
 
 contextBridge.exposeInMainWorld('knotApi', api);

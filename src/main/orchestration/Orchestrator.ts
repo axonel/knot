@@ -2,6 +2,7 @@ import { EventEmitter } from 'node:events';
 import type { DatabaseService } from '../database/index.js';
 import type { BridgeService } from '../bridge/bridgeService.js';
 import type { AntigravityManager } from '../antigravity/antigravityManager.js';
+import type { GitService } from '../git/gitService.js';
 import type { Task, TaskStatus } from '../../shared/types.js';
 import type { ParsedBridgeMessage } from '../bridge/types.js';
 import { TaskQueue } from './TaskQueue.js';
@@ -13,12 +14,14 @@ export interface OrchestratorOptions {
   dbService: DatabaseService;
   bridgeService: BridgeService;
   antigravityManager: AntigravityManager;
+  gitService?: GitService;
 }
 
 export class Orchestrator extends EventEmitter {
   private dbService: DatabaseService;
   private bridgeService: BridgeService;
   private antigravityManager: AntigravityManager;
+  private gitService?: GitService;
   private queue: TaskQueue;
   private dispatcher: TaskDispatcher;
   private publisher: TaskResultPublisher;
@@ -30,12 +33,14 @@ export class Orchestrator extends EventEmitter {
     this.dbService = options.dbService;
     this.bridgeService = options.bridgeService;
     this.antigravityManager = options.antigravityManager;
+    this.gitService = options.gitService;
 
     this.queue = new TaskQueue(this.dbService);
     this.dispatcher = new TaskDispatcher({
       dbService: this.dbService,
       queue: this.queue,
       antigravityManager: this.antigravityManager,
+      gitService: this.gitService,
     });
     this.publisher = new TaskResultPublisher(
       this.bridgeService.getBridgeRoot(),

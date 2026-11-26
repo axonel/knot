@@ -197,7 +197,7 @@ function createWindow(): void {
   });
 
   const iconPath = resolveIconPath();
-  const preloadPath = path.join(__dirname, '../preload/index.js');
+  const preloadPath = path.join(__dirname, '../preload/index.cjs');
   const preloadExists = fs.existsSync(preloadPath);
 
   if (!preloadExists) {

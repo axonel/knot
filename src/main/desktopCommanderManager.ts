@@ -310,7 +310,9 @@ export class DesktopCommanderManager extends EventEmitter {
       lower.includes('session active') ||
       lower.includes('listening on') ||
       lower.includes('mcp server initialized') ||
-      lower.includes('remote device active')
+      lower.includes('remote device active') ||
+      lower.includes('status: online') ||
+      lower.includes('device status set to online')
     ) {
       if (!this.connectionVerified || this.connectionState !== 'connected') {
         this.connectionVerified = true;

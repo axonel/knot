@@ -6,7 +6,7 @@ import electronPath from 'electron';
 function startProduction() {
   const mainPath = path.resolve(import.meta.dirname, '../dist/main/index.js');
   const rendererPath = path.resolve(import.meta.dirname, '../dist/renderer/index.html');
-  const preloadPath = path.resolve(import.meta.dirname, '../dist/preload/index.js');
+  const preloadPath = path.resolve(import.meta.dirname, '../dist/preload/index.cjs');
 
   if (!fs.existsSync(mainPath) || !fs.existsSync(rendererPath) || !fs.existsSync(preloadPath)) {
     console.log('[Knot Start] Build artifacts missing. Running npm run build first...');

@@ -486,11 +486,11 @@ export class ReconciliationService {
         pendingResultsPublicationCount: 0,
       },
       reconciliation: {
-        lastReconciliationAt: lastReport?.reconciledAt || null,
-        lastDurationMs: lastReport?.durationMs || null,
-        issuesDetectedTotal: lastReport?.issuesDetected || 0,
-        issuesRepairedTotal: lastReport?.issuesRepaired || 0,
-        lastReport: lastReport || null,
+        lastReconciliationAt: lastReport?.reconciledAt ?? null,
+        lastDurationMs: lastReport?.durationMs ?? null,
+        issuesDetectedTotal: lastReport?.issuesDetected ?? 0,
+        issuesRepairedTotal: lastReport?.issuesRepaired ?? 0,
+        lastReport: lastReport ?? null,
       },
     };
   }

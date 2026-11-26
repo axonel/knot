@@ -121,7 +121,7 @@ jobs:
           echo "Verifying generated distribution assets..."
           test -f dist/renderer/index.html || { echo "❌ Missing dist/renderer/index.html"; exit 1; }
           test -f dist/main/index.js || { echo "❌ Missing dist/main/index.js"; exit 1; }
-          test -f dist/preload/index.js || { echo "❌ Missing dist/preload/index.js"; exit 1; }
+          test -f dist/preload/index.cjs || { echo "❌ Missing dist/preload/index.cjs"; exit 1; }
           echo "✅ All expected bundle entrypoints verified."
 
       - name: Upload build artifacts

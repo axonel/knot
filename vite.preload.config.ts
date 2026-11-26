@@ -10,8 +10,8 @@ export default defineConfig({
     ssr: true,
     lib: {
       entry: path.resolve(import.meta.dirname, 'src/preload/index.ts'),
-      formats: ['es'],
-      fileName: () => 'index.js',
+      formats: ['cjs'],
+      fileName: () => 'index.cjs',
     },
     rollupOptions: {
       external: [
@@ -19,6 +19,10 @@ export default defineConfig({
         ...builtinModules,
         ...builtinModules.map((m) => `node:${m}`),
       ],
+      output: {
+        format: 'cjs',
+        entryFileNames: 'index.cjs',
+      },
     },
   },
   resolve: {

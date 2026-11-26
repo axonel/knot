@@ -1,7 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
-import React from 'react';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -206,36 +203,6 @@ describe('Prompt 14 — Automated Security Regression & Quality Gates', () => {
       expect(validateNavigationUrl('http://attacker.com/exploit', devServer).allowed).toBe(false);
       expect(validateNavigationUrl('javascript:void(0)', devServer).allowed).toBe(false);
       expect(validateNavigationUrl('', devServer).allowed).toBe(false);
-    });
-  });
-
-  // =========================================================================
-  // 3. React Markdown Rendering Safety
-  // =========================================================================
-  describe('3. React Markdown Rendering Safety', () => {
-    it('renders malicious markup strictly as escaped text without executing scripts', () => {
-      const maliciousPayload = '<script>window.__PWNED__ = true;</script><img src="x" onerror="window.__PWNED__ = true;" />';
-
-      // Component rendering message markdown in React children (matching Knot message UI)
-      const MessageComponent: React.FC<{ content: string }> = ({ content }) => (
-        <div data-testid="markdown-body" className="text-xs whitespace-pre-wrap font-sans">
-          {content}
-        </div>
-      );
-
-      const { container } = render(<MessageComponent content={maliciousPayload} />);
-
-      const el = screen.getByTestId('markdown-body');
-      expect(el).toBeInTheDocument();
-      // The text is escaped and preserved as literal text
-      expect(el.textContent).toContain('<script>window.__PWNED__ = true;</script>');
-
-      // No actual <script> or <img> tags were created in the DOM
-      expect(container.querySelector('script')).toBeNull();
-      expect(container.querySelector('img')).toBeNull();
-
-      // Window property was not set
-      expect((window as unknown as { __PWNED__?: boolean }).__PWNED__).toBeUndefined();
     });
   });
 

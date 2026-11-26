@@ -30,7 +30,12 @@ describe('Linux Desktop Integration & Packaging', () => {
         expect(out).toBe('');
       } catch (err: unknown) {
         // If desktop-file-validate is not installed on the system (e.g. headless CI container), skip gracefully
-        if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ENOENT') {
+        if (
+          err &&
+          typeof err === 'object' &&
+          (('code' in err && (err as { code: string }).code === 'ENOENT') ||
+            ('status' in err && (err as { status: number }).status === 127))
+        ) {
           return;
         }
         if (err && typeof err === 'object' && 'status' in err) {

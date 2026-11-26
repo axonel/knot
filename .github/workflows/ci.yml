@@ -71,7 +71,7 @@ jobs:
 
       - name: Run test suite with JUnit and Coverage
         run: |
-          npx vitest run --exclude "**/antigravity.smoke.test.ts" \
+          xvfb-run --auto-servernum -- npx vitest run --exclude "**/antigravity.smoke.test.ts" \
             --reporter=default \
             --reporter=junit \
             --outputFile=test-results.xml \

@@ -338,30 +338,26 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                       >
                         Deleted
                       </button>
-                      {inspection.summary.stagedCount > 0 && (
-                        <button
-                          onClick={() => setActiveFilter('staged')}
-                          className={`px-1.5 py-0.5 rounded border transition-colors ${
-                            activeFilter === 'staged'
-                              ? 'bg-[#004E72] text-[#F9F9F9] border-[#004E72]'
-                              : 'bg-[#090B0D] text-[#F9F9F9]/60 border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
-                          }`}
-                        >
-                          Staged ({inspection.summary.stagedCount})
-                        </button>
-                      )}
-                      {inspection.summary.unstagedCount > 0 && (
-                        <button
-                          onClick={() => setActiveFilter('unstaged')}
-                          className={`px-1.5 py-0.5 rounded border transition-colors ${
-                            activeFilter === 'unstaged'
-                              ? 'bg-[#004E72] text-[#F9F9F9] border-[#004E72]'
-                              : 'bg-[#090B0D] text-[#F9F9F9]/60 border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
-                          }`}
-                        >
-                          Unstaged ({inspection.summary.unstagedCount})
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setActiveFilter('staged')}
+                        className={`px-1.5 py-0.5 rounded border transition-colors ${
+                          activeFilter === 'staged'
+                            ? 'bg-[#004E72] text-[#F9F9F9] border-[#004E72]'
+                            : 'bg-[#090B0D] text-[#F9F9F9]/60 border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
+                        }`}
+                      >
+                        Staged ({inspection.summary.stagedCount})
+                      </button>
+                      <button
+                        onClick={() => setActiveFilter('unstaged')}
+                        className={`px-1.5 py-0.5 rounded border transition-colors ${
+                          activeFilter === 'unstaged'
+                            ? 'bg-[#004E72] text-[#F9F9F9] border-[#004E72]'
+                            : 'bg-[#090B0D] text-[#F9F9F9]/60 border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
+                        }`}
+                      >
+                        Unstaged ({inspection.summary.unstagedCount})
+                      </button>
                       {inspection.summary.uncertainCount > 0 && (
                         <button
                           onClick={() => setActiveFilter('uncertain')}

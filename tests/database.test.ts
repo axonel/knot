@@ -68,7 +68,7 @@ describe('SQLite Database Layer & Migrations', () => {
       // Open second time
       const db2 = initDatabase(dbPath);
       const count = db2.prepare('SELECT COUNT(*) as count FROM schema_migrations').get() as { count: number };
-      expect(count.count).toBe(6);
+      expect(count.count).toBe(7);
 
       // Verify migration 004 & 005 are applied
       const taskColumns = db2.prepare('PRAGMA table_info(tasks)').all() as { name: string }[];
@@ -83,6 +83,10 @@ describe('SQLite Database Layer & Migrations', () => {
       // Verify migration 006 events table columns
       const eventColumns = db2.prepare('PRAGMA table_info(events)').all() as { name: string }[];
       expect(eventColumns.some((col) => col.name === 'project_id')).toBe(true);
+
+      // Verify migration 007 reconciliation_history table
+      const recTable = db2.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = 'reconciliation_history'").get() as { name: string } | undefined;
+      expect(recTable?.name).toBe('reconciliation_history');
       expect(eventColumns.some((col) => col.name === 'correlation_id')).toBe(true);
       expect(eventColumns.some((col) => col.name === 'provenance')).toBe(true);
       expect(eventColumns.some((col) => col.name === 'source')).toBe(true);

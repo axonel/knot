@@ -480,4 +480,26 @@ For full architectural details, see 👉 **[Unified Execution Timeline & Audit T
 - **Remote Cloud Pairing**: First-time execution of Desktop Commander Remote requires completing device pairing via the browser/terminal prompt provided by `@wonderwhy-er/desktop-commander`.
 - **Desktop Commander Scope**: ChatGPT requires Desktop Commander Remote to have read/write access to both the Knot Bridge directory and project repository directory via `allowedDirectories`.
 
+---
+
+## 🛡️ Runtime Reliability, State Reconciliation & Recovery
+
+Knot incorporates a dedicated reliability architecture to guarantee predictability and consistency across crashes, process terminations, and out-of-order filesystem events:
+
+- **Strict State Transition Models**: Formal lifecycle matrix for tasks, bridge watchers, and execution processes. Invalid state jumps throw `assertLegalTaskTransition` and are rejected before execution.
+- **At-Most-Once Execution Guarantees**: `claimNextExecutable` utilizes an atomic SQLite Compare-And-Swap (CAS) transaction ensuring concurrent workers or UI triggers never execute the same task twice.
+- **Automated Startup Reconciliation**:
+  - Automatically identifies in-flight tasks trapped in `running` status across restarts and marks them `interrupted`.
+  - Preserves user approval status (`approved`) while requiring an explicit human retry before re-queueing to avoid unconfirmed partial writes.
+  - Reconciles orphaned Antigravity process records.
+  - Scans for unprocessed inbox messages and ingests them into SQLite.
+  - Automatically re-materializes missing task result markdown files in `outbox/knot/`.
+- **Context Vault Canonical Authority**:
+  - SQLite serves as the absolute canonical authority for all project decisions and technical constraints.
+  - Re-materializes missing on-disk context markdown files automatically.
+  - Continuously computes SHA-256 hashes to detect external on-disk drift and flags conflicts without silently corrupting or overwriting SQLite data.
+- **Bounded Process Termination**: Antigravity child processes receive `stdin.end()` and `SIGTERM` with a 3000ms bounded timeout race before issuing fallback `SIGKILL`.
+- **Interactive Reliability Diagnostics View**: Built-in modal in the workspace header displays real-time health across SQLite, filesystem bridge watchers, and task queues, with one-click manual state reconciliation.
+
+
 

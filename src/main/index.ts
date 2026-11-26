@@ -9,6 +9,7 @@ import { BridgeService } from './bridge/index.js';
 import { AntigravityManager } from './antigravity/index.js';
 import { Orchestrator } from './orchestration/index.js';
 import { GitService } from './git/gitService.js';
+import { ReconciliationService } from './reliability/index.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -32,6 +33,7 @@ let bridgeService: BridgeService | null = null;
 let antigravityManager: AntigravityManager | null = null;
 let orchestrator: Orchestrator | null = null;
 let gitService: GitService | null = null;
+let reconciliationService: ReconciliationService | null = null;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -785,6 +787,17 @@ ipcMain.handle('context:getManifest', (_event, projectId: string) => {
   return bridgeService.getContextManifest(projectId);
 });
 
+// Reliability & State Reconciliation IPC handlers
+ipcMain.handle('reliability:getDiagnostics', async () => {
+  if (!reconciliationService) throw new Error('Reconciliation service not initialized');
+  return await reconciliationService.getDiagnostics();
+});
+
+ipcMain.handle('reliability:reconcile', async () => {
+  if (!reconciliationService) throw new Error('Reconciliation service not initialized');
+  return await reconciliationService.reconcile();
+});
+
 // App lifecycle & shutdown cleanup
 app.on('before-quit', async (event) => {
   logger.info('Application received before-quit event. Initiating clean termination.');
@@ -801,7 +814,7 @@ app.on('before-quit', async (event) => {
 
   try {
     if (antigravityManager) {
-      await antigravityManager.cleanup();
+      await antigravityManager.cleanup(3000);
       logger.info('Antigravity processes cleaned up.');
     }
   } catch (agyErr) {
@@ -916,6 +929,24 @@ if (gotTheLock) {
 
     orchestrator.start();
     logger.info('Orchestrator successfully initialized.');
+
+    reconciliationService = new ReconciliationService({
+      dbService,
+      bridgeService,
+      antigravityManager,
+    });
+    logger.info('Reconciliation service successfully initialized.');
+
+    // Run startup state reconciliation to recover interrupted tasks and ensure mailbox/context integrity
+    reconciliationService.reconcile().then((report) => {
+      logger.info('Startup reconciliation completed successfully.', {
+        durationMs: report.durationMs,
+        issuesDetected: report.issuesDetected,
+        issuesRepaired: report.issuesRepaired,
+      });
+    }).catch((reconcileErr) => {
+      logger.error('Startup reconciliation failed', reconcileErr);
+    });
   } catch (err) {
     logger.error('Failed to initialize services at startup', err);
   }

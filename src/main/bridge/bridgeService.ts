@@ -26,7 +26,7 @@ import type {
   BridgeMessageType,
   MessageSender,
 } from './types.js';
-import type { Message, Session, Task, ContextDocument, ContextManifest } from '../../shared/types.js';
+import type { Message, Session, Task, ContextDocument, ContextManifest, BridgeLifecycleState } from '../../shared/types.js';
 
 export interface BridgeServiceOptions {
   customBridgeRoot?: string;
@@ -48,8 +48,10 @@ export class BridgeService {
   private inboundListeners = new Set<(message: ParsedBridgeMessage) => Promise<void> | void>();
   private lastInboundMessage: { id: string; timestamp: string; sender: string } | null = null;
   private lastOutboundMessage: { id: string; timestamp: string; sender: string } | null = null;
+  private lifecycleState: BridgeLifecycleState = 'not_initialized';
 
   constructor(options: BridgeServiceOptions) {
+    this.lifecycleState = 'initializing';
     this.bridgeRoot = resolveBridgeRoot(options.customBridgeRoot);
     this.dbService = options.dbService;
     this.commanderManager = options.commanderManager;
@@ -61,9 +63,24 @@ export class BridgeService {
     this.watcher = new InboxWatcher({
       onMessageAccepted: (msg) => this.handleInboundAccepted(msg),
       onMessageRejected: (rej) => this.handleInboundRejected(rej),
+      onError: (err) => this.handleWatcherError(err),
     });
 
     this.syncWorkspaceIndex();
+    this.lifecycleState = 'watching';
+  }
+
+  public getLifecycleState(): BridgeLifecycleState {
+    return this.lifecycleState;
+  }
+
+  private handleWatcherError(error: Error): void {
+    console.error('[BridgeService] Watcher degraded due to error:', error);
+    this.lifecycleState = 'degraded';
+    this.emitEvent('error', {
+      source: 'watcher',
+      error: error.message,
+    });
   }
 
   public getBridgeRoot(): string {
@@ -896,6 +913,7 @@ export class BridgeService {
   }
 
   public async close(): Promise<void> {
+    this.lifecycleState = 'stopped';
     await this.watcher.close();
     this.eventListeners.clear();
     this.inboundListeners.clear();

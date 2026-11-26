@@ -493,5 +493,32 @@ For the comprehensive specification, see 👉 **[Unified Execution Timeline & Au
 4. **Visual Inspection**:
    - Integrated `UnifiedTimelinePanel` accessible via the central panel view switcher (`Conversation` / `Context Vault` / `Timeline`).
 
+---
+
+## 9. Runtime Reliability, State Reconciliation & Recovery
+
+Knot guarantees predictable behavior and data integrity across process crashes, unexpected halts, and out-of-order filesystem events.
+
+For the comprehensive specification, see 👉 **[Runtime Reliability & Recovery](reliability-and-recovery.md)**.
+
+### Highlights
+
+1. **Strict Legal Transition Enforcement**:
+   - Task state transitions are strictly governed by `LEGAL_TASK_TRANSITIONS`. Invalid state mutations throw errors before execution.
+2. **At-Most-Once Execution (Atomic CAS)**:
+   - `claimNextExecutable` executes an atomic SQL Compare-and-Swap claim (`status = 'queued' AND approval_status = 'approved' -> status = 'running'`). No two workers can ever claim or execute the same task.
+3. **Automated State Reconciliation**:
+   - Automatically executed on startup and available on-demand via IPC.
+   - Recovers in-flight tasks trapped in `running` to `interrupted`, logging an audit trail event while preserving approval gates. Does not auto-re-execute without user retry.
+   - Detects on-disk context file loss and re-materializes files from canonical SQLite records.
+   - Detects on-disk context drift via SHA-256 and alerts without overwriting canonical database records.
+   - Re-materializes missing task result markdown files in `outbox/knot/`.
+   - Re-processes un-ingested files in `inbox/chatgpt/`.
+4. **Bounded Process Termination**:
+   - Child processes receive graceful shutdown signals (`stdin.end()`, `SIGTERM`) with a 3000ms bounded timeout before fallback `SIGKILL`.
+5. **Interactive Reliability Diagnostics**:
+   - Dedicated `ReliabilityModal` in the workspace toolbar exposes live subsystem health and manual state reconciliation.
+
+
 
 

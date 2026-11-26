@@ -16,6 +16,7 @@ export interface InboxWatcherHandlers {
     projectId?: string;
     sessionId?: string;
   }) => Promise<void> | void;
+  onError?: (error: Error) => void;
 }
 
 export class InboxWatcher {
@@ -51,6 +52,11 @@ export class InboxWatcher {
 
       this.watcher.on('add', (filePath) => this.handleFile(filePath));
       this.watcher.on('change', (filePath) => this.handleFile(filePath));
+      this.watcher.on('error', (err) => {
+        const error = err instanceof Error ? err : new Error(String(err));
+        console.error('[InboxWatcher] File watcher error:', error);
+        this.handlers.onError?.(error);
+      });
     } else {
       this.watcher.add(inboxDir);
     }

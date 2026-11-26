@@ -9,6 +9,7 @@ import {
   FolderGit2,
   BookOpen,
   Clock,
+  Wrench,
 } from 'lucide-react';
 import type {
   Project,
@@ -24,6 +25,7 @@ import { ChatGptActivityPanel } from './ChatGptActivityPanel.js';
 import { AntigravityExecutionPanel } from './AntigravityExecutionPanel.js';
 import { ContextVaultPanel } from './ContextVaultPanel.js';
 import { UnifiedTimelinePanel } from './UnifiedTimelinePanel.js';
+import { ReliabilityModal } from './ReliabilityModal.js';
 
 export const CollaborationWorkspace: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -47,6 +49,7 @@ export const CollaborationWorkspace: React.FC = () => {
   // Modals
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
+  const [showReliabilityModal, setShowReliabilityModal] = useState(false);
   const [modalProjectName, setModalProjectName] = useState('');
   const [modalRepoPath, setModalRepoPath] = useState('');
   const [modalSessionTitle, setModalSessionTitle] = useState('');
@@ -280,6 +283,15 @@ export const CollaborationWorkspace: React.FC = () => {
           {/* Panel Toggle Actions */}
           <div className="flex items-center gap-1.5 shrink-0">
             <button
+              onClick={() => setShowReliabilityModal(true)}
+              title="Runtime Reliability & Recovery Diagnostics"
+              className="px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all bg-[#090B0D] text-[#F9F9F9]/80 border border-[#F9F9F9]/10 hover:text-[#F9F9F9] hover:border-[#F9F9F9]/30"
+            >
+              <Wrench size={12} className="text-[#FF6E42]" />
+              <span className="hidden sm:inline">Reliability</span>
+            </button>
+
+            <button
               onClick={() => setShowDiagnostic((v) => !v)}
               title="Toggle Directory Access Diagnostic"
               className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all ${
@@ -500,6 +512,12 @@ export const CollaborationWorkspace: React.FC = () => {
           </form>
         </div>
       )}
+
+      {/* Reliability Diagnostics Modal */}
+      <ReliabilityModal
+        isOpen={showReliabilityModal}
+        onClose={() => setShowReliabilityModal(false)}
+      />
     </div>
   );
 };

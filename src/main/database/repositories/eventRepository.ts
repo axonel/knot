@@ -178,9 +178,10 @@ export class EventRepository {
         data_json, event_timestamp, created_at
       )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO NOTHING
     `);
 
-    stmt.run(
+    const info = stmt.run(
       eventId,
       projectId,
       data.sessionId || null,
@@ -196,6 +197,14 @@ export class EventRepository {
       eventTimestamp,
       now
     );
+
+    if (info.changes === 0) {
+      // Event already inserted concurrently with this ID
+      const existingConflict = this.get(eventId);
+      if (existingConflict) {
+        return existingConflict;
+      }
+    }
 
     return {
       id: eventId,
@@ -452,9 +461,13 @@ export class EventRepository {
       task.approvalStatus === 'approved' ||
       approvalEvents.some((e) => e.eventType === 'approval_granted' || e.eventType === 'task_approved');
 
-    const approverEvent = approvalEvents.find(
-      (e) => e.eventType === 'approval_granted' || e.eventType === 'task_approved'
-    );
+    const approverEvent =
+      approvalEvents.find(
+        (e) => (e.eventType === 'approval_granted' || e.eventType === 'task_approved') && Boolean(e.data?.approvedBy)
+      ) ||
+      approvalEvents.find(
+        (e) => e.eventType === 'approval_granted' || e.eventType === 'task_approved'
+      );
     const approver = approverEvent
       ? (approverEvent.data?.approvedBy as string) ||
         (approverEvent.data?.actor as string) ||

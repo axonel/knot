@@ -21,6 +21,7 @@ export class TaskDispatcher extends EventEmitter {
   private gitService?: GitService;
   private dispatchingSessions = new Set<string>();
   private pendingTimeouts = new Set<NodeJS.Timeout>();
+  private acceptingTasks = true;
 
   public destroy(): void {
     for (const timer of this.pendingTimeouts) {
@@ -28,6 +29,11 @@ export class TaskDispatcher extends EventEmitter {
     }
     this.pendingTimeouts.clear();
     this.removeAllListeners();
+  }
+
+  public stop(): void {
+    this.acceptingTasks = false;
+    this.destroy();
   }
 
   constructor(options: TaskDispatcherOptions) {
@@ -40,31 +46,27 @@ export class TaskDispatcher extends EventEmitter {
 
   /**
    * Attempts to dispatch the next ready and approved task for a given session.
-   * Enforces FIFO ordering, session concurrency of 1, and safety approval checks.
+   * Atomically claims the task using compare-and-swap, enforcing FIFO ordering,
+   * session concurrency of 1, and safety approval checks.
    */
   public async dispatchNext(sessionId: string): Promise<Task | null> {
+    if (!this.acceptingTasks) {
+      return null;
+    }
+
     if (this.dispatchingSessions.has(sessionId)) {
-      return null;
-    }
-
-    const running = this.queue.getRunningTask(sessionId);
-    if (running) {
-      return null;
-    }
-
-    const candidate = this.queue.getNextExecutableTask(sessionId);
-    if (!candidate) {
-      return null;
-    }
-
-    if (candidate.approvalStatus !== 'approved') {
       return null;
     }
 
     this.dispatchingSessions.add(sessionId);
 
     try {
-      return await this.executeTask(candidate);
+      const claimed = this.queue.claimNextExecutable(sessionId);
+      if (!claimed) {
+        return null;
+      }
+
+      return await this.executeTask(claimed);
     } finally {
       this.dispatchingSessions.delete(sessionId);
     }

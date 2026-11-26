@@ -480,16 +480,33 @@ export class AntigravityManager extends EventEmitter {
     return this.dbService.messages.listBySession(sessionId, { limit: 100 });
   }
 
-  public async cleanup(): Promise<void> {
+  public async cleanup(timeoutMs = 3000): Promise<void> {
     const stopPromises: Promise<void>[] = [];
     for (const [sessionId, proc] of this.activeProcesses.entries()) {
       stopPromises.push(
         proc.stop().then(() => {
           this.dbService.agentSessions.updateStatusBySession(sessionId, 'antigravity', 'stopped', 0);
+        }).catch((err) => {
+          console.error(`[AntigravityManager] Error stopping process for session ${sessionId}:`, err);
         })
       );
     }
-    await Promise.all(stopPromises);
+
+    const allStopped = Promise.all(stopPromises);
+    const timeout = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        for (const proc of this.activeProcesses.values()) {
+          try {
+            proc.interrupt();
+          } catch {
+            // ignore
+          }
+        }
+        resolve();
+      }, timeoutMs);
+    });
+
+    await Promise.race([allStopped, timeout]);
     this.activeProcesses.clear();
     this.activeTaskBySession.clear();
   }

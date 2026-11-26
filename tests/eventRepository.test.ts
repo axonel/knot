@@ -236,6 +236,10 @@ describe('EventRepository — Unified Execution Timeline & Audit Trail', () => {
     });
 
     // 5. Execution
+    dbService.tasks.updateExecution(taskId, {
+      status: 'running',
+      dispatchedAt: t3.toISOString(),
+    });
     dbService.events.append({
       sessionId,
       taskId,

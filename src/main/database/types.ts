@@ -8,6 +8,7 @@ export type TaskStatus =
   | 'succeeded'
   | 'failed'
   | 'cancelled'
+  | 'interrupted'
   | 'needs_attention';
 
 export type MessageSender = 'user' | 'chatgpt' | 'antigravity' | 'system';
@@ -157,3 +158,15 @@ export interface ContextConflictRecord {
   created_at: string;
 }
 
+export interface ReconciliationHistoryRecord {
+  id: string;
+  reconciled_at: string;
+  duration_ms: number;
+  tasks_reconciled: number;
+  bridge_files_reconciled: number;
+  context_docs_reconciled: number;
+  results_reconciled: number;
+  issues_detected: number;
+  issues_repaired: number;
+  details_json: string | null;
+}

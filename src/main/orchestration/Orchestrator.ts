@@ -193,6 +193,7 @@ export class Orchestrator extends EventEmitter {
     if (this.unsubscribeBridgeInbound) {
       this.unsubscribeBridgeInbound();
     }
+    this.dispatcher.stop();
     this.removeAllListeners();
   }
 }

@@ -275,6 +275,36 @@ function createMockKnotApi() {
       getHandoff: vi.fn().mockResolvedValue(null),
       getManifest: vi.fn().mockResolvedValue(null),
     },
+    reliability: {
+      getDiagnostics: vi.fn().mockResolvedValue({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        database: { available: true, path: ':memory:', version: 7, walMode: true, busyTimeout: 5000 },
+        bridge: { status: 'watching', activeWatchersCount: 1, watchedPaths: [], pendingInboundCount: 0, rejectedCount: 0 },
+        orchestration: { activeProcessesCount: 0, runningTasksCount: 0, queuedTasksCount: 0, awaitingApprovalCount: 0, interruptedTasksCount: 0, pendingResultsPublicationCount: 0 },
+        reconciliation: { lastReconciliationAt: new Date().toISOString(), lastDurationMs: 5, issuesDetectedTotal: 0, issuesRepairedTotal: 0 },
+      }),
+      reconcile: vi.fn().mockResolvedValue({
+        id: 'mock-reconciliation',
+        reconciledAt: new Date().toISOString(),
+        durationMs: 5,
+        tasksReconciled: 0,
+        bridgeFilesReconciled: 0,
+        contextDocsReconciled: 0,
+        resultsReconciled: 0,
+        issuesDetected: 0,
+        issuesRepaired: 0,
+        details: {
+          interruptedTasksRecovered: [],
+          archivedTasksCancelled: [],
+          missedBridgeMessagesProcessed: [],
+          reMaterializedContextFiles: [],
+          contextDriftConflictsDetected: [],
+          reMaterializedResultFiles: [],
+          errors: [],
+        },
+      }),
+    },
   };
 }
 

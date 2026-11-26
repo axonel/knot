@@ -169,6 +169,12 @@ const api: KnotApi = {
     getHandoff: (sessionId: string) => ipcRenderer.invoke('context:getHandoff', sessionId),
     getManifest: (projectId: string) => ipcRenderer.invoke('context:getManifest', projectId),
   },
+
+  // Reliability & State Reconciliation API
+  reliability: {
+    getDiagnostics: () => ipcRenderer.invoke('reliability:getDiagnostics'),
+    reconcile: () => ipcRenderer.invoke('reliability:reconcile'),
+  },
 };
 
 contextBridge.exposeInMainWorld('knotApi', api);

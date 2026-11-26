@@ -55,6 +55,14 @@ export class TaskQueue extends EventEmitter {
   }
 
   /**
+   * Atomically claims the next executable task for a given session.
+   * Guarantees race-safe atomic dispatch under concurrent callers.
+   */
+  public claimNextExecutable(sessionId: string): Task | null {
+    return this.dbService.tasks.claimNextExecutable(sessionId);
+  }
+
+  /**
    * Retrieves the next executable task for a given session.
    * Must have status 'queued' and approvalStatus 'approved'.
    */

@@ -1,6 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import type { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskGitBoundary, TaskContextReference } from '../../../shared/types.js';
+import { assertLegalTaskTransition } from '../../../shared/taskStateModel.js';
 import type { TaskRecord } from '../types.js';
 
 export class TaskRepository {
@@ -215,10 +216,65 @@ export class TaskRepository {
     return rows.map((r) => this.mapRow(r));
   }
 
+  /**
+   * Atomically claims the next executable task for a session using compare-and-swap.
+   * Guarantees that at most one worker can claim and transition the task to 'running'.
+   * Enforces:
+   * 1. Session must not already have a task in 'running' state.
+   * 2. Candidate task must be in 'queued' status with approval_status = 'approved'.
+   * 3. Highest priority first (urgent > high > normal > low), then FIFO by created_at.
+   */
+  public claimNextExecutable(sessionId: string): Task | null {
+    // Check if session already has a running task
+    const running = this.db.prepare("SELECT id FROM tasks WHERE session_id = ? AND status = 'running'").get(sessionId);
+    if (running) {
+      return null;
+    }
+
+    // Find next candidate in deterministic priority order
+    const candidateQuery = `
+      SELECT id FROM tasks
+      WHERE session_id = ? AND status = 'queued' AND approval_status = 'approved'
+      ORDER BY
+        CASE priority
+          WHEN 'urgent' THEN 1
+          WHEN 'high' THEN 2
+          WHEN 'normal' THEN 3
+          WHEN 'low' THEN 4
+          ELSE 5
+        END ASC,
+        created_at ASC
+      LIMIT 1
+    `;
+    const candidate = this.db.prepare(candidateQuery).get(sessionId) as { id: string } | undefined;
+    if (!candidate) {
+      return null;
+    }
+
+    // Atomic compare-and-swap claim
+    const now = new Date().toISOString();
+    const claimStmt = this.db.prepare(`
+      UPDATE tasks
+      SET status = 'running', dispatched_at = ?, started_at = COALESCE(started_at, ?), updated_at = ?
+      WHERE id = ? AND status = 'queued' AND approval_status = 'approved'
+    `);
+    const info = claimStmt.run(now, now, now, candidate.id);
+    if (info.changes === 0) {
+      // Lost race to another worker
+      return null;
+    }
+
+    return this.get(candidate.id);
+  }
+
   public updateStatus(id: string, status: TaskStatus): Task {
     const existing = this.get(id);
     if (!existing) {
       throw new Error(`Task not found with id: ${id}`);
+    }
+
+    if (status !== existing.status) {
+      assertLegalTaskTransition(id, existing.status, status);
     }
 
     const now = new Date().toISOString();
@@ -227,7 +283,7 @@ export class TaskRepository {
 
     if (status === 'running' && !startedAt) {
       startedAt = now;
-    } else if (['succeeded', 'failed', 'cancelled'].includes(status) && !completedAt) {
+    } else if (['succeeded', 'failed', 'cancelled', 'interrupted'].includes(status) && !completedAt) {
       completedAt = now;
     }
 
@@ -266,14 +322,18 @@ export class TaskRepository {
       throw new Error(`Task not found with id: ${id}`);
     }
 
-    const now = new Date().toISOString();
     const status = updates.status !== undefined ? updates.status : existing.status;
+    if (updates.status !== undefined && updates.status !== existing.status) {
+      assertLegalTaskTransition(id, existing.status, updates.status);
+    }
+
+    const now = new Date().toISOString();
     let startedAt = existing.startedAt;
     let completedAt = updates.completedAt !== undefined ? updates.completedAt : existing.completedAt;
 
     if (status === 'running' && !startedAt) {
       startedAt = now;
-    } else if (['succeeded', 'failed', 'cancelled'].includes(status) && !completedAt) {
+    } else if (['succeeded', 'failed', 'cancelled', 'interrupted'].includes(status) && !completedAt) {
       completedAt = now;
     }
 
@@ -335,6 +395,9 @@ export class TaskRepository {
     const description = data.description !== undefined ? data.description : existing.description;
     const assignedTo = data.assignedTo !== undefined ? data.assignedTo : existing.assignedTo;
     const status = data.status !== undefined ? data.status : existing.status;
+    if (data.status !== undefined && data.status !== existing.status) {
+      assertLegalTaskTransition(id, existing.status, data.status);
+    }
     const approvalStatus = data.approvalStatus !== undefined ? data.approvalStatus : existing.approvalStatus;
     const payload = data.payload !== undefined ? data.payload : existing.payload;
     const payloadJson = payload ? JSON.stringify(payload) : null;
@@ -358,7 +421,7 @@ export class TaskRepository {
 
     if (status === 'running' && !startedAt) {
       startedAt = now;
-    } else if (['succeeded', 'failed', 'cancelled'].includes(status) && !completedAt) {
+    } else if (['succeeded', 'failed', 'cancelled', 'interrupted'].includes(status) && !completedAt) {
       completedAt = now;
     }
 

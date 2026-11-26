@@ -109,6 +109,7 @@ export type TaskStatus =
   | 'succeeded'
   | 'failed'
   | 'cancelled'
+  | 'interrupted'
   | 'needs_attention';
 
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
@@ -515,6 +516,9 @@ export interface KnotApi {
 
   // Context Vault API
   context: ContextApi;
+
+  // Reliability & Recovery Diagnostics API
+  reliability: ReliabilityApi;
 }
 
 export interface OrchestrationEvent {
@@ -588,12 +592,24 @@ export type AntigravityProcessState =
   | 'unavailable'
   | 'stopped'
   | 'starting'
+  | 'running'
+  | 'waiting_for_input'
   | 'ready'
   | 'thinking'
   | 'stopping'
   | 'authentication_required'
   | 'needs_attention'
+  | 'failed'
+  | 'interrupted'
   | 'error';
+
+export type BridgeLifecycleState =
+  | 'not_initialized'
+  | 'initializing'
+  | 'watching'
+  | 'degraded'
+  | 'stopped'
+  | 'failed';
 
 export interface AntigravityCapabilities {
   installed: boolean;
@@ -954,6 +970,70 @@ export interface ContextApi {
   getHandoff: (sessionId: string) => Promise<ContextDocument | null>;
   getManifest: (projectId: string) => Promise<ContextManifest | null>;
 }
+
+export interface ReliabilityDiagnostics {
+  status: 'healthy' | 'degraded' | 'failed' | 'unknown';
+  timestamp: string;
+  database: {
+    available: boolean;
+    path: string;
+    version: number;
+    walMode: boolean;
+    busyTimeout: number;
+    error?: string | null;
+  };
+  bridge: {
+    status: BridgeLifecycleState;
+    activeWatchersCount: number;
+    watchedPaths: string[];
+    pendingInboundCount: number;
+    rejectedCount: number;
+    lastError?: string | null;
+  };
+  orchestration: {
+    activeProcessesCount: number;
+    runningTasksCount: number;
+    queuedTasksCount: number;
+    awaitingApprovalCount: number;
+    interruptedTasksCount: number;
+    pendingResultsPublicationCount: number;
+  };
+  reconciliation: {
+    lastReconciliationAt?: string | null;
+    lastDurationMs?: number | null;
+    issuesDetectedTotal?: number | null;
+    issuesRepairedTotal?: number | null;
+    lastReport?: ReconciliationReport | null;
+  };
+}
+
+export interface ReconciliationReport {
+  id: string;
+  reconciledAt: string;
+  durationMs: number;
+  tasksReconciled: number;
+  bridgeFilesReconciled: number;
+  contextDocsReconciled: number;
+  resultsReconciled: number;
+  issuesDetected: number;
+  issuesRepaired: number;
+  details: {
+    interruptedTasksRecovered: string[];
+    archivedTasksCancelled: string[];
+    missedBridgeMessagesProcessed: string[];
+    reMaterializedContextFiles: string[];
+    contextDriftConflictsDetected: string[];
+    reMaterializedResultFiles: string[];
+    errors: string[];
+  };
+}
+
+export interface ReliabilityApi {
+  getDiagnostics: () => Promise<ReliabilityDiagnostics>;
+  reconcile: () => Promise<ReconciliationReport>;
+}
+
+export * from './taskStateModel.js';
 
 
 

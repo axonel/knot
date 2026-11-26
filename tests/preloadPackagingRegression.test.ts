@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { spawnSync } from 'node:child_process';
+import { spawnSync, execSync } from 'node:child_process';
 import electronPath from 'electron';
 
 describe('Packaged Preload CommonJS & Sandboxed BrowserWindow Regression Gate', () => {
@@ -10,6 +10,12 @@ describe('Packaged Preload CommonJS & Sandboxed BrowserWindow Regression Gate', 
   const preloadCjsPath = path.join(projectRoot, 'dist', 'preload', 'index.cjs');
   const mainBundlePath = path.join(projectRoot, 'dist', 'main', 'index.js');
   const mainSourcePath = path.join(projectRoot, 'src', 'main', 'index.ts');
+
+  beforeAll(() => {
+    if (!fs.existsSync(preloadCjsPath)) {
+      execSync('npm run build:preload', { cwd: projectRoot, stdio: 'inherit' });
+    }
+  });
 
   it('generates dist/preload/index.cjs as a valid CommonJS artifact', () => {
     expect(fs.existsSync(preloadCjsPath)).toBe(true);
@@ -65,6 +71,10 @@ app.whenReady().then(async () => {
       },
     });
 
+    win.webContents.on('console-message', (_event, level, message) => {
+      console.log('__RENDERER_MSG__:' + JSON.stringify({ level, message }));
+    });
+
     win.loadURL('data:text/html,<html><body><h1>Preload Test</h1></body></html>');
     await new Promise((resolve) => win.webContents.once('did-finish-load', resolve));
 
@@ -80,7 +90,10 @@ app.whenReady().then(async () => {
       })
     \`);
 
-    const statusCallResult = await win.webContents.executeJavaScript('window.knotApi.getStatus()');
+    let statusCallResult = null;
+    if (check.hasKnotApi && check.hasGetStatus) {
+      statusCallResult = await win.webContents.executeJavaScript('window.knotApi.getStatus()');
+    }
 
     console.log('__VITEST_PRELOAD_OUT__:' + JSON.stringify({ ...check, statusCallResult }));
     app.quit();

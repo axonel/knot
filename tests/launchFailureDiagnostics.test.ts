@@ -212,13 +212,13 @@ fi
         execSync('npm run build:main', { cwd: projectRoot, stdio: 'pipe' });
       }
       const electronPath = path.join(projectRoot, 'node_modules', '.bin', 'electron');
-      const res = spawnSync(electronPath, ['dist/main/index.js', '--version'], {
+      const res = spawnSync(electronPath, ['--no-sandbox', 'dist/main/index.js', '--version'], {
         cwd: projectRoot,
         encoding: 'utf-8',
       });
 
-      if (res.status !== 0 && (!process.env.DISPLAY || res.stderr?.includes('DISPLAY') || res.stderr?.includes('OzonePlatform') || res.stderr?.includes('ozone'))) {
-        return; // Headless Linux environment without display server
+      if (res.status !== 0 && (!process.env.DISPLAY || res.stderr?.includes('DISPLAY') || res.stderr?.includes('OzonePlatform') || res.stderr?.includes('ozone') || res.stderr?.includes('sandboxed') || res.stderr?.includes('sandbox'))) {
+        return; // Headless Linux environment without display server or sandbox
       }
 
       expect(res.status).toBe(0);
@@ -232,13 +232,13 @@ fi
         execSync('npm run build:main', { cwd: projectRoot, stdio: 'pipe' });
       }
       const electronPath = path.join(projectRoot, 'node_modules', '.bin', 'electron');
-      const res = spawnSync(electronPath, ['dist/main/index.js', '--help'], {
+      const res = spawnSync(electronPath, ['--no-sandbox', 'dist/main/index.js', '--help'], {
         cwd: projectRoot,
         encoding: 'utf-8',
       });
 
-      if (res.status !== 0 && (!process.env.DISPLAY || res.stderr?.includes('DISPLAY') || res.stderr?.includes('OzonePlatform') || res.stderr?.includes('ozone'))) {
-        return; // Headless Linux environment without display server
+      if (res.status !== 0 && (!process.env.DISPLAY || res.stderr?.includes('DISPLAY') || res.stderr?.includes('OzonePlatform') || res.stderr?.includes('ozone') || res.stderr?.includes('sandboxed') || res.stderr?.includes('sandbox'))) {
+        return; // Headless Linux environment without display server or sandbox
       }
 
       expect(res.status).toBe(0);

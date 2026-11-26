@@ -19,6 +19,9 @@
     "uninstall:desktop": "node scripts/uninstall-desktop.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:ci": "vitest run --exclude \"**/antigravity.smoke.test.ts\" --reporter=default --reporter=junit --outputFile=test-results.xml",
+    "test:coverage": "vitest run --coverage --exclude \"**/antigravity.smoke.test.ts\"",
+    "audit:ci": "node scripts/audit-dependencies.mjs",
     "start": "node scripts/start.js",
     "lint": "eslint src"
   },
@@ -51,6 +54,7 @@
     "@typescript-eslint/eslint-plugin": "^8.73.0",
     "@typescript-eslint/parser": "^8.73.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "@vitest/coverage-v8": "^5.1.2",
     "autoprefixer": "^10.7.0",
     "electron": "^45.4.1",
     "electron-builder": "^26.18.0",

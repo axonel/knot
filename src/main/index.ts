@@ -10,6 +10,11 @@ import { AntigravityManager } from './antigravity/index.js';
 import { Orchestrator } from './orchestration/index.js';
 import { GitService } from './git/gitService.js';
 import { ReconciliationService } from './reliability/index.js';
+import { validateNavigationUrl, validateExternalUrl } from './security/navigationSecurity.js';
+import {
+  validateIpcSender as validateIpcSenderFn,
+  isPathAllowedForOpen as isPathAllowedForOpenFn,
+} from './security/ipcSecurity.js';
 import type {
   CreateProjectInput,
   UpdateProjectInput,
@@ -220,33 +225,23 @@ function createWindow(): void {
 
   // Navigation Hardening: Restrict will-navigate to dev server or local bundle
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
-    try {
-      const parsed = new URL(navigationUrl);
-      const devUrl = process.env.VITE_DEV_SERVER_URL;
-      const isDevUrl = devUrl && navigationUrl.startsWith(devUrl);
-      const isLocalFile = parsed.protocol === 'file:';
-      if (!isDevUrl && !isLocalFile) {
-        logger.warn('Prevented untrusted navigation attempt', { navigationUrl });
-        event.preventDefault();
-      }
-    } catch {
+    const devUrl = process.env.VITE_DEV_SERVER_URL;
+    const result = validateNavigationUrl(navigationUrl, devUrl);
+    if (!result.allowed) {
+      logger.warn('Prevented untrusted navigation attempt', { navigationUrl, reason: result.reason });
       event.preventDefault();
     }
   });
 
   // Window Open Hardening: Deny child windows and restrict external URLs to http/https
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    try {
-      const parsed = new URL(url);
-      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
-        shell.openExternal(url).catch((err) => {
-          logger.error('Failed to open external URL in system browser', err);
-        });
-      } else {
-        logger.warn('Blocked opening non-HTTP(S) external URL', { url });
-      }
-    } catch {
-      logger.warn('Invalid URL passed to window open handler', { url });
+    const result = validateExternalUrl(url);
+    if (result.allowed && result.sanitizedUrl) {
+      shell.openExternal(result.sanitizedUrl).catch((err) => {
+        logger.error('Failed to open external URL in system browser', err);
+      });
+    } else {
+      logger.warn('Blocked opening invalid or non-HTTP(S) external URL', { url, reason: result.reason });
     }
     return { action: 'deny' };
   });
@@ -364,46 +359,15 @@ function createWindow(): void {
 
 // Security Boundary: Validate IPC Sender Frame to prevent unauthorized IPC invocation
 function validateIpcSender(event: Electron.IpcMainInvokeEvent): void {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    if (event.senderFrame && event.senderFrame !== mainWindow.webContents.mainFrame) {
-      logger.warn('Unauthorized IPC invocation attempt from untrusted frame', {
-        processId: event.processId,
-        frameId: event.frameId,
-      });
-      throw new Error('Forbidden: Unauthorized IPC sender frame.');
-    }
-  }
+  const mainFrame = mainWindow && !mainWindow.isDestroyed() ? mainWindow.webContents.mainFrame : null;
+  validateIpcSenderFn(event, mainFrame);
 }
 
 // Security Boundary: Validate directory open requests stay within authorized roots
 function isPathAllowedForOpen(dirPath: string): boolean {
-  if (!dirPath || typeof dirPath !== 'string') return false;
-  const resolvedTarget = path.resolve(dirPath);
-
-  // 1. Allow within bridge root
-  if (bridgeService) {
-    const bridgeRoot = path.resolve(bridgeService.getBridgeRoot());
-    const rel = path.relative(bridgeRoot, resolvedTarget);
-    if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
-      return true;
-    }
-  }
-
-  // 2. Allow within any registered project repository directory
-  if (dbService) {
-    const projects = dbService.projects.list(true);
-    for (const project of projects) {
-      if (project.repositoryPath) {
-        const repoRoot = path.resolve(project.repositoryPath);
-        const rel = path.relative(repoRoot, resolvedTarget);
-        if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return false;
+  const bridgeRoot = bridgeService?.getBridgeRoot();
+  const repoPaths = dbService?.projects.list(true).map((p) => p.repositoryPath) ?? [];
+  return isPathAllowedForOpenFn(dirPath, bridgeRoot, repoPaths);
 }
 
 // Register IPC handlers

@@ -178,3 +178,17 @@ A dedicated **Reliability Modal** (`src/renderer/components/Workspace/Reliabilit
 - **Task Telemetry**: Real-time counts of running, queued, awaiting approval, and interrupted tasks.
 - **Latest Reconciliation Report**: Duration, inspected counts, detected issues, repaired issues, and granular issue logs.
 - **Run State Reconciliation Button**: Interactive trigger to execute an immediate reconciliation pass.
+
+---
+
+## 8. Automated Reliability Verification & CI Quality Gates
+
+All failure modes, recovery paths, and concurrency controls are covered by automated regression suites and enforced by CI gates:
+
+1. **Atomic CAS Claiming Race**: Tested in `tests/reliability.test.ts` and `tests/securityRegression.test.tsx`. Simulates two simultaneous worker claims on the same queued task; verifies that exactly one succeeds and the other receives `null`.
+2. **Crash & Restart In-Flight Task Recovery**: Tested in `tests/reliability.test.ts` and `tests/securityRegression.test.tsx`. Verifies that orphaned `running` tasks are reconciled to `interrupted` with `failureReason` and approval status preserved.
+3. **Idempotent Event Ingestion**: Tested in `tests/securityRegression.test.tsx`. Verifies duplicate event IDs are safely deduplicated without throwing.
+4. **Context Drift Detection & Re-Materialization**: Tested in `tests/reliability.test.ts`. Verifies missing context markdown documents are re-materialized from SQLite authority without overwriting newer manual edits.
+5. **Bounded Process Lifecycle & SIGKILL Escalation**: Tested in `tests/desktopCommanderManager.test.ts` and `tests/antigravity.test.ts`. Validates timeout-bounded graceful termination and fallback escalation.
+
+For instructions on running these reliability tests and quality gates locally and in CI, see [`docs/ci-and-quality-gates.md`](file:///home/roonakyadav/Projects/knot/docs/ci-and-quality-gates.md).

@@ -7,6 +7,8 @@ node_modules/
 dist/
 release/
 out/
+coverage/
+test-results.xml
 
 # Environment and secrets
 .env

@@ -239,3 +239,28 @@ All data entering event audit logs, execution details, task results, diff viewer
    - Knot manages the lifecycle of the Desktop Commander process, but Desktop Commander's internal remote connection authentication and allowed directory configuration are managed independently.
 3. **Antigravity CLI Internal Logic**:
    - Knot relies on the Antigravity CLI binary adhering to its native tool permissions when invoked without bypass flags.
+
+---
+
+## 13. Automated Security Regression Suite & CI Quality Gates
+
+All security boundaries, input sanitizers, and permission controls documented in this threat model are continuously validated by Knot's automated regression pipeline and GitHub Actions CI gates:
+
+1. **Security Regression Suite (`tests/securityRegression.test.tsx`)**:
+   - **Electron IPC Sender Authorization**: Validates sender frame reference and origin (`validateIpcSender`), rejecting untrusted external domains.
+   - **Path Traversal & Safe Path Boundaries**: Confines file opening (`isPathAllowedForOpen`) to bridge root and registered repository paths.
+   - **Cross-Project & Cross-Session Isolation**: Prohibits cross-project session access (`validateCrossProjectAccess`) and cross-session task manipulation (`validateCrossSessionTaskAccess`).
+   - **Navigation & URL Guards**: Rejects non-HTTP/HTTPS schemes (`validateExternalUrl`) and external window navigations (`validateNavigationUrl`).
+   - **React Markdown Escaping**: Verifies `<script>` and event handlers in markdown content are rendered as literal text without DOM script execution.
+   - **Git Secret Omission & Traversal**: Verifies `.env`, `.pem`, and credential files are omitted from diff inspection outputs.
+   - **Tamper Detection & Content Hashing**: Validates SHA-256 hash checks (`verifyTaskContentIntegrity`) and approval revocation upon instruction modifications.
+   - **Sensitive Operation Gating**: Verifies destructive operations require user approval even when project trust is automatic.
+
+2. **Dependency Vulnerability Gate (`scripts/audit-dependencies.mjs`)**:
+   - Automated `npm audit` gate with zero-tolerance for vulnerabilities in runtime production dependencies.
+   - Enforces expiration dates and strict documentation for any accepted dev/packaging tooling exceptions.
+
+3. **Linux Packaging Verification Gate (`scripts/verify-packaging.mjs`)**:
+   - Verifies produced AppImages and unpacked binaries meet integrity standards and contain zero leaked credential or environment files.
+
+For details on running these gates and merge criteria, refer to [`docs/ci-and-quality-gates.md`](file:///home/roonakyadav/Projects/knot/docs/ci-and-quality-gates.md).

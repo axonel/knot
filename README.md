@@ -525,5 +525,52 @@ Knot incorporates a dedicated reliability architecture to guarantee predictabili
 - **Bounded Process Termination**: Antigravity child processes receive `stdin.end()` and `SIGTERM` with a 3000ms bounded timeout race before issuing fallback `SIGKILL`.
 - **Interactive Reliability Diagnostics View**: Built-in modal in the workspace header displays real-time health across SQLite, filesystem bridge watchers, and task queues, with one-click manual state reconciliation.
 
+---
+
+## 🚦 CI Pipeline, Security Regression & Quality Gates
+
+Knot enforces a multi-layer automated Continuous Integration (CI) pipeline using GitHub Actions to guarantee that every change is statically verified, unit tested, security audited, and package-validated before merging.
+
+For full architectural details, merge criteria, and the PR definition of done, see 👉 **[CI Pipeline & Quality Gates Specification](docs/ci-and-quality-gates.md)**.
+
+### Running Quality Gates Locally
+
+Developers can run all CI quality gates locally before opening a pull request:
+
+```bash
+# 1. TypeScript Static Typecheck
+npm run typecheck
+
+# 2. ESLint Static Analysis
+npm run lint
+
+# 3. Automated Dependency Security Audit
+node scripts/audit-dependencies.mjs
+
+# 4. Unit & Security Regression Test Suite
+npm test
+
+# 5. Test Suite with Coverage & JUnit XML Generation
+npm run test:coverage
+npm run test:ci
+
+# 6. Production Bundle Build (Renderer, Main, Preload)
+npm run build
+
+# 7. Linux Packaging & Distribution Integrity Gate
+npm run pack
+node scripts/verify-packaging.mjs
+```
+
+### Real Developer-Machine Integration Testing
+
+Local integration scenarios that require host binaries (e.g. real Google Antigravity `agy` CLI binary or local Git user configurations) are separated from headless CI and executed via:
+
+```bash
+./scripts/verify-real-integration.sh
+```
+
+This verification script inspects host prerequisites, tests CLI detection, runs live smoke tests (`tests/antigravity.smoke.test.ts`), and verifies distribution packaging.
+
 
 

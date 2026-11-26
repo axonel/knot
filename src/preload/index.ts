@@ -78,8 +78,12 @@ const api: KnotApi = {
 
   // Event Audit Log API
   events: {
-    list: (sessionId: string, options?: EventFilterOptions) => ipcRenderer.invoke('events:list', sessionId, options),
+    list: (sessionIdOrFilter?: string | EventFilterOptions, options?: EventFilterOptions) =>
+      ipcRenderer.invoke('events:list', sessionIdOrFilter, options),
     append: (data: AppendEventInput) => ipcRenderer.invoke('events:append', data),
+    getTaskTrace: (taskId: string) => ipcRenderer.invoke('events:getTaskTrace', taskId),
+    exportTaskTrace: (taskId: string, format: 'markdown' | 'json') =>
+      ipcRenderer.invoke('events:exportTaskTrace', taskId, format),
   },
 
   // ChatGPT ↔ Knot Filesystem Bridge API

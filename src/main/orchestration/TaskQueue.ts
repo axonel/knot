@@ -90,8 +90,25 @@ export class TaskQueue extends EventEmitter {
     this.dbService.events.append({
       sessionId: task.sessionId,
       taskId,
+      correlationId: taskId,
+      eventType: 'approval_granted',
+      actor: 'user',
+      source: 'user_ui',
+      provenance: 'user_recorded',
+      title: `Approval Granted by User: ${task.title}`,
+      severity: 'success',
+      data: { taskId },
+    });
+
+    this.dbService.events.append({
+      sessionId: task.sessionId,
+      taskId,
+      correlationId: taskId,
       eventType: 'task_approved',
       actor: 'user',
+      source: 'user_ui',
+      provenance: 'user_recorded',
+      title: `Task Approved: ${task.title}`,
       data: { taskId },
     });
 
@@ -119,8 +136,25 @@ export class TaskQueue extends EventEmitter {
     this.dbService.events.append({
       sessionId: task.sessionId,
       taskId,
+      correlationId: taskId,
+      eventType: 'approval_rejected',
+      actor: 'user',
+      source: 'user_ui',
+      provenance: 'user_recorded',
+      title: `Approval Rejected by User: ${task.title}`,
+      severity: 'error',
+      data: { taskId, reason: reason || 'Task rejected by user' },
+    });
+
+    this.dbService.events.append({
+      sessionId: task.sessionId,
+      taskId,
+      correlationId: taskId,
       eventType: 'task_rejected',
       actor: 'user',
+      source: 'user_ui',
+      provenance: 'user_recorded',
+      title: `Task Rejected: ${task.title}`,
       data: { taskId, reason: reason || 'Task rejected by user' },
     });
 
@@ -147,8 +181,13 @@ export class TaskQueue extends EventEmitter {
     this.dbService.events.append({
       sessionId: task.sessionId,
       taskId,
+      correlationId: taskId,
       eventType: 'task_cancelled',
       actor: 'user',
+      source: 'user_ui',
+      provenance: 'user_recorded',
+      title: `Task Cancelled: ${task.title}`,
+      severity: 'warning',
       data: { taskId, reason: reason || 'Task cancelled by user' },
     });
 
@@ -179,8 +218,25 @@ export class TaskQueue extends EventEmitter {
     this.dbService.events.append({
       sessionId: task.sessionId,
       taskId,
+      correlationId: taskId,
+      eventType: 'task_retry_requested',
+      actor: 'user',
+      source: 'user_ui',
+      provenance: 'user_recorded',
+      title: `Task Retry Requested: ${task.title}`,
+      severity: 'info',
+      data: { taskId, retryCount: nextRetry },
+    });
+
+    this.dbService.events.append({
+      sessionId: task.sessionId,
+      taskId,
+      correlationId: taskId,
       eventType: 'task_retried',
       actor: 'user',
+      source: 'user_ui',
+      provenance: 'user_recorded',
+      title: `Task Retried: ${task.title}`,
       data: { taskId, retryCount: nextRetry },
     });
 

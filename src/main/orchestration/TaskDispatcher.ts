@@ -144,6 +144,28 @@ export class TaskDispatcher extends EventEmitter {
     if (this.gitService) {
       try {
         gitBoundary = await this.gitService.captureTaskBoundaryStart(task.id, workingDirectory, workingDirectory);
+        if (gitBoundary) {
+          this.dbService.events.append({
+            projectId: project.id,
+            sessionId: task.sessionId,
+            taskId: task.id,
+            correlationId: task.id,
+            eventType: 'git_boundary_captured',
+            actor: 'git',
+            source: 'local_git',
+            provenance: 'git_verified',
+            title: `Git Baseline Captured: ${task.title}`,
+            data: {
+              phase: 'start',
+              branch: gitBoundary.start.branch,
+              head: gitBoundary.start.head,
+              isClean: gitBoundary.start.isClean,
+              stagedCount: gitBoundary.start.stagedFiles.length,
+              unstagedCount: gitBoundary.start.unstagedFiles.length,
+              untrackedCount: gitBoundary.start.untrackedFiles.length,
+            },
+          });
+        }
       } catch (err) {
         console.warn(`[TaskDispatcher] Could not capture Git boundary start for task "${task.id}":`, err);
       }
@@ -158,10 +180,15 @@ export class TaskDispatcher extends EventEmitter {
     });
 
     this.dbService.events.append({
+      projectId: project.id,
       sessionId: task.sessionId,
       taskId: task.id,
+      correlationId: task.id,
       eventType: 'task_dispatched',
       actor: 'knot',
+      source: 'orchestration_runtime',
+      provenance: 'knot_observed',
+      title: `Task Dispatched to Antigravity: ${task.title}`,
       data: {
         taskId: task.id,
         title: task.title,
@@ -233,80 +260,133 @@ export class TaskDispatcher extends EventEmitter {
             reportedHash,
             workingDirectory
           );
-        } catch (err) {
-          console.warn(`[TaskDispatcher] Could not capture Git boundary end for task "${task.id}":`, err);
+        if (gitBoundary && gitBoundary.end) {
+          this.dbService.events.append({
+            projectId: project.id,
+            sessionId: task.sessionId,
+            taskId: task.id,
+            correlationId: task.id,
+            eventType: 'git_boundary_captured',
+            actor: 'git',
+            source: 'local_git',
+            provenance: 'git_verified',
+            title: `Git Completion Verified: ${task.title}`,
+            data: {
+              phase: 'end',
+              branch: gitBoundary.end.branch,
+              head: gitBoundary.end.head,
+              isClean: gitBoundary.end.isClean,
+              stagedCount: gitBoundary.end.stagedFiles.length,
+              unstagedCount: gitBoundary.end.unstagedFiles.length,
+              untrackedCount: gitBoundary.end.untrackedFiles.length,
+              verifiedCommitHash: gitBoundary.verifiedCommitHash || null,
+            },
+          });
         }
+      } catch (err) {
+        console.warn(`[TaskDispatcher] Could not capture Git boundary end for task "${task.id}":`, err);
       }
+    }
 
-      // Succeeded
-      const completedAt = new Date().toISOString();
-      const succeededTask = this.dbService.tasks.updateExecution(task.id, {
-        status: 'succeeded',
-        completedAt,
-        gitBoundary,
-      });
+    // Succeeded
+    const completedAt = new Date().toISOString();
+    const succeededTask = this.dbService.tasks.updateExecution(task.id, {
+      status: 'succeeded',
+      completedAt,
+      gitBoundary,
+    });
 
-      this.dbService.events.append({
-        sessionId: task.sessionId,
+    this.dbService.events.append({
+      projectId: project.id,
+      sessionId: task.sessionId,
+      taskId: task.id,
+      correlationId: task.id,
+      eventType: 'task_completed',
+      actor: 'knot',
+      source: 'orchestration_runtime',
+      provenance: 'knot_observed',
+      title: `Task Completed: ${task.title}`,
+      severity: 'success',
+      data: {
         taskId: task.id,
-        eventType: 'task_succeeded',
-        actor: 'antigravity',
-        data: {
-          taskId: task.id,
-          completedAt,
-          gitEndHead: gitBoundary?.end?.head || null,
-          gitVerifiedCommit: gitBoundary?.verifiedCommitHash || null,
-        },
+        completedAt,
+        gitEndHead: gitBoundary?.end?.head || null,
+        gitVerifiedCommit: gitBoundary?.verifiedCommitHash || null,
+      },
+    });
+
+    this.dbService.events.append({
+      projectId: project.id,
+      sessionId: task.sessionId,
+      taskId: task.id,
+      correlationId: task.id,
+      eventType: 'task_succeeded',
+      actor: 'antigravity',
+      source: 'antigravity_cli',
+      provenance: 'antigravity_reported',
+      title: `Task Execution Succeeded: ${task.title}`,
+      severity: 'success',
+      data: {
+        taskId: task.id,
+        completedAt,
+        gitEndHead: gitBoundary?.end?.head || null,
+        gitVerifiedCommit: gitBoundary?.verifiedCommitHash || null,
+      },
+    });
+
+    this.emit('task_completed', succeededTask, turnResult);
+
+    // Trigger next task in queue for this session
+    const timer = setTimeout(() => {
+      this.pendingTimeouts.delete(timer);
+      this.dispatchNext(task.sessionId).catch((err) => {
+        if (err?.message?.includes('database is not open') || err?.code === 'ERR_INVALID_STATE') return;
+        console.error('[TaskDispatcher] Error dispatching next task:', err);
       });
+    }, 50);
+    this.pendingTimeouts.add(timer);
 
-      this.emit('task_completed', succeededTask, turnResult);
+    return succeededTask;
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    const completedAt = new Date().toISOString();
 
-      // Trigger next task in queue for this session
-      const timer = setTimeout(() => {
-        this.pendingTimeouts.delete(timer);
-        this.dispatchNext(task.sessionId).catch((err) => {
-          if (err?.message?.includes('database is not open') || err?.code === 'ERR_INVALID_STATE') return;
-          console.error('[TaskDispatcher] Error dispatching next task:', err);
-        });
-      }, 50);
-      this.pendingTimeouts.add(timer);
-
-      return succeededTask;
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      const completedAt = new Date().toISOString();
-
-      if (this.gitService && gitBoundary) {
-        try {
-          gitBoundary = await this.gitService.captureTaskBoundaryEnd(
-            gitBoundary,
-            workingDirectory,
-            null,
-            workingDirectory
-          );
-        } catch (gitErr) {
-          console.warn(`[TaskDispatcher] Could not capture Git boundary end for failed task "${task.id}":`, gitErr);
-        }
+    if (this.gitService && gitBoundary) {
+      try {
+        gitBoundary = await this.gitService.captureTaskBoundaryEnd(
+          gitBoundary,
+          workingDirectory,
+          null,
+          workingDirectory
+        );
+      } catch (gitErr) {
+        console.warn(`[TaskDispatcher] Could not capture Git boundary end for failed task "${task.id}":`, gitErr);
       }
+    }
 
-      const failedTask = this.dbService.tasks.updateExecution(task.id, {
-        status: 'failed',
-        failureReason: errorMsg,
-        completedAt,
-        gitBoundary,
-      });
+    const failedTask = this.dbService.tasks.updateExecution(task.id, {
+      status: 'failed',
+      failureReason: errorMsg,
+      completedAt,
+      gitBoundary,
+    });
 
-      this.dbService.events.append({
-        sessionId: task.sessionId,
+    this.dbService.events.append({
+      sessionId: task.sessionId,
+      taskId: task.id,
+      correlationId: task.id,
+      eventType: 'task_failed',
+      actor: 'knot',
+      source: 'orchestration_runtime',
+      provenance: 'knot_observed',
+      title: `Task Execution Failed: ${task.title}`,
+      severity: 'error',
+      data: {
         taskId: task.id,
-        eventType: 'task_failed',
-        actor: 'antigravity',
-        data: {
-          taskId: task.id,
-          error: errorMsg,
-          completedAt,
-        },
-      });
+        error: errorMsg,
+        completedAt,
+      },
+    });
 
       this.emit('task_failed', failedTask, errorMsg);
       throw err;

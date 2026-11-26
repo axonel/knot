@@ -76,11 +76,18 @@ export interface TaskRecord {
 
 export interface EventRecord {
   id: string;
-  session_id: string;
+  project_id: string | null;
+  session_id: string | null;
   task_id: string | null;
+  correlation_id: string | null;
   event_type: string;
   actor: string;
+  source: string;
+  provenance: string;
+  title: string;
+  severity: string;
   data_json: string | null;
+  event_timestamp: string;
   created_at: string;
 }
 

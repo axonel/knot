@@ -152,7 +152,7 @@ describe('DesktopCommanderManager', () => {
       });
 
       await manager.start();
-      await new Promise((r) => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 400));
 
       const status = manager.getStatus();
       expect(status.state).toBe('Error');
@@ -180,7 +180,7 @@ describe('DesktopCommanderManager', () => {
       expect(manager.getStatus().state).toBe('Running');
 
       // Wait for process to exit unexpectedly with code 137
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => setTimeout(r, 450));
 
       const status = manager.getStatus();
       expect(status.state).toBe('Error');

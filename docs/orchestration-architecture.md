@@ -472,4 +472,26 @@ For complete details, see [Project Context Vault Specification](context-manageme
    - Includes full revision history timeline and line-by-line diff comparison powered by `diffLines`.
    - Strictly built with Knot's 5-color palette: `#090B0D`, `#092634`, `#004E72`, `#FF6E42`, `#F9F9F9`.
 
+---
+
+## 8. Unified Execution Timeline & Audit Trail
+
+Knot maintains an append-only, chronological, project-aware activity and execution timeline that records the full multi-agent development lifecycle.
+
+For the comprehensive specification, see 👉 **[Unified Execution Timeline & Audit Trail](execution-timeline.md)**.
+
+### Highlights
+
+1. **Strict Provenance vs. Independent Observation**:
+   - Reported activities from ChatGPT (`chatgpt_reported`) and Antigravity (`antigravity_reported`) are explicitly labeled and distinguished from independently observed runtime events (`knot_observed`) and Git-verified states (`git_verified`).
+2. **Three Timeline Scopes**:
+   - **Project Scope**: Cross-session history, context revisions, and global development milestones.
+   - **Session Scope**: Inbound/outbound bridge activity, task lifecycle transitions, and active streaming.
+   - **Task Trace Scope**: Focused deep audit of a single task partitioned into 7 lifecycle stages (`assignment`, `queue`, `approval`, `execution`, `git`, `completion`, `verification`).
+3. **Secret Redaction & Export**:
+   - Task traces can be exported as Markdown or JSON, with sensitive secrets (bearer tokens, API keys, private keys, passwords) automatically scrubbed via centralized sanitization.
+4. **Visual Inspection**:
+   - Integrated `UnifiedTimelinePanel` accessible via the central panel view switcher (`Conversation` / `Context Vault` / `Timeline`).
+
+
 

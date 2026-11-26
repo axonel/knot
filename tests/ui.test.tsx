@@ -70,6 +70,31 @@ function createMockKnotApi() {
     events: {
       list: vi.fn().mockResolvedValue([]),
       append: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'e-1', ...d, createdAt: '' })),
+      getTaskTrace: vi.fn().mockResolvedValue({
+        task: { id: 't-1', sessionId: 's-1', title: 'Task 1', status: 'succeeded', createdAt: '', updatedAt: '', startedAt: null, completedAt: null, payload: null },
+        events: [],
+        stages: [],
+        summary: {
+          taskId: 't-1',
+          taskTitle: 'Task 1',
+          status: 'succeeded',
+          priority: 'normal',
+          executionMode: 'default',
+          assignedAt: '',
+          dispatchedAt: null,
+          completedAt: null,
+          totalDurationMs: null,
+          queueDurationMs: null,
+          executionDurationMs: null,
+          isApproved: true,
+          approver: null,
+          hasGitVerification: false,
+          verifiedCommit: null,
+          hasChatGptVerification: false,
+          chatGptVerificationSummary: null,
+        },
+      }),
+      exportTaskTrace: vi.fn().mockResolvedValue('# Task Execution Trace'),
     },
     bridge: {
       getStatus: vi.fn().mockResolvedValue({

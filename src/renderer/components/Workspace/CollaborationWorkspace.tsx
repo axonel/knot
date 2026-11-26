@@ -8,6 +8,7 @@ import {
   RefreshCw,
   FolderGit2,
   BookOpen,
+  Clock,
 } from 'lucide-react';
 import type {
   Project,
@@ -22,6 +23,7 @@ import { SharedConversationPanel } from './SharedConversationPanel.js';
 import { ChatGptActivityPanel } from './ChatGptActivityPanel.js';
 import { AntigravityExecutionPanel } from './AntigravityExecutionPanel.js';
 import { ContextVaultPanel } from './ContextVaultPanel.js';
+import { UnifiedTimelinePanel } from './UnifiedTimelinePanel.js';
 
 export const CollaborationWorkspace: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -37,8 +39,9 @@ export const CollaborationWorkspace: React.FC = () => {
   const [showRightExecution, setShowRightExecution] = useState(true);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
 
-  // View state: conversation vs context vault
-  const [centerView, setCenterView] = useState<'conversation' | 'context'>('conversation');
+  // View state: conversation vs context vault vs unified timeline
+  const [centerView, setCenterView] = useState<'conversation' | 'context' | 'timeline'>('conversation');
+  const [selectedTimelineTaskId, setSelectedTimelineTaskId] = useState<string | null>(null);
   const [unresolvedConflictsCount, setUnresolvedConflictsCount] = useState(0);
 
   // Modals
@@ -260,6 +263,17 @@ export const CollaborationWorkspace: React.FC = () => {
                   </span>
                 )}
               </button>
+              <button
+                onClick={() => setCenterView('timeline')}
+                className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  centerView === 'timeline'
+                    ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
+                    : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                }`}
+              >
+                <Clock size={12} className={centerView === 'timeline' ? 'text-[#FF6E42]' : ''} />
+                <span>Timeline</span>
+              </button>
             </div>
           </div>
 
@@ -336,7 +350,7 @@ export const CollaborationWorkspace: React.FC = () => {
             </div>
           )}
 
-          {/* Center Panel: Canonical Shared Conversation or Context Vault */}
+          {/* Center Panel: Canonical Shared Conversation or Context Vault or Unified Timeline */}
           <div className="flex-1 h-full min-w-0">
             {centerView === 'conversation' ? (
               <SharedConversationPanel
@@ -345,11 +359,24 @@ export const CollaborationWorkspace: React.FC = () => {
                 sessionPaths={sessionPaths}
                 onRefresh={loadWorkspace}
               />
-            ) : (
+            ) : centerView === 'context' ? (
               <ContextVaultPanel
                 project={selectedProject}
                 session={selectedSession}
                 onRefresh={loadWorkspace}
+              />
+            ) : (
+              <UnifiedTimelinePanel
+                project={selectedProject}
+                session={selectedSession}
+                initialTaskId={selectedTimelineTaskId}
+                onRefresh={loadWorkspace}
+                onNavigateToTask={(taskId) => {
+                  setSelectedTimelineTaskId(taskId);
+                  setCenterView('timeline');
+                }}
+                onNavigateToContext={() => setCenterView('context')}
+                onNavigateToConversation={() => setCenterView('conversation')}
               />
             )}
           </div>

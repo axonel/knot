@@ -125,12 +125,54 @@ export function ingestTaskAssignment(
     },
   });
 
-  // 5. Append auditable event
+  // 5. Append auditable lifecycle events
+  // 5a. Original ChatGPT assignment (reported)
   dbService.events.append({
     sessionId,
     taskId: task.id,
+    correlationId: task.id,
+    eventType: 'task_received',
+    actor: 'chatgpt',
+    source: 'bridge',
+    provenance: 'chatgpt_reported',
+    title: `Task Received from ChatGPT: ${task.title}`,
+    data: {
+      taskId: task.id,
+      title: task.title,
+      sourceMessageId,
+      priority,
+      executionMode,
+    },
+  });
+
+  // 5b. Knot database creation (observed)
+  dbService.events.append({
+    sessionId,
+    taskId: task.id,
+    correlationId: task.id,
+    eventType: 'task_created',
+    actor: 'knot',
+    source: 'orchestration_runtime',
+    provenance: 'knot_observed',
+    title: `Task Created in Queue: ${task.title}`,
+    data: {
+      taskId: task.id,
+      status: task.status,
+      requiresApproval: policy.requiresApproval,
+      priority,
+    },
+  });
+
+  // 5c. Legacy event compatibility
+  dbService.events.append({
+    sessionId,
+    taskId: task.id,
+    correlationId: task.id,
     eventType: 'task_assigned',
     actor: 'chatgpt',
+    source: 'bridge',
+    provenance: 'chatgpt_reported',
+    title: `Task Assigned: ${task.title}`,
     data: {
       taskId: task.id,
       title: task.title,
@@ -142,6 +184,41 @@ export function ingestTaskAssignment(
       status: task.status,
     },
   });
+
+  // 5d. Queue / Approval state event
+  if (policy.requiresApproval) {
+    dbService.events.append({
+      sessionId,
+      taskId: task.id,
+      correlationId: task.id,
+      eventType: 'approval_requested',
+      actor: 'knot',
+      source: 'orchestration_runtime',
+      provenance: 'knot_observed',
+      severity: 'warning',
+      title: `Approval Requested: ${task.title}`,
+      data: {
+        taskId: task.id,
+        policyCategory: policy.category,
+        reason: policy.reason,
+      },
+    });
+  } else {
+    dbService.events.append({
+      sessionId,
+      taskId: task.id,
+      correlationId: task.id,
+      eventType: 'task_queued',
+      actor: 'knot',
+      source: 'orchestration_runtime',
+      provenance: 'knot_observed',
+      title: `Task Queued for Execution: ${task.title}`,
+      data: {
+        taskId: task.id,
+        priority,
+      },
+    });
+  }
 
   return {
     task,

@@ -188,27 +188,117 @@ export interface UpdateTaskInput {
   contextReferences?: TaskContextReference[] | null;
 }
 
+export type EventActor = 'chatgpt' | 'antigravity' | 'knot' | 'user' | 'system' | 'git';
+
+export type EventProvenance =
+  | 'chatgpt_reported'
+  | 'antigravity_reported'
+  | 'knot_observed'
+  | 'git_verified'
+  | 'user_recorded';
+
+export type EventSource =
+  | 'bridge'
+  | 'antigravity_cli'
+  | 'orchestration_runtime'
+  | 'local_git'
+  | 'user_ui'
+  | 'sqlite'
+  | 'context_vault'
+  | 'filesystem_bridge'
+  | 'chatgpt_bridge';
+
+export type EventSeverity = 'info' | 'success' | 'warning' | 'warn' | 'error';
+
 export interface EventItem {
   id: string;
-  sessionId: string;
+  projectId?: string | null;
+  sessionId: string | null;
   taskId: string | null;
+  correlationId?: string | null;
   eventType: string;
-  actor: string;
+  actor: EventActor | string;
+  source: EventSource | string;
+  provenance: EventProvenance | string;
+  title: string;
+  severity: EventSeverity;
   data?: Record<string, unknown> | null;
+  timestamp: string;
   createdAt: string;
 }
 
 export interface AppendEventInput {
-  sessionId: string;
-  eventType: string;
-  actor: string;
+  id?: string;
+  projectId?: string | null;
+  sessionId?: string | null;
   taskId?: string | null;
+  correlationId?: string | null;
+  eventType: string;
+  actor: EventActor | string;
+  source?: EventSource | string;
+  provenance?: EventProvenance | string;
+  title?: string;
+  severity?: EventSeverity;
   data?: Record<string, unknown> | null;
+  timestamp?: string;
 }
 
 export interface EventFilterOptions extends PaginationOptions {
+  projectId?: string;
+  sessionId?: string;
   taskId?: string;
-  eventType?: string;
+  correlationId?: string;
+  eventType?: string | string[];
+  actor?: EventActor | string;
+  provenance?: EventProvenance | string;
+  source?: EventSource | string;
+  severity?: EventSeverity;
+  searchQuery?: string;
+  fromTimestamp?: string;
+  toTimestamp?: string;
+  order?: 'ASC' | 'DESC';
+}
+
+export type TaskTraceStageName =
+  | 'assignment'
+  | 'queue'
+  | 'approval'
+  | 'execution'
+  | 'git'
+  | 'completion'
+  | 'verification';
+
+export interface TaskTraceStage {
+  name: TaskTraceStageName;
+  label: string;
+  description: string;
+  events: EventItem[];
+  status: 'pending' | 'active' | 'completed' | 'failed' | 'skipped';
+}
+
+export interface TaskExecutionTrace {
+  task: Task;
+  events: EventItem[];
+  stages: TaskTraceStage[];
+  summary: {
+    taskId: string;
+    taskTitle: string;
+    status: TaskStatus;
+    priority: string;
+    executionMode: string;
+    assignedAt: string;
+    dispatchedAt: string | null;
+    completedAt: string | null;
+    totalDurationMs: number | null;
+    queueDurationMs: number | null;
+    executionDurationMs: number | null;
+    isApproved: boolean;
+    approver: string | null;
+    hasGitVerification: boolean;
+    verifiedCommit: string | null;
+    hasChatGptVerification: boolean;
+    chatGptVerificationSummary: string | null;
+  };
 }
 
 // ==========================================
@@ -246,8 +336,10 @@ export interface TasksApi {
 }
 
 export interface EventsApi {
-  list: (sessionId: string, options?: EventFilterOptions) => Promise<EventItem[]>;
+  list: (sessionIdOrFilter?: string | EventFilterOptions, options?: EventFilterOptions) => Promise<EventItem[]>;
   append: (data: AppendEventInput) => Promise<EventItem>;
+  getTaskTrace: (taskId: string) => Promise<TaskExecutionTrace>;
+  exportTaskTrace: (taskId: string, format: 'markdown' | 'json') => Promise<string>;
 }
 
 // ==========================================
@@ -281,6 +373,8 @@ export interface KnotMessageMetadata {
   sender: MessageSender;
   recipient: MessageSender | 'knot' | 'all';
   type: BridgeMessageType;
+  title?: string;
+  correlationId?: string;
   challengeId?: string;
   createdAt: string;
   metadata?: Record<string, unknown>;

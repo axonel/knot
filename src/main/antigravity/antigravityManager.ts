@@ -21,6 +21,7 @@ export interface AntigravityManagerOptions {
 
 export class AntigravityManager extends EventEmitter {
   private activeProcesses = new Map<string, AntigravityProcess>();
+  private activeTaskBySession = new Map<string, string>();
   private dbService: DatabaseService;
   private bridgeService: BridgeService;
 
@@ -132,6 +133,9 @@ export class AntigravityManager extends EventEmitter {
       sessionId,
       eventType: 'antigravity_process_started',
       actor: 'antigravity',
+      source: 'antigravity_cli',
+      provenance: 'knot_observed',
+      title: 'Antigravity CLI process started',
       data: {
         workingDirectory,
         mode: options.mode || 'default',
@@ -211,6 +215,9 @@ export class AntigravityManager extends EventEmitter {
         sessionId,
         eventType: 'antigravity_turn_completed',
         actor: 'antigravity',
+        source: 'antigravity_cli',
+        provenance: 'antigravity_reported',
+        title: `Antigravity completed turn (${result.status})`,
         data: {
           status: result.status,
           durationSeconds: result.durationSeconds,
@@ -230,6 +237,10 @@ export class AntigravityManager extends EventEmitter {
         sessionId,
         eventType: 'antigravity_turn_failed',
         actor: 'antigravity',
+        source: 'antigravity_cli',
+        provenance: 'antigravity_reported',
+        severity: 'error',
+        title: `Antigravity turn failed: ${errorMsg.slice(0, 100)}`,
         data: { error: errorMsg },
       });
 
@@ -343,6 +354,9 @@ export class AntigravityManager extends EventEmitter {
     };
 
     proc.on('tool_event', toolListener);
+    if (options?.taskId) {
+      this.activeTaskBySession.set(sessionId, options.taskId);
+    }
 
     try {
       const result = await proc.sendMessage(trimmed);
@@ -356,6 +370,9 @@ export class AntigravityManager extends EventEmitter {
         taskId: options?.taskId,
         eventType: 'antigravity_turn_completed',
         actor: 'antigravity',
+        source: 'antigravity_cli',
+        provenance: 'antigravity_reported',
+        title: `Antigravity completed task turn (${result.status})`,
         data: {
           status: result.status,
           durationSeconds: result.durationSeconds,
@@ -394,12 +411,17 @@ export class AntigravityManager extends EventEmitter {
         taskId: options?.taskId,
         eventType: 'antigravity_turn_failed',
         actor: 'antigravity',
+        source: 'antigravity_cli',
+        provenance: 'antigravity_reported',
+        severity: 'error',
+        title: `Antigravity task turn failed: ${errorMsg.slice(0, 100)}`,
         data: { error: errorMsg },
       });
 
       this.emitEvent('error', sessionId, { error: errorMsg });
       throw err;
     } finally {
+      this.activeTaskBySession.delete(sessionId);
       proc.off('tool_event', toolListener);
     }
   }
@@ -412,12 +434,16 @@ export class AntigravityManager extends EventEmitter {
 
     await proc.stop();
     this.activeProcesses.delete(sessionId);
+    this.activeTaskBySession.delete(sessionId);
     this.dbService.agentSessions.updateStatusBySession(sessionId, 'antigravity', 'stopped', proc.lastExitCode ?? 0);
 
     this.dbService.events.append({
       sessionId,
       eventType: 'antigravity_process_stopped',
       actor: 'antigravity',
+      source: 'antigravity_cli',
+      provenance: 'knot_observed',
+      title: 'Antigravity CLI process stopped',
       data: { exitCode: proc.lastExitCode },
     });
 
@@ -430,8 +456,13 @@ export class AntigravityManager extends EventEmitter {
       proc.interrupt();
       this.dbService.events.append({
         sessionId,
+        taskId: this.activeTaskBySession.get(sessionId),
         eventType: 'antigravity_interrupted',
         actor: 'user',
+        source: 'orchestration_runtime',
+        provenance: 'user_recorded',
+        severity: 'warn',
+        title: 'Antigravity execution interrupted by user',
         data: {},
       });
     }
@@ -460,6 +491,7 @@ export class AntigravityManager extends EventEmitter {
     }
     await Promise.all(stopPromises);
     this.activeProcesses.clear();
+    this.activeTaskBySession.clear();
   }
 
   private wireProcessEvents(sessionId: string, proc: AntigravityProcess, _projectId: string): void {
@@ -476,6 +508,9 @@ export class AntigravityManager extends EventEmitter {
         sessionId,
         eventType: 'antigravity_init',
         actor: 'antigravity',
+        source: 'antigravity_cli',
+        provenance: 'antigravity_reported',
+        title: 'Antigravity session initialized',
         data: {
           conversationId: initEvent.conversationId,
           cwd: initEvent.cwd,
@@ -489,12 +524,20 @@ export class AntigravityManager extends EventEmitter {
     });
 
     proc.on('tool_event', ({ tool, stepIndex }) => {
+      const activeTaskId = this.activeTaskBySession.get(sessionId);
       const eventType = tool.status === 'done' ? 'tool_completed' : tool.status === 'denied' ? 'tool_denied' : 'tool_started';
+      const severity = tool.status === 'denied' ? 'warn' : 'info';
+      const title = `Antigravity tool ${tool.status}: ${tool.name || 'operation'}`;
       this.dbService.events.append({
         sessionId,
+        taskId: activeTaskId,
         eventType: `antigravity_${eventType}`,
         actor: 'antigravity',
-        data: { tool, stepIndex },
+        source: 'antigravity_cli',
+        provenance: 'antigravity_reported',
+        severity,
+        title,
+        data: { tool, stepIndex, taskId: activeTaskId },
       });
 
       this.emitEvent(eventType as any, sessionId, { tool, stepIndex });
@@ -502,6 +545,16 @@ export class AntigravityManager extends EventEmitter {
 
     proc.on('auth_required', (detail) => {
       this.dbService.agentSessions.updateStatusBySession(sessionId, 'antigravity', 'authentication_required');
+      this.dbService.events.append({
+        sessionId,
+        eventType: 'antigravity_auth_required',
+        actor: 'antigravity',
+        source: 'antigravity_cli',
+        provenance: 'knot_observed',
+        severity: 'warn',
+        title: 'Antigravity authentication required',
+        data: { detail },
+      });
       this.emitEvent('auth_required', sessionId, { detail });
     });
   }

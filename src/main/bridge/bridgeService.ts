@@ -526,8 +526,12 @@ export class BridgeService {
     // 3. Record event in SQLite
     this.dbService.events.append({
       sessionId,
+      projectId,
       eventType: 'agent_message_published',
       actor: sender,
+      source: 'filesystem_bridge',
+      provenance: 'knot_observed',
+      title: `Published message to outbox (${sender})`,
       data: {
         messageId: message.id,
         sequence: message.sequence,
@@ -576,16 +580,34 @@ export class BridgeService {
     // If type === 'activity', record in events table only (do not pollute messages table or conversation.md)
     if (type === 'activity') {
       const meta = parsedMessage.metadata.metadata || {};
+      const isVerification = meta.category === 'verification' ||
+        (typeof meta.category === 'string' && meta.category.toLowerCase().includes('verif')) ||
+        (typeof parsedMessage.metadata.title === 'string' && parsedMessage.metadata.title.toLowerCase().includes('verif'));
+      const eventType = isVerification ? 'chatgpt_verification' : 'chatgpt_activity';
+      const title = typeof parsedMessage.metadata.title === 'string' && parsedMessage.metadata.title
+        ? parsedMessage.metadata.title
+        : isVerification ? 'ChatGPT verified execution results' : 'ChatGPT activity reported';
+      const severity = meta.status === 'failed' || meta.outcome === 'failed' ? 'error' : 'info';
+
       this.dbService.events.append({
         sessionId,
-        eventType: 'chatgpt_activity',
+        projectId,
+        taskId: (meta.taskId as string) || null,
+        correlationId: (parsedMessage.metadata.correlationId as string) || null,
+        eventType,
         actor: sender,
+        source: 'chatgpt_bridge',
+        provenance: 'chatgpt_reported',
+        title,
+        severity,
         data: {
           messageId: id,
           category: meta.category || 'other',
           reference: meta.reference || null,
           taskId: meta.taskId || null,
           summary: parsedMessage.bodyMarkdown,
+          verifiedCommit: meta.verifiedCommit || null,
+          outcome: meta.outcome || meta.status || null,
         },
       });
 
@@ -653,8 +675,12 @@ export class BridgeService {
 
           this.dbService.events.append({
             sessionId,
+            projectId,
             eventType: 'context_updated',
             actor: sender,
+            source: 'filesystem_bridge',
+            provenance: 'chatgpt_reported',
+            title: `Context document updated: ${resultDoc.title}`,
             data: {
               contextId: resultDoc.id,
               revision: resultDoc.currentRevision,
@@ -686,8 +712,12 @@ export class BridgeService {
 
           this.dbService.events.append({
             sessionId,
+            projectId,
             eventType: 'context_created',
             actor: sender,
+            source: 'filesystem_bridge',
+            provenance: 'chatgpt_reported',
+            title: `Context document created: ${resultDoc.title}`,
             data: {
               contextId: resultDoc.id,
               revision: resultDoc.currentRevision,
@@ -711,8 +741,13 @@ export class BridgeService {
         const errMsg = err instanceof Error ? err.message : String(err);
         this.dbService.events.append({
           sessionId,
+          projectId,
           eventType: 'context_conflict_detected',
           actor: 'knot',
+          source: 'context_vault',
+          provenance: 'knot_observed',
+          severity: 'warn',
+          title: `Context conflict on document ${rawContextId || 'unknown'}`,
           data: {
             contextId: rawContextId,
             expectedRevision,
@@ -755,8 +790,12 @@ export class BridgeService {
     // 2. Record auditable event in SQLite events table
     this.dbService.events.append({
       sessionId,
+      projectId,
       eventType: 'bridge_message_received',
       actor: sender,
+      source: 'filesystem_bridge',
+      provenance: 'knot_observed',
+      title: `Inbound bridge message received (${type})`,
       data: {
         messageId: id,
         sequence: savedMessage.sequence,

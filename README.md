@@ -422,6 +422,43 @@ For complete documentation, see 👉 **[Project Context Vault Specification](doc
 
 ---
 
+## ⏱️ Unified Execution Timeline & Audit Trail
+
+Knot provides a persistent, chronological, project-aware activity and execution timeline that reconstructs the entire multi-agent lifecycle across ChatGPT, Antigravity, Knot, and Git.
+
+For full architectural details, see 👉 **[Unified Execution Timeline & Audit Trail Specification](docs/execution-timeline.md)**.
+
+### Key Capabilities
+
+- **Strict Attribution & Provenance Badges**:
+  - Distinguishes reported activities from independently verified observations:
+    - `chatgpt_reported`: Research, inspection, planning, or verification reported by ChatGPT.
+    - `antigravity_reported`: Step updates, tool executions, and turn completions reported by Antigravity CLI.
+    - `knot_observed`: Process lifecycles, IPC events, safety policy evaluations, and outbox publications observed by Knot runtime.
+    - `git_verified`: Working-tree diffs, baseline statuses, and commit hashes verified directly via local Git.
+    - `user_recorded`: Human approval, cancellation, retry, or context actions.
+- **Three Timeline Scopes**:
+  - **Project Timeline**: Complete chronological audit trail spanning all sessions, tasks, and context revisions for a project.
+  - **Session Timeline**: Real-time event stream focused on the active session.
+  - **Task Execution Trace**: Deep end-to-end breakdown of a single task partitioned across **7 Canonical Lifecycle Stages**:
+    1. `assignment`: ChatGPT task formulation and acceptance criteria.
+    2. `queue`: Ingestion, FIFO priority queueing, and dispatch locks.
+    3. `approval`: Safety policy evaluation, approval requests, grants, or rejections.
+    4. `execution`: Antigravity process startup, tool streaming, and results.
+    5. `git`: Pre-execution baseline check, working-tree changes, and verified commit hashes.
+    6. `completion`: Structured result outbox publication and completion status.
+    7. `verification`: Subsequent review and verification recorded by ChatGPT.
+- **Trace Export & Secret Redaction**:
+  - Export full task execution traces to clipboard or disk as human-readable **Markdown (`.md`)** or machine-readable **JSON (`.json`)**.
+  - Automatically scrubs bearer tokens, API keys, passwords, and private keys via Knot's centralized secret sanitizer before export.
+- **Integrated UI Inspection Panel**:
+  - Full-featured `UnifiedTimelinePanel` in Knot's central workspace tab switcher.
+  - Real-time search, actor filters (`ChatGPT`, `Antigravity`, `Knot`, `User`, `Git`), and category filters (`Tasks`, `Execution`, `Approvals`, `Git`, `Context`, `Verification`, `Errors`).
+  - One-click navigation to inspect Git diffs or jump to related context vault documents.
+  - Strictly follows Knot's 5-color developer tool palette (`#F9F9F9`, `#004E72`, `#FF6E42`, `#092634`, `#090B0D`).
+
+---
+
 ## 🔒 Security Architecture
 
 1. **Strict Context Isolation**: Renderer runs with `contextIsolation: true` and `nodeIntegration: false`.
@@ -434,6 +471,7 @@ For complete documentation, see 👉 **[Project Context Vault Specification](doc
 8. **Sensitive Task Gating**: Potentially destructive commands and operations are held behind an explicit human approval gate.
 9. **Read-Only Git Inspection Invariant**: The Git inspection engine executes whitelisted read-only Git commands exclusively (`status`, `diff`, `log`, `rev-parse`, `cat-file`), rejecting all state-mutating operations. Paths are constrained to repository bounds with symlink escape validation, argument arrays with `shell: false`, and automatic suppression of sensitive credential files and binary payloads.
 10. **Context Integrity & Concurrency Guarantees**: Optimistic Concurrency Control (OCC) prevents stale writes from overwriting valid project context. Conflicts are strictly preserved and isolated in SQLite (`context_conflicts`) without data loss. Antigravity operates strictly in read-only mode regarding project context; only ChatGPT and user input can update the vault.
+11. **Immutable Audit Trail & Secret-Sanitized Export**: Event insertion is idempotent and append-only with strict ordering (`event_timestamp ASC, created_at ASC, id ASC`). All timeline trace exports (Markdown and JSON) pass through automated secret redaction filters before leaving the application layer.
 
 ---
 

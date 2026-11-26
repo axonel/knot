@@ -482,14 +482,33 @@ ipcMain.handle('tasks:updateStatus', (_event, id: string, status: TaskStatus) =>
 });
 
 // Register Event Audit Log IPC handlers
-ipcMain.handle('events:list', (_event, sessionId: string, options?: EventFilterOptions) => {
-  if (!dbService) throw new Error('Database not initialized');
-  return dbService.events.listBySession(sessionId, options);
-});
+ipcMain.handle(
+  'events:list',
+  (_event, sessionIdOrFilter?: string | EventFilterOptions, options?: EventFilterOptions) => {
+    if (!dbService) throw new Error('Database not initialized');
+    if (typeof sessionIdOrFilter === 'object' && sessionIdOrFilter !== null) {
+      return dbService.events.list(sessionIdOrFilter);
+    }
+    if (typeof sessionIdOrFilter === 'string') {
+      return dbService.events.listBySession(sessionIdOrFilter, options);
+    }
+    return dbService.events.list(options || {});
+  }
+);
 
 ipcMain.handle('events:append', (_event, data: AppendEventInput) => {
   if (!dbService) throw new Error('Database not initialized');
   return dbService.events.append(data);
+});
+
+ipcMain.handle('events:getTaskTrace', (_event, taskId: string) => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.events.getTaskTrace(taskId);
+});
+
+ipcMain.handle('events:exportTaskTrace', (_event, taskId: string, format: 'markdown' | 'json') => {
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.events.exportTaskTrace(taskId, format);
 });
 
 // Register ChatGPT Bridge IPC handlers
@@ -663,6 +682,16 @@ ipcMain.handle('context:get', (_event, id: string) => {
 ipcMain.handle('context:create', (_event, input: CreateContextInput) => {
   if (!dbService) throw new Error('Database service not initialized');
   const doc = dbService.context.create(input);
+  dbService.events.append({
+    projectId: doc.projectId,
+    sessionId: doc.sessionId || undefined,
+    eventType: 'context_created',
+    actor: (input.author as any) || 'user',
+    source: 'context_vault',
+    provenance: (input.provenance as any) || 'user_recorded',
+    title: `Context document created: ${doc.title}`,
+    data: { contextId: doc.id, title: doc.title, revision: doc.currentRevision, category: doc.category, scope: doc.scope },
+  });
   if (bridgeService && doc.projectId) {
     bridgeService.syncContextWorkspace(doc.projectId);
   }
@@ -672,6 +701,16 @@ ipcMain.handle('context:create', (_event, input: CreateContextInput) => {
 ipcMain.handle('context:update', (_event, id: string, input: UpdateContextInput) => {
   if (!dbService) throw new Error('Database service not initialized');
   const doc = dbService.context.update(id, input);
+  dbService.events.append({
+    projectId: doc.projectId,
+    sessionId: doc.sessionId || undefined,
+    eventType: 'context_updated',
+    actor: (input.author as any) || 'user',
+    source: 'context_vault',
+    provenance: (input.provenance as any) || 'user_recorded',
+    title: `Context document updated: ${doc.title}`,
+    data: { contextId: doc.id, title: doc.title, revision: doc.currentRevision, category: doc.category, scope: doc.scope },
+  });
   if (bridgeService && doc.projectId) {
     bridgeService.syncContextWorkspace(doc.projectId);
   }
@@ -681,6 +720,16 @@ ipcMain.handle('context:update', (_event, id: string, input: UpdateContextInput)
 ipcMain.handle('context:archive', (_event, id: string) => {
   if (!dbService) throw new Error('Database service not initialized');
   const doc = dbService.context.archive(id);
+  dbService.events.append({
+    projectId: doc.projectId,
+    sessionId: doc.sessionId || undefined,
+    eventType: 'context_archived',
+    actor: 'user',
+    source: 'context_vault',
+    provenance: 'user_recorded',
+    title: `Archived context document: ${doc.title}`,
+    data: { contextId: doc.id, title: doc.title, revision: doc.currentRevision },
+  });
   if (bridgeService && doc.projectId) {
     bridgeService.syncContextWorkspace(doc.projectId);
   }
@@ -690,6 +739,16 @@ ipcMain.handle('context:archive', (_event, id: string) => {
 ipcMain.handle('context:restore', (_event, id: string) => {
   if (!dbService) throw new Error('Database service not initialized');
   const doc = dbService.context.restore(id);
+  dbService.events.append({
+    projectId: doc.projectId,
+    sessionId: doc.sessionId || undefined,
+    eventType: 'context_restored',
+    actor: 'user',
+    source: 'context_vault',
+    provenance: 'user_recorded',
+    title: `Restored context document: ${doc.title}`,
+    data: { contextId: doc.id, title: doc.title, revision: doc.currentRevision },
+  });
   if (bridgeService && doc.projectId) {
     bridgeService.syncContextWorkspace(doc.projectId);
   }

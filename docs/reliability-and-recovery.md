@@ -32,6 +32,9 @@ Because Knot coordinates asynchronous processes, cross-agent filesystem mailboxe
 | **On-Disk Context Drift** | Developer or external script edits a context markdown file directly on disk outside Knot. | **Drift Detection & SQLite Primacy**: Reconciliation computes SHA-256 content hashes, detects drift, flags a conflict in diagnostics, and strictly preserves SQLite as the canonical authority without overwriting. |
 | **Unprocessed Inbox Messages** | Network hiccups or file lock delays leave `.md` files sitting in ChatGPT inbox. | **Inbox Mailbox Scans**: Reconciliation scans all active inbox directories and processes any un-ingested messages into `processed/` or `rejected/`. |
 | **Orphaned Antigravity Processes** | CLI process hangs on termination or does not respond to standard input closing. | **Bounded Timeout Cleanup**: Antigravity manager executes a graceful `stdin.end()` and `SIGTERM`, with a 3000ms bounded timeout race before issuing `SIGKILL`. |
+| **Symlink or Malicious Inbox Message** | Local attacker or rogue script writes symlink or oversized file (>256 KB) into inbox. | **Inbox Security Boundary**: `fs.lstat` validates file type and size prior to memory allocation; symlinks are rejected and unlinked; errors are categorized (`SYMLINK_NOT_ALLOWED`, `MESSAGE_TOO_LARGE`). |
+| **Instruction Tampering After Approval** | Task instructions modified after human approval was granted. | **Cryptographic Hash Invalidation**: Inbound update recalculates SHA-256 content hash, invalidates `approvedContentHash`, and reverts `status` to `awaiting_approval`. At execution time, `TaskDispatcher` halts if hashes mismatch. |
+| **Untrusted Origin / Cross-Project IPC** | Compromised renderer frame attempts privileged operation. | **IPC Sender Validation**: `validateIpcSender` verifies sender frame origin against trusted local dev server or app bundle before dispatching handler. |
 
 ---
 
@@ -58,8 +61,9 @@ export const LEGAL_TASK_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
 #### Transition Invariants:
 1. **Approval Gate Enforcement**: A task in `awaiting_approval` cannot transition to `running` directly; it must be approved first.
 2. **Terminal Preservation**: A task in `succeeded` cannot transition back to `running`.
-3. **Explicit Retries**: Failed, cancelled, or interrupted tasks cannot be automatically executed; they require an explicit user retry which returns them to `queued`.
-4. **Preflight Failure Safety**: A `queued` task that fails preflight validation (missing repo, inaccessible path) transitions directly to `failed`.
+3. **Explicit Retries & Content Integrity**: Failed, cancelled, or interrupted tasks cannot be automatically executed; they require an explicit user retry which returns them to `queued` (or `awaiting_approval` if instructions were materially altered after approval).
+4. **Instruction Edit Invalidation**: Editing the title, description, or criteria of an approved task invalidates prior approval, transitioning it back to `awaiting_approval`.
+5. **Preflight Failure Safety**: A `queued` task that fails preflight validation (missing repo, inaccessible path, security escape) transitions directly to `failed`.
 
 ### 3.2 Bridge Lifecycle Model
 

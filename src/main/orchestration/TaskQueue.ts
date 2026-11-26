@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import type { DatabaseService } from '../database/index.js';
 import type { Task } from '../../shared/types.js';
+import { computeTaskContentHash } from './TaskPolicy.js';
 
 export interface TaskQueueEvents {
   task_enqueued: (task: Task) => void;
@@ -84,15 +85,24 @@ export class TaskQueue extends EventEmitter {
   /**
    * Approves a task awaiting approval so it can be scheduled for execution.
    */
-  public approveTask(taskId: string): Task {
+  public approveTask(taskId: string, expectedContentHash?: string, approver = 'user'): Task {
     const task = this.dbService.tasks.get(taskId);
     if (!task) {
       throw new Error(`Task "${taskId}" not found.`);
     }
 
+    const currentHash = task.contentHash || computeTaskContentHash(task);
+    if (expectedContentHash && expectedContentHash !== currentHash) {
+      throw new Error(`Cannot approve task: content hash mismatch. Expected ${expectedContentHash}, got ${currentHash}.`);
+    }
+
+    const now = new Date().toISOString();
     const updated = this.dbService.tasks.updateExecution(taskId, {
       approvalStatus: 'approved',
       status: 'queued',
+      approvedContentHash: currentHash,
+      approvedBy: approver,
+      approvedAt: now,
     });
 
     this.dbService.events.append({
@@ -100,12 +110,12 @@ export class TaskQueue extends EventEmitter {
       taskId,
       correlationId: taskId,
       eventType: 'approval_granted',
-      actor: 'user',
+      actor: approver,
       source: 'user_ui',
       provenance: 'user_recorded',
       title: `Approval Granted by User: ${task.title}`,
       severity: 'success',
-      data: { taskId },
+      data: { taskId, approvedBy: approver, contentHash: currentHash },
     });
 
     this.dbService.events.append({
@@ -113,11 +123,11 @@ export class TaskQueue extends EventEmitter {
       taskId,
       correlationId: taskId,
       eventType: 'task_approved',
-      actor: 'user',
+      actor: approver,
       source: 'user_ui',
       provenance: 'user_recorded',
       title: `Task Approved: ${task.title}`,
-      data: { taskId },
+      data: { taskId, approvedBy: approver, contentHash: currentHash },
     });
 
     this.emit('task_approved', updated);
@@ -214,9 +224,21 @@ export class TaskQueue extends EventEmitter {
     }
 
     const nextRetry = (task.retryCount || 0) + 1;
+    const currentHash = task.contentHash || computeTaskContentHash(task);
     const isApproved = task.approvalStatus === 'approved';
+    const hasHashMismatch = Boolean(task.approvedContentHash && task.approvedContentHash !== currentHash);
+    const canRetainApproval = isApproved && !hasHashMismatch;
+
+    const nextStatus = canRetainApproval ? 'queued' : 'awaiting_approval';
+    const nextApprovalStatus = canRetainApproval ? 'approved' : 'awaiting_approval';
+    const nextApprovedHash = canRetainApproval ? (task.approvedContentHash || currentHash) : null;
+
     const updated = this.dbService.tasks.updateExecution(taskId, {
-      status: isApproved ? 'queued' : 'awaiting_approval',
+      status: nextStatus,
+      approvalStatus: nextApprovalStatus,
+      approvedContentHash: nextApprovedHash,
+      approvedBy: canRetainApproval ? task.approvedBy : null,
+      approvedAt: canRetainApproval ? task.approvedAt : null,
       retryCount: nextRetry,
       failureReason: null,
       completedAt: null,

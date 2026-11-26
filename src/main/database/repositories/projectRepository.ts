@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import type { Project, CreateProjectInput, UpdateProjectInput } from '../../../shared/types.js';
+import type { Project, CreateProjectInput, UpdateProjectInput, ProjectTrustPolicy } from '../../../shared/types.js';
 import type { ProjectRecord } from '../types.js';
 
 export class ProjectRepository {
@@ -12,6 +12,7 @@ export class ProjectRepository {
       name: row.name,
       repositoryPath: row.repository_path,
       repositoryRemote: row.repository_remote,
+      trustPolicy: (row.trust_policy as ProjectTrustPolicy) || 'approval_required',
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       archivedAt: row.archived_at,
@@ -29,19 +30,21 @@ export class ProjectRepository {
     const now = new Date().toISOString();
     const repoPath = data.repositoryPath ? data.repositoryPath.trim() : null;
     const repoRemote = data.repositoryRemote ? data.repositoryRemote.trim() : null;
+    const trustPolicy: ProjectTrustPolicy = data.trustPolicy || 'approval_required';
 
     const stmt = this.db.prepare(`
-      INSERT INTO projects (id, name, repository_path, repository_remote, created_at, updated_at, archived_at)
-      VALUES (?, ?, ?, ?, ?, ?, NULL)
+      INSERT INTO projects (id, name, repository_path, repository_remote, trust_policy, created_at, updated_at, archived_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
     `);
 
-    stmt.run(id, trimmedName, repoPath, repoRemote, now, now);
+    stmt.run(id, trimmedName, repoPath, repoRemote, trustPolicy, now, now);
 
     return {
       id,
       name: trimmedName,
       repositoryPath: repoPath,
       repositoryRemote: repoRemote,
+      trustPolicy,
       createdAt: now,
       updatedAt: now,
       archivedAt: null,
@@ -85,21 +88,49 @@ export class ProjectRepository {
 
     const repoPath = data.repositoryPath !== undefined ? data.repositoryPath : existing.repositoryPath;
     const repoRemote = data.repositoryRemote !== undefined ? data.repositoryRemote : existing.repositoryRemote;
+    const trustPolicy: ProjectTrustPolicy = data.trustPolicy !== undefined ? data.trustPolicy : existing.trustPolicy;
     const now = new Date().toISOString();
 
     const stmt = this.db.prepare(`
       UPDATE projects
-      SET name = ?, repository_path = ?, repository_remote = ?, updated_at = ?
+      SET name = ?, repository_path = ?, repository_remote = ?, trust_policy = ?, updated_at = ?
       WHERE id = ?
     `);
 
-    stmt.run(name, repoPath, repoRemote, now, id);
+    stmt.run(name, repoPath, repoRemote, trustPolicy, now, id);
 
     return {
       ...existing,
       name,
       repositoryPath: repoPath,
       repositoryRemote: repoRemote,
+      trustPolicy,
+      updatedAt: now,
+    };
+  }
+
+  public updateTrustPolicy(id: string, trustPolicy: ProjectTrustPolicy): Project {
+    if (trustPolicy !== 'approval_required' && trustPolicy !== 'trusted') {
+      throw new Error(`Invalid project trust policy: "${trustPolicy}". Allowed policies: "approval_required", "trusted".`);
+    }
+
+    const existing = this.get(id);
+    if (!existing) {
+      throw new Error(`Project not found with id: ${id}`);
+    }
+
+    const now = new Date().toISOString();
+    const stmt = this.db.prepare(`
+      UPDATE projects
+      SET trust_policy = ?, updated_at = ?
+      WHERE id = ?
+    `);
+
+    stmt.run(trustPolicy, now, id);
+
+    return {
+      ...existing,
+      trustPolicy,
       updatedAt: now,
     };
   }

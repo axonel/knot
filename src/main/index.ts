@@ -24,6 +24,8 @@ import type {
   CreateContextInput,
   UpdateContextInput,
   ContextFilterOptions,
+  ProjectTrustPolicy,
+  SecurityDiagnostics,
 } from '../shared/types.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -212,8 +214,41 @@ function createWindow(): void {
       preload: preloadExists ? preloadPath : undefined,
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false,
+      sandbox: true,
     },
+  });
+
+  // Navigation Hardening: Restrict will-navigate to dev server or local bundle
+  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+    try {
+      const parsed = new URL(navigationUrl);
+      const devUrl = process.env.VITE_DEV_SERVER_URL;
+      const isDevUrl = devUrl && navigationUrl.startsWith(devUrl);
+      const isLocalFile = parsed.protocol === 'file:';
+      if (!isDevUrl && !isLocalFile) {
+        logger.warn('Prevented untrusted navigation attempt', { navigationUrl });
+        event.preventDefault();
+      }
+    } catch {
+      event.preventDefault();
+    }
+  });
+
+  // Window Open Hardening: Deny child windows and restrict external URLs to http/https
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+        shell.openExternal(url).catch((err) => {
+          logger.error('Failed to open external URL in system browser', err);
+        });
+      } else {
+        logger.warn('Blocked opening non-HTTP(S) external URL', { url });
+      }
+    } catch {
+      logger.warn('Invalid URL passed to window open handler', { url });
+    }
+    return { action: 'deny' };
   });
 
   // Ensure window becomes visible once ready
@@ -327,72 +362,116 @@ function createWindow(): void {
   });
 }
 
+// Security Boundary: Validate IPC Sender Frame to prevent unauthorized IPC invocation
+function validateIpcSender(event: Electron.IpcMainInvokeEvent): void {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (event.senderFrame && event.senderFrame !== mainWindow.webContents.mainFrame) {
+      logger.warn('Unauthorized IPC invocation attempt from untrusted frame', {
+        processId: event.processId,
+        frameId: event.frameId,
+      });
+      throw new Error('Forbidden: Unauthorized IPC sender frame.');
+    }
+  }
+}
+
+// Security Boundary: Validate directory open requests stay within authorized roots
+function isPathAllowedForOpen(dirPath: string): boolean {
+  if (!dirPath || typeof dirPath !== 'string') return false;
+  const resolvedTarget = path.resolve(dirPath);
+
+  // 1. Allow within bridge root
+  if (bridgeService) {
+    const bridgeRoot = path.resolve(bridgeService.getBridgeRoot());
+    const rel = path.relative(bridgeRoot, resolvedTarget);
+    if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
+      return true;
+    }
+  }
+
+  // 2. Allow within any registered project repository directory
+  if (dbService) {
+    const projects = dbService.projects.list(true);
+    for (const project of projects) {
+      if (project.repositoryPath) {
+        const repoRoot = path.resolve(project.repositoryPath);
+        const rel = path.relative(repoRoot, resolvedTarget);
+        if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 // Register IPC handlers
-ipcMain.handle('desktop-commander:start', async () => {
+ipcMain.handle('desktop-commander:start', async (event) => {
+  validateIpcSender(event);
   return await manager.start();
 });
 
-ipcMain.handle('desktop-commander:stop', async () => {
+ipcMain.handle('desktop-commander:stop', async (event) => {
+  validateIpcSender(event);
   return await manager.stop();
 });
 
-ipcMain.handle('desktop-commander:status', () => {
+ipcMain.handle('desktop-commander:status', (event) => {
+  validateIpcSender(event);
   return manager.getStatus();
 });
 
-ipcMain.handle('desktop-commander:logs', () => {
+ipcMain.handle('desktop-commander:logs', (event) => {
+  validateIpcSender(event);
   return manager.getLogs();
 });
 
-// Register Desktop Commander IPC handlers
-ipcMain.handle('desktop-commander:start', async () => {
-  return await manager.start();
-});
-
-ipcMain.handle('desktop-commander:stop', async () => {
-  return await manager.stop();
-});
-
-ipcMain.handle('desktop-commander:status', () => {
-  return manager.getStatus();
-});
-
-ipcMain.handle('desktop-commander:logs', () => {
-  return manager.getLogs();
-});
-
-ipcMain.handle('desktop-commander:clearLogs', () => {
+ipcMain.handle('desktop-commander:clearLogs', (event) => {
+  validateIpcSender(event);
   manager.clearLogs();
   return { success: true };
 });
 
 // Register Project Management IPC handlers
-ipcMain.handle('projects:list', (_event, includeArchived?: boolean) => {
+ipcMain.handle('projects:list', (event, includeArchived?: boolean) => {
+  validateIpcSender(event);
   if (!dbService) throw new Error('Database not initialized');
   return dbService.projects.list(Boolean(includeArchived));
 });
 
-ipcMain.handle('projects:get', (_event, id: string) => {
+ipcMain.handle('projects:get', (event, id: string) => {
+  validateIpcSender(event);
   if (!dbService) throw new Error('Database not initialized');
   return dbService.projects.get(id);
 });
 
-ipcMain.handle('projects:create', (_event, data: CreateProjectInput) => {
+ipcMain.handle('projects:create', (event, data: CreateProjectInput) => {
+  validateIpcSender(event);
   if (!dbService) throw new Error('Database not initialized');
   return dbService.projects.create(data);
 });
 
-ipcMain.handle('projects:update', (_event, id: string, data: UpdateProjectInput) => {
+ipcMain.handle('projects:update', (event, id: string, data: UpdateProjectInput) => {
+  validateIpcSender(event);
   if (!dbService) throw new Error('Database not initialized');
   return dbService.projects.update(id, data);
 });
 
-ipcMain.handle('projects:archive', (_event, id: string) => {
+ipcMain.handle('projects:updateTrustPolicy', (event, id: string, policy: ProjectTrustPolicy) => {
+  validateIpcSender(event);
+  if (!dbService) throw new Error('Database not initialized');
+  return dbService.projects.updateTrustPolicy(id, policy);
+});
+
+ipcMain.handle('projects:archive', (event, id: string) => {
+  validateIpcSender(event);
   if (!dbService) throw new Error('Database not initialized');
   return dbService.projects.archive(id);
 });
 
-ipcMain.handle('projects:unarchive', (_event, id: string) => {
+ipcMain.handle('projects:unarchive', (event, id: string) => {
+  validateIpcSender(event);
   if (!dbService) throw new Error('Database not initialized');
   return dbService.projects.unarchive(id);
 });
@@ -540,8 +619,16 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle('bridge:openDirectory', async (_event, dirPath: string) => {
-  if (dirPath && fs.existsSync(dirPath)) {
+ipcMain.handle('bridge:openDirectory', async (event, dirPath: string) => {
+  validateIpcSender(event);
+  if (!dirPath || typeof dirPath !== 'string') {
+    throw new Error('Directory path must be a non-empty string.');
+  }
+  if (!isPathAllowedForOpen(dirPath)) {
+    logger.warn('Forbidden: Directory access outside allowed project or bridge boundaries attempted', { dirPath });
+    throw new Error('Access denied: Selected path is outside project and bridge directories.');
+  }
+  if (fs.existsSync(dirPath)) {
     await shell.openPath(dirPath);
     return true;
   }
@@ -557,63 +644,77 @@ ipcMain.handle(
 );
 
 // Antigravity CLI Integration IPC Handlers
-ipcMain.handle('antigravity:detect', async (_event, customPath?: string) => {
+ipcMain.handle('antigravity:detect', async (event, customPath?: string) => {
+  validateIpcSender(event);
   if (!antigravityManager) throw new Error('Antigravity manager not initialized');
   return antigravityManager.detect(customPath);
 });
 
-ipcMain.handle('antigravity:getStatus', async (_event, sessionId: string) => {
+ipcMain.handle('antigravity:getStatus', async (event, sessionId: string) => {
+  validateIpcSender(event);
   if (!antigravityManager) throw new Error('Antigravity manager not initialized');
   return antigravityManager.getStatus(sessionId);
 });
 
-ipcMain.handle('antigravity:start', async (_event, sessionId: string, options?: any) => {
+ipcMain.handle('antigravity:start', async (event, sessionId: string, options?: any) => {
+  validateIpcSender(event);
   if (!antigravityManager) throw new Error('Antigravity manager not initialized');
-  return antigravityManager.start(sessionId, options);
+  const safeOptions = { ...options };
+  delete safeOptions.executablePath;
+  return antigravityManager.start(sessionId, safeOptions);
 });
 
-ipcMain.handle('antigravity:sendMessage', async (_event, sessionId: string, prompt: string) => {
+ipcMain.handle('antigravity:sendMessage', async (event, sessionId: string, prompt: string) => {
+  validateIpcSender(event);
   if (!antigravityManager) throw new Error('Antigravity manager not initialized');
   return antigravityManager.sendMessage(sessionId, prompt);
 });
 
-ipcMain.handle('antigravity:stop', async (_event, sessionId: string) => {
+ipcMain.handle('antigravity:stop', async (event, sessionId: string) => {
+  validateIpcSender(event);
   if (!antigravityManager) throw new Error('Antigravity manager not initialized');
   return antigravityManager.stop(sessionId);
 });
 
-ipcMain.handle('antigravity:interrupt', async (_event, sessionId: string) => {
+ipcMain.handle('antigravity:interrupt', async (event, sessionId: string) => {
+  validateIpcSender(event);
   if (!antigravityManager) throw new Error('Antigravity manager not initialized');
   return antigravityManager.interrupt(sessionId);
 });
 
-ipcMain.handle('antigravity:resume', async (_event, sessionId: string) => {
+ipcMain.handle('antigravity:resume', async (event, sessionId: string) => {
+  validateIpcSender(event);
   if (!antigravityManager) throw new Error('Antigravity manager not initialized');
   return antigravityManager.resume(sessionId);
 });
 
-ipcMain.handle('antigravity:getHistory', async (_event, sessionId: string) => {
+ipcMain.handle('antigravity:getHistory', async (event, sessionId: string) => {
+  validateIpcSender(event);
   if (!antigravityManager) throw new Error('Antigravity manager not initialized');
   return antigravityManager.getHistory(sessionId);
 });
 
 // ChatGPT-Led Orchestration IPC handlers
-ipcMain.handle('orchestration:approve-task', async (_event, taskId: string) => {
+ipcMain.handle('orchestration:approve-task', async (event, taskId: string) => {
+  validateIpcSender(event);
   if (!orchestrator) throw new Error('Orchestrator not initialized');
   return await orchestrator.approveTask(taskId);
 });
 
-ipcMain.handle('orchestration:reject-task', async (_event, taskId: string, reason?: string) => {
+ipcMain.handle('orchestration:reject-task', async (event, taskId: string, reason?: string) => {
+  validateIpcSender(event);
   if (!orchestrator) throw new Error('Orchestrator not initialized');
   return orchestrator.rejectTask(taskId, reason);
 });
 
-ipcMain.handle('orchestration:cancel-task', async (_event, taskId: string, reason?: string) => {
+ipcMain.handle('orchestration:cancel-task', async (event, taskId: string, reason?: string) => {
+  validateIpcSender(event);
   if (!orchestrator) throw new Error('Orchestrator not initialized');
   return orchestrator.cancelTask(taskId, reason);
 });
 
-ipcMain.handle('orchestration:retry-task', async (_event, taskId: string) => {
+ipcMain.handle('orchestration:retry-task', async (event, taskId: string) => {
+  validateIpcSender(event);
   if (!orchestrator) throw new Error('Orchestrator not initialized');
   return await orchestrator.retryTask(taskId);
 });
@@ -793,9 +894,74 @@ ipcMain.handle('reliability:getDiagnostics', async () => {
   return await reconciliationService.getDiagnostics();
 });
 
-ipcMain.handle('reliability:reconcile', async () => {
+ipcMain.handle('reliability:reconcile', async (event) => {
+  validateIpcSender(event);
   if (!reconciliationService) throw new Error('Reconciliation service not initialized');
   return await reconciliationService.reconcile();
+});
+
+// Security Boundaries & Threat Hardening IPC handlers
+ipcMain.handle('security:getDiagnostics', (event, projectId?: string) => {
+  validateIpcSender(event);
+  if (!dbService) throw new Error('Database not initialized');
+
+  const allProjects = dbService.projects.list(true);
+  const trustedProjectsCount = allProjects.filter((p) => p.trustPolicy === 'trusted').length;
+  const approvalRequiredProjectsCount = allProjects.length - trustedProjectsCount;
+
+  let currentProject = projectId ? dbService.projects.get(projectId) : null;
+  if (!currentProject && allProjects.length > 0) {
+    currentProject = allProjects[0];
+  }
+
+  // Count pending approvals across active tasks in queued/awaiting_approval states
+  const pendingApprovalsCount = dbService.tasks.listQueued().filter((t) => t.status === 'awaiting_approval').length;
+
+  const currentPolicy: ProjectTrustPolicy = currentProject?.trustPolicy || 'approval_required';
+  const status: 'enforced' | 'warning' = currentPolicy === 'trusted' ? 'warning' : 'enforced';
+
+  const diagnostics: SecurityDiagnostics = {
+    status,
+    timestamp: new Date().toISOString(),
+    bridgeTrust: {
+      mode: 'unauthenticated_filesystem',
+      description:
+        'Bridge inbox files are unauthenticated local files. Sender metadata claims are not cryptographically verified.',
+      senderIdentityGuaranteed: false,
+    },
+    projectTrust: {
+      projectId: currentProject?.id || null,
+      projectName: currentProject?.name || null,
+      trustPolicy: currentPolicy,
+      trustedProjectsCount,
+      approvalRequiredProjectsCount,
+    },
+    taskAuthorization: {
+      pendingApprovalsCount,
+      sensitivePolicy:
+        'Sensitive operations (credentials, filesystem deletion, environment modifications) require explicit user approval in all modes.',
+      contentHashIntegrityEnforced: true,
+    },
+    antigravityPermissions: {
+      mode: 'native_interactive_permissions',
+      dangerouslySkipPermissions: false,
+      alwaysProceed: false,
+      sandboxActive: true,
+      nativePermissionsPreserved: true,
+    },
+    filesystemScope: {
+      enforceRepositoryBoundaries: true,
+      rejectSymlinkEscapes: true,
+      maxMessageSizeBytes: 262144, // 256 KB
+    },
+    desktopCommander: {
+      running: manager.getStatus().state === 'Running',
+      isolatedConfig: true,
+      independentAccessControl: true,
+    },
+  };
+
+  return diagnostics;
 });
 
 // App lifecycle & shutdown cleanup

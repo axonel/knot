@@ -305,20 +305,34 @@ Generated: 2026-11-24T12:10:00.000Z
                                        └──────────────┘
 ```
 
-### Safety Execution Policies
+### Safety Execution Policies & Trust Boundaries
 
-Knot inspects every task assignment's title, body, and acceptance criteria against safety heuristics:
+Knot inspects every task assignment's title, body, and acceptance criteria against deterministic security heuristics and project trust modes:
 
-| Category | Indicators / Patterns | Action |
-|---|---|---|
-| **Safe Tasks** | Implementation, refactoring, unit tests, bug fixes, documentation, styling | Auto-approved into `queued` state |
-| **Sensitive Tasks** | `git push`, `force push`, `drop table`, `rm -rf`, delete, production deploy, migrations, secrets | Placed into `awaiting_approval` state requiring explicit user approval |
+| Category | Indicators / Patterns | Action in `approval_required` (Default) | Action in `trusted` (Opt-In) |
+|---|---|---|---|
+| **Ordinary / Safe Tasks (`safe`)** | Project-local file edits, unit tests, linters, documentation, formatting | Placed in `awaiting_approval` requiring user approval | Auto-approved and queued for dispatch |
+| **Sensitive Operations (`sensitive`)** | `git push`, remote merges, deployments, package releases, `rm -rf`, database drops, secrets, `.env` access | **Always requires explicit user approval** | **Always requires explicit user approval** |
+| **Ambiguous Operations (`ambiguous`)** | Unclassified, opaque, or broad requests | **Always requires explicit user approval** | **Always requires explicit user approval** |
+
+#### Cryptographic Content Hash Binding & Invalidation
+- **Deterministic SHA-256 Hashing**: A task's canonical content (`title\n---\ndescription\n---\nacceptanceCriteria`) is hashed to generate `contentHash`.
+- **Approval Binding**: When approved by the user, `approvedContentHash` is permanently stamped.
+- **Tampering Invalidation**: If an approved task's instructions are modified before dispatch, `TaskRepository.update` automatically invalidates approval, resetting `status` to `awaiting_approval`.
+- **Pre-Dispatch Verification**: `TaskDispatcher.executeTask` recomputes the content hash and compares it against `approvedContentHash`. Any mismatch blocks execution and revokes approval.
+- **Non-Silent Retries**: Retrying a task whose instructions were materially altered requires explicit user re-approval.
+
+#### Antigravity Native Permission Safeguards
+- Knot strictly preserves Antigravity's native permission model.
+- Knot **NEVER** passes `--dangerously-skip-permissions`, `--always-proceed`, or simulated keyboard confirmations.
+- Working directories are strictly validated to reside within the registered project repository root via `validateRepositoryPath`. Working in root `/`, home `~`, or outside project bounds is blocked.
+- IPC handlers strip any client-supplied executable paths to prevent arbitrary binary execution.
 
 #### Concurrency and FIFO Guarantees
 - Concurrency limit is strictly **1 active task per session**.
 - Tasks are ordered by Priority (`urgent` > `high` > `normal` > `low`) and then FIFO (`created_at ASC`).
 - When a task completes, the next eligible approved task in the session queue is dispatched automatically.
-- Upon application restart, in-flight tasks left in `running` state are safely transitioned to `failed` with diagnostic reason preserved (`Interrupted by application restart...`), avoiding unsafe duplicate execution while enabling explicit user inspection or retry.
+- Upon application restart, in-flight tasks left in `running` state are safely transitioned to `failed` or `interrupted` with diagnostic reason preserved (`Interrupted by application restart...`), avoiding unsafe duplicate execution while enabling explicit user inspection or retry.
 
 ---
 

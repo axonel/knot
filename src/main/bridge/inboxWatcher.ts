@@ -92,24 +92,22 @@ export class InboxWatcher {
       return;
     }
 
+    if (normalizedPath.includes('\0')) {
+      return;
+    }
+
     this.inFlight.add(normalizedPath);
 
     try {
-      if (!fs.existsSync(normalizedPath)) {
-        return;
-      }
-
-      // Check if file is still growing or not accessible yet
-      let content = '';
+      // 1. Inspect file stats with lstat to detect symlinks before accessing
+      let lstat: fs.Stats;
       try {
-        content = fs.readFileSync(normalizedPath, 'utf-8');
+        lstat = fs.lstatSync(normalizedPath);
       } catch {
-        // If file is locked or still being created, skip for now; watcher will trigger again
         return;
       }
 
       // Extract scope from path if not forced
-      // Expected structure: .../projects/<projectId>/sessions/<sessionId>/inbox/chatgpt/<filename>
       let scope = forcedScope;
       if (!scope) {
         const parts = normalizedPath.split(path.sep);
@@ -120,6 +118,45 @@ export class InboxWatcher {
             sessionId: parts[inboxIdx - 1],
           };
         }
+      }
+
+      // Security Check: Symlinks in inbox are strictly forbidden
+      if (lstat.isSymbolicLink()) {
+        const error = {
+          code: 'SYMLINK_NOT_ALLOWED',
+          message: 'Symbolic links in bridge inbox are strictly prohibited.',
+        };
+        await this.handleRejection(normalizedPath, error, '', scope);
+        return;
+      }
+
+      // Security Check: Non-regular files rejected
+      if (!lstat.isFile()) {
+        const error = {
+          code: 'INVALID_FILE_TYPE',
+          message: 'Only regular files are permitted in bridge inbox.',
+        };
+        await this.handleRejection(normalizedPath, error, '', scope);
+        return;
+      }
+
+      // Security Check: Pre-read message size limit (256 KB)
+      if (lstat.size > 256 * 1024) {
+        const error = {
+          code: 'MESSAGE_TOO_LARGE',
+          message: `Message exceeds maximum allowed size of 256 KB (${Math.round(lstat.size / 1024)} KB).`,
+        };
+        await this.handleRejection(normalizedPath, error, '', scope);
+        return;
+      }
+
+      // Check if file is still growing or not accessible yet
+      let content = '';
+      try {
+        content = fs.readFileSync(normalizedPath, 'utf-8');
+      } catch {
+        // If file is locked or still being created, skip for now; watcher will trigger again
+        return;
       }
 
       const parseResult = parseBridgeMessage(content, normalizedPath, scope);
@@ -161,8 +198,21 @@ export class InboxWatcher {
       const targetPath = path.join(rejectedDir, fileName);
       const errorMetaPath = path.join(rejectedDir, `${baseName}.error.json`);
 
-      // Move malformed file
-      if (fs.existsSync(filePath)) {
+      // Safely move malformed file or unlink symlink
+      let isSymlink = false;
+      try {
+        isSymlink = fs.lstatSync(filePath).isSymbolicLink();
+      } catch {
+        // file might already be gone
+      }
+
+      if (isSymlink) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch {
+          // ignore
+        }
+      } else if (fs.existsSync(filePath)) {
         try {
           fs.renameSync(filePath, targetPath);
         } catch {

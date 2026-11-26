@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { AntigravityProcess } from './antigravityProcess.js';
 import { cliDetector } from './cliDetector.js';
+import { validateRepositoryPath } from '../git/gitSecurity.js';
 import type { DatabaseService } from '../database/index.js';
 import type { BridgeService } from '../bridge/bridgeService.js';
 import type {
@@ -91,10 +92,12 @@ export class AntigravityManager extends EventEmitter {
       throw new Error(`Project not found: ${session.projectId}`);
     }
 
-    const workingDirectory = project.repositoryPath;
-    if (!workingDirectory) {
+    const rawWorkingDirectory = project.repositoryPath;
+    if (!rawWorkingDirectory) {
       throw new Error(`Project "${project.name}" has no repository path configured.`);
     }
+
+    const workingDirectory = validateRepositoryPath(rawWorkingDirectory);
 
     let existingProcess = this.activeProcesses.get(sessionId);
     if (existingProcess && existingProcess.state !== 'stopped' && existingProcess.state !== 'error') {

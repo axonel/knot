@@ -163,8 +163,8 @@ export class Orchestrator extends EventEmitter {
     }
   }
 
-  public async approveTask(taskId: string): Promise<Task> {
-    const task = this.queue.approveTask(taskId);
+  public async approveTask(taskId: string, expectedContentHash?: string, approver = 'user'): Promise<Task> {
+    const task = this.queue.approveTask(taskId, expectedContentHash, approver);
     await this.dispatcher.dispatchNext(task.sessionId);
     return task;
   }

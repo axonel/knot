@@ -1,5 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { spawn, type ChildProcess } from 'node:child_process';
+import path from 'node:path';
+import os from 'node:os';
 import { StreamParser } from './streamParser.js';
 import { EventMapper, type MappedInitEvent, type MappedResultEvent, type MappedStepUpdateEvent } from './eventMapper.js';
 import type {
@@ -100,6 +102,25 @@ export class AntigravityProcess extends EventEmitter {
       }
 
       // CRITICAL: NEVER pass --dangerously-skip-permissions or --always-proceed
+      const FORBIDDEN_FLAGS = ['--dangerously-skip-permissions', '--always-proceed', '--skip-permissions', '--bypass-permissions'];
+      for (const arg of args) {
+        if (FORBIDDEN_FLAGS.some((flag) => arg.includes(flag))) {
+          const err = new Error('Security policy violation: permission bypass flags are strictly prohibited in Knot.');
+          this.setState('error');
+          return reject(err);
+        }
+      }
+
+      // Validate working directory is not filesystem root or entire home directory
+      const resolvedCwd = path.resolve(this.config.workingDirectory);
+      const homeDir = os.homedir();
+      if (resolvedCwd === '/' || resolvedCwd === homeDir) {
+        const err = new Error(
+          `Security policy violation: working directory cannot be filesystem root or entire home directory ("${resolvedCwd}").`
+        );
+        this.setState('error');
+        return reject(err);
+      }
 
       try {
         const child = spawn(this.config.executablePath, args, {

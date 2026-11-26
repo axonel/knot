@@ -5,6 +5,7 @@ import type {
   KnotApi,
   CreateProjectInput,
   UpdateProjectInput,
+  ProjectTrustPolicy,
   CreateSessionInput,
   SessionStatus,
   AppendMessageInput,
@@ -48,6 +49,7 @@ const api: KnotApi = {
     get: (id: string) => ipcRenderer.invoke('projects:get', id),
     create: (data: CreateProjectInput) => ipcRenderer.invoke('projects:create', data),
     update: (id: string, data: UpdateProjectInput) => ipcRenderer.invoke('projects:update', id, data),
+    updateTrustPolicy: (id: string, policy: ProjectTrustPolicy) => ipcRenderer.invoke('projects:updateTrustPolicy', id, policy),
     archive: (id: string) => ipcRenderer.invoke('projects:archive', id),
     unarchive: (id: string) => ipcRenderer.invoke('projects:unarchive', id),
     selectDirectory: () => ipcRenderer.invoke('projects:selectDirectory'),
@@ -174,6 +176,11 @@ const api: KnotApi = {
   reliability: {
     getDiagnostics: () => ipcRenderer.invoke('reliability:getDiagnostics'),
     reconcile: () => ipcRenderer.invoke('reliability:reconcile'),
+  },
+
+  // Security Boundaries & Threat Hardening API
+  security: {
+    getDiagnostics: (projectId?: string) => ipcRenderer.invoke('security:getDiagnostics', projectId),
   },
 };
 

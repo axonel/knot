@@ -5,6 +5,7 @@ import type { DatabaseService } from '../database/index.js';
 import type { Task, TaskExecutionDetails } from '../../shared/types.js';
 import { initSessionWorkspace, writeCanonicalConversation } from '../bridge/workspace.js';
 import { formatBridgeMessage } from '../bridge/protocol.js';
+import { sanitizeLogOutput, sanitizeObject } from '../logSanitizer.js';
 
 export interface PublishTaskResultOptions {
   task: Task;
@@ -75,6 +76,22 @@ ${summary}
     }
 
     bodyContent += `\n---\n*Published by Knot Orchestration Runtime*\n`;
+    const sanitizedBodyContent = sanitizeLogOutput(bodyContent);
+
+    const rawMetadata: Record<string, unknown> = {
+      taskId: task.id,
+      status: task.status,
+      sourceMessageId: task.sourceMessageId || undefined,
+      priority: task.priority,
+      executionMode: task.executionMode,
+      failureReason: task.failureReason ? sanitizeLogOutput(task.failureReason) : undefined,
+      durationSeconds: options.durationSeconds,
+      changedFiles: details?.changedFiles,
+      commitHash: details?.commitHash,
+      commandsCount: details?.commandsExecuted?.length,
+      testsCount: details?.testsExecuted?.length,
+    };
+    const sanitizedMetadata = sanitizeObject(rawMetadata);
 
     const formattedMessage = formatBridgeMessage(
       {
@@ -86,21 +103,9 @@ ${summary}
         recipient: 'chatgpt',
         type: 'task_result',
         createdAt: now,
-        metadata: {
-          taskId: task.id,
-          status: task.status,
-          sourceMessageId: task.sourceMessageId || undefined,
-          priority: task.priority,
-          executionMode: task.executionMode,
-          failureReason: task.failureReason || undefined,
-          durationSeconds: options.durationSeconds,
-          changedFiles: details?.changedFiles,
-          commitHash: details?.commitHash,
-          commandsCount: details?.commandsExecuted?.length,
-          testsCount: details?.testsExecuted?.length,
-        },
+        metadata: sanitizedMetadata,
       },
-      bodyContent
+      sanitizedBodyContent
     );
 
     // 1. Write atomic outbox message: <messageId>.md
@@ -124,7 +129,7 @@ ${summary}
       sender: 'knot',
       recipient: 'chatgpt',
       messageType: 'task_result',
-      contentMarkdown: bodyContent,
+      contentMarkdown: sanitizedBodyContent,
       correlationId: task.id,
       metadata: {
         taskId: task.id,

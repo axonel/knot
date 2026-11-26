@@ -325,12 +325,36 @@ Successfully implemented structured outbox publishing. All test cases passed.
 
 ---
 
-## 7. Human Review Workflow
+---
 
-Knot enforces strict human-in-the-loop governance:
-- **Never Auto-Approve Destruction**: Antigravity is never run with flags that bypass tool confirmations (`--dangerously-skip-permissions` or `--always-proceed` are forbidden).
-- **Pending Approvals**: Sensitive tasks appear in the Antigravity Execution Panel with amber warning badges and explicit approval buttons.
-- **Rejection & Cancellation**: The user may reject or cancel any task, returning a cancelled result to the outbox with the user's explanation.
+## 7. Bridge Security Boundaries & Human Review Workflow
+
+### 7.1 The Bridge Trust Model & Limitations
+- **Transport Attribution Only**: A metadata header stating `sender: chatgpt` indicates transport-level intent, **not cryptographic authentication**. Any local process with write permissions to the user's bridge directory can create a file with that header.
+- **Untrusted Input Invariant**: Knot treats all bridge inbox files as untrusted user input. Files are checked via `fs.lstat` before opening:
+  - **Symlinks Prohibited**: Symbolic links are immediately unlinked and moved to `rejected/chatgpt/` (`SYMLINK_NOT_ALLOWED`) without following.
+  - **Payload Limit**: Files larger than **256 KB** are rejected prior to memory allocation (`MESSAGE_TOO_LARGE`).
+  - **Path Confinement**: Directory path parameters are strictly validated to prevent path traversal (`../`) outside the session inbox.
+  - **No Shell Execution**: Markdown text is strictly inert prompt text and never passed to a system shell.
+  - **No Self-Elevation**: Messages cannot grant themselves bypass flags, elevated privileges, or project trust status.
+
+### 7.2 Project Trust Policies
+- **Approval Required (`approval_required`, Default)**: All incoming tasks, even safe implementation tasks, are held in `awaiting_approval` until approved by the user in Knot.
+- **Trusted Project Mode (`trusted`, Opt-In)**: The user may explicitly promote a project in the UI. Safe ordinary tasks are automatically queued and dispatched.
+- **Strict Sensitive Gating**: Sensitive operations (e.g. `git push`, branch merge, deployments, deletions, secret access) and ambiguous tasks **always require explicit user approval**, regardless of project trust mode.
+
+### 7.3 Content Integrity & Cryptographic Approval Binding
+- Task title, description, and acceptance criteria are hashed using deterministic **SHA-256**.
+- User approvals are cryptographically bound to the content hash (`approvedContentHash`).
+- Modifying instructions on an approved task invalidates approval and returns the task to `awaiting_approval`.
+- Retries with modified instructions require re-approval before dispatch.
+
+### 7.4 Antigravity Execution Safeguards
+- Knot enforces strict human-in-the-loop governance:
+  - Antigravity is **never** run with flags that bypass tool confirmations (`--dangerously-skip-permissions` or `--always-proceed` are strictly forbidden).
+  - Working directory is validated against registered repository path; escaping repo bounds is blocked.
+  - Sensitive tasks appear in the UI with amber warning badges, policy rationale, and explicit approval buttons.
+  - The user may reject or cancel any task, returning a cancelled result to the outbox with explanation.
 
 ---
 

@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import { EventEmitter } from 'node:events';
 import type { DatabaseService } from '../database/index.js';
 import type { TaskQueue } from './TaskQueue.js';
@@ -6,6 +5,8 @@ import type { AntigravityManager } from '../antigravity/antigravityManager.js';
 import type { GitService } from '../git/gitService.js';
 import type { Task, TaskExecutionDetails, TaskGitBoundary } from '../../shared/types.js';
 import { formatTaskContract, type AttachedTaskContext } from './taskContract.js';
+import { verifyTaskContentIntegrity } from './TaskPolicy.js';
+import { validateRepositoryPath } from '../git/gitSecurity.js';
 
 export interface TaskDispatcherOptions {
   dbService: DatabaseService;
@@ -80,6 +81,38 @@ export class TaskDispatcher extends EventEmitter {
       throw new Error(`Cannot execute task "${task.id}": approvalStatus is "${task.approvalStatus}" (must be "approved").`);
     }
 
+    // Verify task content integrity against approved hash (prevent tampering)
+    if (task.approvedContentHash) {
+      const integrity = verifyTaskContentIntegrity(task);
+      if (!integrity.valid) {
+        const failureReason = 'Task instructions were modified after approval. Approval revoked for safety.';
+        const revokedTask = this.dbService.tasks.updateExecution(task.id, {
+          approvalStatus: 'awaiting_approval',
+          status: 'awaiting_approval',
+          approvedContentHash: null,
+          approvedBy: null,
+          approvedAt: null,
+          failureReason,
+        });
+        this.dbService.events.append({
+          sessionId: task.sessionId,
+          taskId: task.id,
+          eventType: 'approval_revoked',
+          actor: 'knot',
+          severity: 'warning',
+          title: `Approval Revoked: ${task.title} (content modified after approval)`,
+          data: {
+            taskId: task.id,
+            reason: failureReason,
+            expectedHash: integrity.expectedHash,
+            currentHash: integrity.currentHash,
+          },
+        });
+        this.emit('task_status_changed', revokedTask);
+        throw new Error(`Execution blocked: task "${task.id}" content was modified after approval. Approval has been revoked.`);
+      }
+    }
+
     const session = this.dbService.sessions.get(task.sessionId);
     if (!session) {
       throw new Error(`Session "${task.sessionId}" not found.`);
@@ -113,14 +146,17 @@ export class TaskDispatcher extends EventEmitter {
       throw new Error(`Project "${session.projectId}" not found.`);
     }
 
-    const workingDirectory = project.repositoryPath || '';
-    if (!workingDirectory) {
+    const rawWorkingDirectory = project.repositoryPath || '';
+    if (!rawWorkingDirectory) {
       throw new Error(`Project "${project.name}" does not have a repository path configured.`);
     }
 
-    if (!fs.existsSync(workingDirectory)) {
+    let workingDirectory: string;
+    try {
+      workingDirectory = validateRepositoryPath(rawWorkingDirectory);
+    } catch (err: unknown) {
       const completedAt = new Date().toISOString();
-      const errorMsg = `Project repository directory is inaccessible or missing: "${workingDirectory}".`;
+      const errorMsg = `Project repository directory is inaccessible or missing: validation failed: ${err instanceof Error ? err.message : String(err)}`;
       const failedTask = this.dbService.tasks.updateExecution(task.id, {
         status: 'failed',
         failureReason: errorMsg,

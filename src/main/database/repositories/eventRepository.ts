@@ -14,7 +14,7 @@ import type {
   EventSeverity,
 } from '../../../shared/types.js';
 import type { EventRecord, TaskRecord } from '../types.js';
-import { sanitizeLogOutput } from '../../logSanitizer.js';
+import { sanitizeLogOutput, sanitizeObject } from '../../logSanitizer.js';
 
 export class EventRepository {
   constructor(private db: DatabaseSync) {}
@@ -166,10 +166,12 @@ export class EventRepository {
     const eventType = data.eventType.trim();
     const source = this.resolveSource(actor, data.source);
     const provenance = this.resolveProvenance(actor, data.provenance);
-    const title = data.title?.trim() || this.formatTitleFromEventType(eventType);
+    const rawTitle = data.title?.trim() || this.formatTitleFromEventType(eventType);
+    const title = sanitizeLogOutput(rawTitle);
     const severity = this.resolveSeverity(eventType, data.severity);
     const correlationId = data.correlationId || data.taskId || data.sessionId || eventId;
-    const dataJson = data.data ? JSON.stringify(data.data) : null;
+    const sanitizedData = data.data ? sanitizeObject(data.data as Record<string, unknown>) : null;
+    const dataJson = sanitizedData ? JSON.stringify(sanitizedData) : null;
 
     const stmt = this.db.prepare(`
       INSERT INTO events (

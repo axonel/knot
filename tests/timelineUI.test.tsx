@@ -9,6 +9,7 @@ describe('UnifiedTimelinePanel UI Component', () => {
     name: 'Sample Project',
     repositoryPath: '/mock/repo',
     repositoryRemote: null,
+    trustPolicy: 'approval_required',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     archivedAt: null,

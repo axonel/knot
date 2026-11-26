@@ -10,6 +10,7 @@ import {
   BookOpen,
   Clock,
   Wrench,
+  ShieldAlert,
 } from 'lucide-react';
 import type {
   Project,
@@ -26,6 +27,7 @@ import { AntigravityExecutionPanel } from './AntigravityExecutionPanel.js';
 import { ContextVaultPanel } from './ContextVaultPanel.js';
 import { UnifiedTimelinePanel } from './UnifiedTimelinePanel.js';
 import { ReliabilityModal } from './ReliabilityModal.js';
+import { SecurityModal } from './SecurityModal.js';
 
 export const CollaborationWorkspace: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -50,6 +52,7 @@ export const CollaborationWorkspace: React.FC = () => {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showNewSessionModal, setShowNewSessionModal] = useState(false);
   const [showReliabilityModal, setShowReliabilityModal] = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [modalProjectName, setModalProjectName] = useState('');
   const [modalRepoPath, setModalRepoPath] = useState('');
   const [modalSessionTitle, setModalSessionTitle] = useState('');
@@ -292,6 +295,15 @@ export const CollaborationWorkspace: React.FC = () => {
             </button>
 
             <button
+              onClick={() => setShowSecurityModal(true)}
+              title="Security Boundaries & Threat Hardening"
+              className="px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all bg-[#090B0D] text-[#F9F9F9]/80 border border-[#F9F9F9]/10 hover:text-[#F9F9F9] hover:border-[#F9F9F9]/30"
+            >
+              <ShieldAlert size={12} className="text-[#FF6E42]" />
+              <span className="hidden sm:inline">Security</span>
+            </button>
+
+            <button
               onClick={() => setShowDiagnostic((v) => !v)}
               title="Toggle Directory Access Diagnostic"
               className={`px-2.5 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all ${
@@ -517,6 +529,17 @@ export const CollaborationWorkspace: React.FC = () => {
       <ReliabilityModal
         isOpen={showReliabilityModal}
         onClose={() => setShowReliabilityModal(false)}
+      />
+
+      {/* Security Diagnostics & Trust Policy Modal */}
+      <SecurityModal
+        isOpen={showSecurityModal}
+        onClose={() => setShowSecurityModal(false)}
+        project={selectedProject}
+        onProjectUpdated={(updated) => {
+          setSelectedProject(updated);
+          setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        }}
       />
     </div>
   );

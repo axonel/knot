@@ -83,6 +83,7 @@ Update authentication flow.
   });
 
   it('ingests task assignment and creates task in SQLite with proper fields', () => {
+    dbService.projects.updateTrustPolicy(projectId, 'trusted');
     const messageId = randomUUID();
     const parsedMessage: ParsedBridgeMessage = {
       metadata: {

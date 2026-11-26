@@ -68,7 +68,7 @@ describe('SQLite Database Layer & Migrations', () => {
       // Open second time
       const db2 = initDatabase(dbPath);
       const count = db2.prepare('SELECT COUNT(*) as count FROM schema_migrations').get() as { count: number };
-      expect(count.count).toBe(7);
+      expect(count.count).toBe(8);
 
       // Verify migration 004 & 005 are applied
       const taskColumns = db2.prepare('PRAGMA table_info(tasks)').all() as { name: string }[];

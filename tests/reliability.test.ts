@@ -359,7 +359,7 @@ describe('Runtime Reliability, State Reconciliation & Recovery', () => {
     it('generates accurate diagnostics and persists report in reconciliation_history', async () => {
       const diagBefore = await reconciliationService.getDiagnostics();
       expect(diagBefore.database.available).toBe(true);
-      expect(diagBefore.database.version).toBe(7);
+      expect(diagBefore.database.version).toBe(8);
       expect(diagBefore.bridge.status).toBe('watching');
 
       const report = await reconciliationService.reconcile();

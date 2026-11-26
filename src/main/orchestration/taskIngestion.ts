@@ -13,14 +13,16 @@ export function extractTaskTitle(markdown: string, metaTitle?: string): string {
     return metaTitle.trim();
   }
 
+  const safeMarkdown = markdown || '';
+
   // Look for first markdown heading (# Title or ## Title)
-  const headingMatch = markdown.match(/^#{1,3}\s+(.+)$/m);
+  const headingMatch = safeMarkdown.match(/^#{1,3}\s+(.+)$/m);
   if (headingMatch && headingMatch[1].trim()) {
     return headingMatch[1].trim();
   }
 
   // Fallback to first non-empty line
-  const lines = markdown.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const lines = safeMarkdown.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   if (lines.length > 0) {
     const firstLine = lines[0].replace(/^[#*-]\s+/, '').trim();
     if (firstLine.length > 60) {
@@ -35,6 +37,10 @@ export function extractTaskTitle(markdown: string, metaTitle?: string): string {
 export function extractAcceptanceCriteria(markdown: string, metaCriteria?: unknown): string[] {
   if (Array.isArray(metaCriteria) && metaCriteria.every((c) => typeof c === 'string')) {
     return metaCriteria;
+  }
+
+  if (!markdown) {
+    return [];
   }
 
   const criteria: string[] = [];
@@ -68,11 +74,14 @@ export function ingestTaskAssignment(
     };
   }
 
-  // 2. Validate session exists
+  // 2. Validate session and project exist
   const session = dbService.sessions.get(sessionId);
   if (!session) {
     throw new Error(`Cannot ingest task: Session "${sessionId}" not found.`);
   }
+
+  const project = dbService.projects.get(session.projectId);
+  const projectTrustPolicy = project?.trustPolicy || 'approval_required';
 
   const metadata = (parsedMessage.metadata.metadata || {}) as Record<string, unknown>;
   const rawTitle = metadata.title as string | undefined;
@@ -93,11 +102,12 @@ export function ingestTaskAssignment(
     );
   }
 
-  // 3. Safety policy evaluation
+  // 3. Safety policy evaluation against project trust mode (fail-safe)
   const policy = TaskPolicy.evaluate(title, parsedMessage.bodyMarkdown, {
     priority,
     executionMode,
     explicitApprovalRequested: explicitApproval,
+    projectTrustPolicy,
   });
 
   const approvalStatus = policy.requiresApproval ? 'awaiting_approval' : 'approved';

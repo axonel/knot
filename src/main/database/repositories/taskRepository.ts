@@ -2,6 +2,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import type { Task, TaskStatus, CreateTaskInput, UpdateTaskInput, TaskGitBoundary, TaskContextReference } from '../../../shared/types.js';
 import { assertLegalTaskTransition } from '../../../shared/taskStateModel.js';
+import { computeTaskContentHash } from '../../orchestration/TaskPolicy.js';
 import type { TaskRecord } from '../types.js';
 
 export class TaskRepository {
@@ -61,6 +62,10 @@ export class TaskRepository {
       executionMode: row.execution_mode || 'default',
       acceptanceCriteria,
       retryCount: row.retry_count ?? 0,
+      contentHash: row.content_hash || null,
+      approvedContentHash: row.approved_content_hash || null,
+      approvedBy: row.approved_by || null,
+      approvedAt: row.approved_at || null,
       payload,
       gitBoundary,
       contextReferences,
@@ -90,20 +95,30 @@ export class TaskRepository {
     const now = new Date().toISOString();
     const status: TaskStatus = data.status || 'queued';
     const startedAt = status === 'running' ? now : null;
-    const completedAt = ['succeeded', 'failed', 'cancelled'].includes(status) ? now : null;
+    const completedAt = ['succeeded', 'failed', 'cancelled', 'interrupted'].includes(status) ? now : null;
     const payloadJson = data.payload ? JSON.stringify(data.payload) : null;
     const acceptanceCriteriaJson = data.acceptanceCriteria ? JSON.stringify(data.acceptanceCriteria) : null;
 
     const gitBoundaryJson = data.gitBoundary ? JSON.stringify(data.gitBoundary) : null;
     const contextReferencesJson = data.contextReferences ? JSON.stringify(data.contextReferences) : null;
 
+    const contentHash = data.contentHash || computeTaskContentHash({
+      title: trimmedTitle,
+      description: data.description || null,
+      acceptanceCriteria: data.acceptanceCriteria || null,
+    });
+    const approvedContentHash = data.approvedContentHash || (data.approvalStatus === 'approved' ? contentHash : null);
+    const approvedBy = data.approvedBy || (data.approvalStatus === 'approved' ? 'user' : null);
+    const approvedAt = data.approvedAt || (data.approvalStatus === 'approved' ? now : null);
+
     const stmt = this.db.prepare(`
       INSERT INTO tasks (
         id, session_id, title, description, created_by, assigned_to, status, approval_status, payload_json,
         source_message_id, result_message_id, dispatched_at, failure_reason, priority, execution_mode,
-        acceptance_criteria_json, retry_count, git_boundary_json, context_references_json,
+        acceptance_criteria_json, retry_count, content_hash, approved_content_hash, approved_by, approved_at,
+        git_boundary_json, context_references_json,
         created_at, updated_at, started_at, completed_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -124,6 +139,10 @@ export class TaskRepository {
       data.executionMode || 'default',
       acceptanceCriteriaJson,
       data.retryCount ?? 0,
+      contentHash,
+      approvedContentHash,
+      approvedBy,
+      approvedAt,
       gitBoundaryJson,
       contextReferencesJson,
       now,
@@ -149,6 +168,10 @@ export class TaskRepository {
       executionMode: data.executionMode || 'default',
       acceptanceCriteria: data.acceptanceCriteria || null,
       retryCount: data.retryCount ?? 0,
+      contentHash,
+      approvedContentHash,
+      approvedBy,
+      approvedAt,
       payload: data.payload || null,
       gitBoundary: data.gitBoundary || null,
       contextReferences: data.contextReferences || null,
@@ -235,6 +258,7 @@ export class TaskRepository {
     const candidateQuery = `
       SELECT id FROM tasks
       WHERE session_id = ? AND status = 'queued' AND approval_status = 'approved'
+        AND (approved_content_hash IS NULL OR approved_content_hash = content_hash)
       ORDER BY
         CASE priority
           WHEN 'urgent' THEN 1
@@ -257,6 +281,7 @@ export class TaskRepository {
       UPDATE tasks
       SET status = 'running', dispatched_at = ?, started_at = COALESCE(started_at, ?), updated_at = ?
       WHERE id = ? AND status = 'queued' AND approval_status = 'approved'
+        AND (approved_content_hash IS NULL OR approved_content_hash = content_hash)
     `);
     const info = claimStmt.run(now, now, now, candidate.id);
     if (info.changes === 0) {
@@ -315,6 +340,10 @@ export class TaskRepository {
       retryCount?: number;
       approvalStatus?: string | null;
       gitBoundary?: TaskGitBoundary | null;
+      contentHash?: string | null;
+      approvedContentHash?: string | null;
+      approvedBy?: string | null;
+      approvedAt?: string | null;
     }
   ): Task {
     const existing = this.get(id);
@@ -345,10 +374,32 @@ export class TaskRepository {
     const gitBoundary = updates.gitBoundary !== undefined ? updates.gitBoundary : existing.gitBoundary;
     const gitBoundaryJson = gitBoundary ? JSON.stringify(gitBoundary) : null;
 
+    const contentHash = updates.contentHash !== undefined ? updates.contentHash : (existing.contentHash || computeTaskContentHash(existing));
+    let approvedContentHash = updates.approvedContentHash !== undefined ? updates.approvedContentHash : existing.approvedContentHash;
+    let approvedBy = updates.approvedBy !== undefined ? updates.approvedBy : existing.approvedBy;
+    let approvedAt = updates.approvedAt !== undefined ? updates.approvedAt : existing.approvedAt;
+
+    if (approvalStatus === 'approved') {
+      if (!approvedContentHash) {
+        approvedContentHash = contentHash;
+      }
+      if (!approvedBy) {
+        approvedBy = 'user';
+      }
+      if (!approvedAt) {
+        approvedAt = now;
+      }
+    } else if (approvalStatus === 'awaiting_approval' || approvalStatus === 'rejected') {
+      approvedContentHash = null;
+      approvedBy = null;
+      approvedAt = null;
+    }
+
     const stmt = this.db.prepare(`
       UPDATE tasks
       SET status = ?, approval_status = ?, started_at = ?, completed_at = ?, dispatched_at = ?,
-          failure_reason = ?, result_message_id = ?, retry_count = ?, git_boundary_json = ?, updated_at = ?
+          failure_reason = ?, result_message_id = ?, retry_count = ?, git_boundary_json = ?,
+          content_hash = ?, approved_content_hash = ?, approved_by = ?, approved_at = ?, updated_at = ?
       WHERE id = ?
     `);
 
@@ -361,7 +412,11 @@ export class TaskRepository {
       failureReason ?? null,
       resultMessageId ?? null,
       retryCount,
-      gitBoundaryJson,
+      gitBoundaryJson ?? null,
+      contentHash ?? null,
+      approvedContentHash ?? null,
+      approvedBy ?? null,
+      approvedAt ?? null,
       now,
       id
     );
@@ -376,6 +431,10 @@ export class TaskRepository {
       failureReason,
       resultMessageId,
       retryCount,
+      contentHash,
+      approvedContentHash,
+      approvedBy,
+      approvedAt,
       gitBoundary,
       updatedAt: now,
     };
@@ -394,11 +453,11 @@ export class TaskRepository {
 
     const description = data.description !== undefined ? data.description : existing.description;
     const assignedTo = data.assignedTo !== undefined ? data.assignedTo : existing.assignedTo;
-    const status = data.status !== undefined ? data.status : existing.status;
+    let status = data.status !== undefined ? data.status : existing.status;
     if (data.status !== undefined && data.status !== existing.status) {
       assertLegalTaskTransition(id, existing.status, data.status);
     }
-    const approvalStatus = data.approvalStatus !== undefined ? data.approvalStatus : existing.approvalStatus;
+    let approvalStatus = data.approvalStatus !== undefined ? data.approvalStatus : existing.approvalStatus;
     const payload = data.payload !== undefined ? data.payload : existing.payload;
     const payloadJson = payload ? JSON.stringify(payload) : null;
     const sourceMessageId = data.sourceMessageId !== undefined ? data.sourceMessageId : existing.sourceMessageId;
@@ -415,6 +474,30 @@ export class TaskRepository {
     const contextReferences = data.contextReferences !== undefined ? data.contextReferences : existing.contextReferences;
     const contextReferencesJson = contextReferences ? JSON.stringify(contextReferences) : null;
 
+    let contentHash = existing.contentHash || computeTaskContentHash(existing);
+    let approvedContentHash = existing.approvedContentHash;
+    let approvedBy = existing.approvedBy;
+    let approvedAt = existing.approvedAt;
+
+    // Detect instruction modification after approval: invalidate prior approval!
+    if (data.title !== undefined || data.description !== undefined || data.acceptanceCriteria !== undefined) {
+      const newHash = computeTaskContentHash({
+        title,
+        description,
+        acceptanceCriteria,
+      });
+      if (newHash !== contentHash) {
+        contentHash = newHash;
+        approvalStatus = 'awaiting_approval';
+        if (status === 'queued') {
+          status = 'awaiting_approval';
+        }
+        approvedContentHash = null;
+        approvedBy = null;
+        approvedAt = null;
+      }
+    }
+
     const now = new Date().toISOString();
     let startedAt = existing.startedAt;
     let completedAt = existing.completedAt;
@@ -430,7 +513,9 @@ export class TaskRepository {
       SET title = ?, description = ?, assigned_to = ?, status = ?, approval_status = ?, payload_json = ?,
           source_message_id = ?, result_message_id = ?, dispatched_at = ?, failure_reason = ?,
           priority = ?, execution_mode = ?, acceptance_criteria_json = ?, retry_count = ?,
-          git_boundary_json = ?, context_references_json = ?, started_at = ?, completed_at = ?, updated_at = ?
+          git_boundary_json = ?, context_references_json = ?,
+          content_hash = ?, approved_content_hash = ?, approved_by = ?, approved_at = ?,
+          started_at = ?, completed_at = ?, updated_at = ?
       WHERE id = ?
     `);
 
@@ -449,8 +534,12 @@ export class TaskRepository {
       executionMode ?? 'default',
       acceptanceCriteriaJson ?? null,
       retryCount,
-      gitBoundaryJson,
-      contextReferencesJson,
+      gitBoundaryJson ?? null,
+      contextReferencesJson ?? null,
+      contentHash ?? null,
+      approvedContentHash ?? null,
+      approvedBy ?? null,
+      approvedAt ?? null,
       startedAt ?? null,
       completedAt ?? null,
       now,
@@ -473,6 +562,10 @@ export class TaskRepository {
       executionMode,
       acceptanceCriteria,
       retryCount,
+      contentHash,
+      approvedContentHash,
+      approvedBy,
+      approvedAt,
       gitBoundary,
       contextReferences,
       startedAt,

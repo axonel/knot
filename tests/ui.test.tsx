@@ -44,10 +44,11 @@ function createMockKnotApi() {
     projects: {
       list: vi.fn().mockResolvedValue([]),
       get: vi.fn().mockResolvedValue(null),
-      create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'p-1', ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
-      update: vi.fn().mockImplementation((id, d) => Promise.resolve({ id, ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
-      archive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Archived', createdAt: '', updatedAt: '', archivedAt: new Date().toISOString(), sessionCount: 0 })),
-      unarchive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Active', createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+      create: vi.fn().mockImplementation((d) => Promise.resolve({ id: 'p-1', trustPolicy: 'approval_required', ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+      update: vi.fn().mockImplementation((id, d) => Promise.resolve({ id, trustPolicy: 'approval_required', ...d, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+      updateTrustPolicy: vi.fn().mockImplementation((id, trustPolicy) => Promise.resolve({ id, name: 'P', trustPolicy, repositoryPath: null, repositoryRemote: null, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
+      archive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Archived', trustPolicy: 'approval_required', repositoryPath: null, repositoryRemote: null, createdAt: '', updatedAt: '', archivedAt: new Date().toISOString(), sessionCount: 0 })),
+      unarchive: vi.fn().mockImplementation((id) => Promise.resolve({ id, name: 'Active', trustPolicy: 'approval_required', repositoryPath: null, repositoryRemote: null, createdAt: '', updatedAt: '', archivedAt: null, sessionCount: 0 })),
       selectDirectory: vi.fn().mockResolvedValue('/mock/path'),
     },
     sessions: {
@@ -305,6 +306,46 @@ function createMockKnotApi() {
         },
       }),
     },
+    security: {
+      getDiagnostics: vi.fn().mockResolvedValue({
+        status: 'enforced',
+        timestamp: new Date().toISOString(),
+        bridgeTrust: {
+          mode: 'unauthenticated_filesystem',
+          description: 'Bridge inbox files are unauthenticated local files.',
+          senderIdentityGuaranteed: false,
+        },
+        projectTrust: {
+          projectId: 'p-1',
+          projectName: 'Mock Project',
+          trustPolicy: 'approval_required',
+          trustedProjectsCount: 0,
+          approvalRequiredProjectsCount: 1,
+        },
+        taskAuthorization: {
+          pendingApprovalsCount: 0,
+          sensitivePolicy: 'Sensitive tasks require approval',
+          contentHashIntegrityEnforced: true,
+        },
+        antigravityPermissions: {
+          mode: 'native_interactive_permissions',
+          dangerouslySkipPermissions: false,
+          alwaysProceed: false,
+          sandboxActive: true,
+          nativePermissionsPreserved: true,
+        },
+        filesystemScope: {
+          enforceRepositoryBoundaries: true,
+          rejectSymlinkEscapes: true,
+          maxMessageSizeBytes: 262144,
+        },
+        desktopCommander: {
+          running: false,
+          isolatedConfig: true,
+          independentAccessControl: true,
+        },
+      }),
+    },
   };
 }
 
@@ -557,6 +598,7 @@ describe('UI and Branding Components', () => {
           name: 'Knot Main Repo',
           repositoryPath: '/home/user/workspace/knot',
           repositoryRemote: 'https://github.com/axonel/knot',
+          trustPolicy: 'approval_required',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           archivedAt: null,
@@ -567,6 +609,7 @@ describe('UI and Branding Components', () => {
           name: 'Archived Demo',
           repositoryPath: null,
           repositoryRemote: null,
+          trustPolicy: 'approval_required',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           archivedAt: new Date().toISOString(),
@@ -642,6 +685,7 @@ describe('UI and Branding Components', () => {
         name: 'Knot Main Repo',
         repositoryPath: '/home/user/workspace/knot',
         repositoryRemote: 'https://github.com/axonel/knot',
+        trustPolicy: 'approval_required',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         archivedAt: null,
@@ -1078,6 +1122,7 @@ describe('UI and Branding Components', () => {
       name: 'Alpha Project',
       repositoryPath: '/mock/repos/alpha',
       repositoryRemote: 'git@github.com:axonel/knot.git',
+      trustPolicy: 'approval_required',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       archivedAt: null,

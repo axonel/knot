@@ -10,6 +10,7 @@ describe('ContextVaultPanel Component', () => {
     name: 'Context Test Project',
     repositoryPath: '/path/to/repo',
     repositoryRemote: 'git@github.com:test/repo.git',
+    trustPolicy: 'approval_required',
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     archivedAt: null,

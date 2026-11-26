@@ -18,6 +18,7 @@ export interface ProjectRecord {
   name: string;
   repository_path: string | null;
   repository_remote: string | null;
+  trust_policy?: string | null;
   created_at: string;
   updated_at: string;
   archived_at: string | null;
@@ -67,6 +68,10 @@ export interface TaskRecord {
   execution_mode?: string | null;
   acceptance_criteria_json?: string | null;
   retry_count?: number | null;
+  content_hash?: string | null;
+  approved_content_hash?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
   git_boundary_json?: string | null;
   context_references_json?: string | null;
   created_at: string;

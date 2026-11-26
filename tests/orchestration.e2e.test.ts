@@ -39,6 +39,7 @@ describe('End-to-End Orchestration & Task Handoff Engine', () => {
       repositoryPath: repoPath,
     });
     projectId = project.id;
+    dbService.projects.updateTrustPolicy(projectId, 'trusted');
 
     const session = dbService.sessions.create({
       projectId,

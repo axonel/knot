@@ -26,11 +26,14 @@ export interface LogEntry {
 // Project, Session, Message, Task & Event Types
 // ==========================================
 
+export type ProjectTrustPolicy = 'approval_required' | 'trusted';
+
 export interface Project {
   id: string;
   name: string;
   repositoryPath: string | null;
   repositoryRemote: string | null;
+  trustPolicy: ProjectTrustPolicy;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
@@ -41,12 +44,14 @@ export interface CreateProjectInput {
   name: string;
   repositoryPath?: string | null;
   repositoryRemote?: string | null;
+  trustPolicy?: ProjectTrustPolicy;
 }
 
 export interface UpdateProjectInput {
   name?: string;
   repositoryPath?: string | null;
   repositoryRemote?: string | null;
+  trustPolicy?: ProjectTrustPolicy;
 }
 
 export type SessionStatus = 'active' | 'paused' | 'completed' | 'archived';
@@ -133,6 +138,10 @@ export interface Task {
   executionMode?: string;
   acceptanceCriteria?: string[] | null;
   retryCount?: number;
+  contentHash?: string | null;
+  approvedContentHash?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
   payload?: Record<string, unknown> | null;
   gitBoundary?: TaskGitBoundary | null;
   contextReferences?: TaskContextReference[] | null;
@@ -165,6 +174,10 @@ export interface CreateTaskInput {
   executionMode?: string;
   acceptanceCriteria?: string[] | null;
   retryCount?: number;
+  contentHash?: string | null;
+  approvedContentHash?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
   payload?: Record<string, unknown> | null;
   gitBoundary?: TaskGitBoundary | null;
   contextReferences?: TaskContextReference[] | null;
@@ -311,6 +324,7 @@ export interface ProjectsApi {
   get: (id: string) => Promise<Project | null>;
   create: (data: CreateProjectInput) => Promise<Project>;
   update: (id: string, data: UpdateProjectInput) => Promise<Project>;
+  updateTrustPolicy: (id: string, policy: ProjectTrustPolicy) => Promise<Project>;
   archive: (id: string) => Promise<Project>;
   unarchive: (id: string) => Promise<Project>;
   selectDirectory: () => Promise<string | null>;
@@ -519,6 +533,9 @@ export interface KnotApi {
 
   // Reliability & Recovery Diagnostics API
   reliability: ReliabilityApi;
+
+  // Security Boundaries & Threat Hardening API
+  security: SecurityApi;
 }
 
 export interface OrchestrationEvent {
@@ -1031,6 +1048,49 @@ export interface ReconciliationReport {
 export interface ReliabilityApi {
   getDiagnostics: () => Promise<ReliabilityDiagnostics>;
   reconcile: () => Promise<ReconciliationReport>;
+}
+
+export interface SecurityDiagnostics {
+  status: 'enforced' | 'warning';
+  timestamp: string;
+  bridgeTrust: {
+    mode: 'unauthenticated_filesystem';
+    description: string;
+    senderIdentityGuaranteed: boolean;
+  };
+  projectTrust: {
+    projectId?: string | null;
+    projectName?: string | null;
+    trustPolicy: ProjectTrustPolicy;
+    trustedProjectsCount: number;
+    approvalRequiredProjectsCount: number;
+  };
+  taskAuthorization: {
+    pendingApprovalsCount: number;
+    sensitivePolicy: string;
+    contentHashIntegrityEnforced: boolean;
+  };
+  antigravityPermissions: {
+    mode: string;
+    dangerouslySkipPermissions: boolean;
+    alwaysProceed: boolean;
+    sandboxActive: boolean;
+    nativePermissionsPreserved: boolean;
+  };
+  filesystemScope: {
+    enforceRepositoryBoundaries: boolean;
+    rejectSymlinkEscapes: boolean;
+    maxMessageSizeBytes: number;
+  };
+  desktopCommander: {
+    running: boolean;
+    isolatedConfig: boolean;
+    independentAccessControl: boolean;
+  };
+}
+
+export interface SecurityApi {
+  getDiagnostics: (projectId?: string) => Promise<SecurityDiagnostics>;
 }
 
 export * from './taskStateModel.js';

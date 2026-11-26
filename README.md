@@ -459,19 +459,43 @@ For full architectural details, see 👉 **[Unified Execution Timeline & Audit T
 
 ---
 
-## 🔒 Security Architecture
+## 🔒 Security Architecture & Threat Hardening
 
-1. **Strict Context Isolation**: Renderer runs with `contextIsolation: true` and `nodeIntegration: false`.
-2. **Narrowly Scoped Preload Bridge**: Frontend components communicate exclusively via strongly typed Electron IPC (`window.knotApi`). No raw shell execution or direct file system access is exposed to the renderer.
-3. **No Shell Interpolation**: Child process execution uses `spawn` with `shell: false` and array arguments, preventing shell injection vulnerabilities.
-4. **Credential Protection**: The log sanitizer continuously matches and redacts authentication secrets, JWTs, and URLs with embedded credentials.
-5. **Parameterized SQL Queries**: All database queries use parameterized prepared statements (`?`), eliminating SQL injection risks.
-6. **Filesystem Bridge Isolation**: Bridge folders are constrained strictly within `app.getPath('userData')/bridge/v1/`. All incoming files are validated for 256 KB size limits, valid JSON headers, and scope UUIDs before SQLite persistence.
-7. **No Auto-Approvals for Dangerous Operations**: Antigravity is executed with standard permission requirements; automated execution never bypasses tool confirmation policies. Knot **NEVER** passes `--dangerously-skip-permissions` or `--always-proceed`.
-8. **Sensitive Task Gating**: Potentially destructive commands and operations are held behind an explicit human approval gate.
-9. **Read-Only Git Inspection Invariant**: The Git inspection engine executes whitelisted read-only Git commands exclusively (`status`, `diff`, `log`, `rev-parse`, `cat-file`), rejecting all state-mutating operations. Paths are constrained to repository bounds with symlink escape validation, argument arrays with `shell: false`, and automatic suppression of sensitive credential files and binary payloads.
-10. **Context Integrity & Concurrency Guarantees**: Optimistic Concurrency Control (OCC) prevents stale writes from overwriting valid project context. Conflicts are strictly preserved and isolated in SQLite (`context_conflicts`) without data loss. Antigravity operates strictly in read-only mode regarding project context; only ChatGPT and user input can update the vault.
-11. **Immutable Audit Trail & Secret-Sanitized Export**: Event insertion is idempotent and append-only with strict ordering (`event_timestamp ASC, created_at ASC, id ASC`). All timeline trace exports (Markdown and JSON) pass through automated secret redaction filters before leaving the application layer.
+Knot is designed with defense-in-depth principles across its Electron IPC boundary, filesystem bridge, task dispatcher, process runner, and SQLite database:
+
+1. **Filesystem Bridge Trust Model & Limitations**:
+   - **Non-Authentication Reality**: The bridge header `sender: chatgpt` is transport-level attribution, **not cryptographic authentication**. Any local process with write permissions to the user's bridge directory can author a message.
+   - **Inbox Treated as Untrusted Input**: Incoming files are validated via `fs.lstat` before reading. Symlinks are rejected immediately (`SYMLINK_NOT_ALLOWED`) without following. Non-regular files and files exceeding 256 KB are discarded prior to parsing.
+   - **No Shell Execution**: Markdown body content is treated as inert prompt text and never passed to a shell or `eval`.
+   - **No Self-Elevation**: Messages cannot elevate their own permissions or toggle trust modes.
+2. **User-Controlled Project Trust Policies**:
+   - **Approval Required (`approval_required`, Default)**: All tasks—including ordinary safe implementation work—require explicit user approval in the Knot UI prior to Antigravity dispatch.
+   - **Trusted Project Mode (`trusted`, Opt-In)**: The user explicitly promotes a project in the Knot UI. Eligible ordinary (`safe`) tasks are automatically dispatched.
+   - **Non-Bypassable Sensitive Gates**: Sensitive operations (`git push`, branch/PR merge, package publish, deployment, recursive deletions, credentials access) and ambiguous operations **always require user approval, even in trusted mode**.
+3. **Cryptographic Task Content Integrity & Approval Invalidation**:
+   - Every task's title, description, and acceptance criteria are hashed with deterministic **SHA-256**.
+   - User approval is bound to the exact content hash (`approvedContentHash`).
+   - Editing an approved task invalidates prior approval, resetting status to `awaiting_approval`.
+   - Retries with materially modified instructions require re-approval before dispatch.
+   - At dispatch time, `TaskDispatcher` recalculates and verifies content hashes, preventing task tampering.
+4. **Preservation of Antigravity Native Permissions**:
+   - Knot **NEVER** passes `--dangerously-skip-permissions` or `--always-proceed`.
+   - Never simulates user approval by injecting input into the CLI.
+   - Working directories are validated and restricted to the registered project repository root. Path traversal, root `/`, and user home `~` are strictly prohibited.
+   - Renderer cannot pass arbitrary executable paths over IPC.
+5. **Electron Renderer & IPC Hardening**:
+   - `contextIsolation: true`, `nodeIntegration: false`, and `sandbox: true`.
+   - Strict Content Security Policy (`script-src 'self' 'wasm-unsafe-eval'`).
+   - `will-navigate` interception restricts navigation to local dev server or app bundle; external URLs open via system browser (`http`/`https` only).
+   - Sender frame validation (`validateIpcSender`) on all privileged IPC channels.
+6. **Centralized Secret Redaction & Sanitization**:
+   - Multi-layer regex sanitizer redacts AWS credentials, GitHub tokens, GitLab PATs, Slack tokens, OpenAI keys, Gemini keys, PEM/SSH private keys, JWTs, database connection strings, and cookies across logs, events, diffs, and exported traces.
+7. **Interactive Security Diagnostics Modal**:
+   - Accessible via the workspace header `<ShieldAlert /> Security` button.
+   - Real-time display of project trust mode, pending approvals, SHA-256 integrity verification, Antigravity permission safeguards, and bridge transport realities.
+   - Adheres strictly to the Knot 5-color developer palette.
+8. **Documented Threat Model**:
+   - Complete 12-scenario threat model and risk analysis documented in [docs/security-threat-model.md](docs/security-threat-model.md).
 
 ---
 

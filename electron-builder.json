@@ -2,6 +2,7 @@
   "appId": "com.axonel.knot",
   "productName": "Knot",
   "executableName": "knot",
+  "publish": null,
   "directories": {
     "output": "release"
   },

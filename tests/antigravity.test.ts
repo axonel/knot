@@ -459,7 +459,7 @@ done
         title: 'Session without path',
       });
 
-      await expect(manager.start(session.id)).rejects.toThrow('no repository path configured');
+      await expect(manager.start(session.id, { executablePath: '/bin/sh' })).rejects.toThrow('no repository path configured');
     });
   });
 });

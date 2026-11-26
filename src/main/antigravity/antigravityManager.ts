@@ -78,7 +78,7 @@ export class AntigravityManager extends EventEmitter {
 
   public async start(sessionId: string, options: StartAgentOptions = {}): Promise<void> {
     const capabilities = cliDetector.getLastCapabilities() || cliDetector.detect();
-    if (!capabilities.installed || !capabilities.executablePath) {
+    if (!options.executablePath && (!capabilities.installed || !capabilities.executablePath)) {
       throw new Error('Antigravity CLI is not installed or executable path not resolved.');
     }
 
@@ -110,7 +110,7 @@ export class AntigravityManager extends EventEmitter {
     const processInstance = new AntigravityProcess({
       sessionId,
       workingDirectory,
-      executablePath: options.executablePath || capabilities.executablePath,
+      executablePath: (options.executablePath || capabilities.executablePath)!,
       mode: options.mode || (persistedSession?.executionMode as AntigravityExecutionMode) || 'default',
       model: options.model || persistedSession?.model || undefined,
       effort: options.effort || persistedSession?.effort || undefined,

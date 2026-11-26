@@ -122,7 +122,22 @@ export class Orchestrator extends EventEmitter {
       this.emit('task_failed', task);
     });
 
-    // 5. Forward queue status changes
+    // 5. Dispatcher task cancellation listener
+    this.dispatcher.on('task_cancelled', async (task: Task) => {
+      try {
+        await this.publisher.publish({
+          task,
+        });
+      } catch (err) {
+        console.error('[Orchestrator] Error publishing cancelled task result:', err);
+      } finally {
+        this.lastAgentResponses.delete(task.sessionId);
+        this.bridgeService.syncWorkspaceIndex();
+      }
+      this.emit('task_cancelled', task);
+    });
+
+    // 6. Forward queue status changes
     this.queue.on('task_status_changed', (task: Task) => {
       this.bridgeService.syncWorkspaceIndex();
       this.emit('task_status_changed', task);
@@ -156,7 +171,7 @@ export class Orchestrator extends EventEmitter {
       const targetTaskId = meta.taskId as string | undefined;
 
       if (targetTaskId && action === 'cancel') {
-        this.cancelTask(targetTaskId, 'Cancelled via task_control bridge command');
+        await this.cancelTask(targetTaskId, 'Cancelled via task_control bridge command');
       } else if (targetTaskId && action === 'retry') {
         await this.retryTask(targetTaskId);
       }
@@ -165,22 +180,63 @@ export class Orchestrator extends EventEmitter {
 
   public async approveTask(taskId: string, expectedContentHash?: string, approver = 'user'): Promise<Task> {
     const task = this.queue.approveTask(taskId, expectedContentHash, approver);
-    await this.dispatcher.dispatchNext(task.sessionId);
+    try {
+      await this.dispatcher.dispatchNext(task.sessionId);
+    } catch (err) {
+      console.warn(`[Orchestrator] Task execution failed or dispatch error after approval:`, err);
+    }
     return task;
   }
 
-  public rejectTask(taskId: string, reason?: string): Task {
-    return this.queue.rejectTask(taskId, reason);
+  public async rejectTask(taskId: string, reason?: string): Promise<Task> {
+    const task = this.queue.rejectTask(taskId, reason);
+    try {
+      await this.publisher.publish({
+        task,
+      });
+    } catch (err) {
+      console.error('[Orchestrator] Error publishing rejected task result:', err);
+    } finally {
+      this.bridgeService.syncWorkspaceIndex();
+    }
+    return task;
   }
 
-  public cancelTask(taskId: string, reason?: string): Task {
-    return this.queue.cancelTask(taskId, reason);
+  public async cancelTask(taskId: string, reason?: string): Promise<Task> {
+    const existing = this.dbService.tasks.get(taskId);
+    if (!existing) {
+      throw new Error(`Task "${taskId}" not found.`);
+    }
+
+    if (existing.status === 'running') {
+      try {
+        await this.antigravityManager.cancelTaskTurn(existing.sessionId, reason);
+      } catch (err) {
+        console.warn(`[Orchestrator] Could not cancel active Antigravity turn for session ${existing.sessionId}:`, err);
+      }
+    }
+
+    const task = this.queue.cancelTask(taskId, reason);
+    try {
+      await this.publisher.publish({
+        task,
+      });
+    } catch (err) {
+      console.error('[Orchestrator] Error publishing cancelled task result:', err);
+    } finally {
+      this.bridgeService.syncWorkspaceIndex();
+    }
+    return task;
   }
 
   public async retryTask(taskId: string): Promise<Task> {
     const task = this.queue.retryTask(taskId);
     if (task.status === 'queued' && task.approvalStatus === 'approved') {
-      await this.dispatcher.dispatchNext(task.sessionId);
+      try {
+        await this.dispatcher.dispatchNext(task.sessionId);
+      } catch (err) {
+        console.warn(`[Orchestrator] Task execution failed or dispatch error after retry:`, err);
+      }
     }
     return task;
   }

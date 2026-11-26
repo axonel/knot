@@ -10,7 +10,7 @@ import type {
   TaskExecutionDetails,
 } from '../../shared/types.js';
 import { computeSha256 } from '../database/repositories/contextRepository.js';
-import { formatBridgeMessage } from '../bridge/protocol.js';
+import { TaskResultPublisher } from '../orchestration/TaskResultPublisher.js';
 
 export interface ReconciliationServiceOptions {
   dbService: DatabaseService;
@@ -89,7 +89,7 @@ export class ReconciliationService {
         const failureReason = 'Execution interrupted: Knot was terminated or restarted while task was in-flight.';
 
         // Update task to 'interrupted' while strictly preserving its approval status
-        this.dbService.tasks.updateExecution(t.id, {
+        const interruptedTask = this.dbService.tasks.updateExecution(t.id, {
           status: 'interrupted',
           completedAt,
           failureReason,
@@ -111,6 +111,18 @@ export class ReconciliationService {
             approvalStatus: t.approval_status,
           },
         });
+
+        // Publish interruption result to bridge outbox
+        try {
+          const publisher = new TaskResultPublisher(bridgeRoot, this.dbService);
+          await publisher.publish({
+            task: interruptedTask,
+          });
+        } catch (pubErr) {
+          report.details.errors.push(
+            `Failed to publish interrupted result for ${t.id}: ${pubErr instanceof Error ? pubErr.message : String(pubErr)}`
+          );
+        }
 
         report.details.interruptedTasksRecovered.push(t.id);
         report.issuesRepaired++;
@@ -298,60 +310,32 @@ export class ReconciliationService {
             }
           }
 
-          // Check completed task result publication in outbox
-          const completedTasks = this.dbService.tasks.listBySession(session.id).filter(
-            (t) => t.status === 'succeeded' || t.status === 'failed'
+          // Check terminal task result publication in outbox
+          const terminalTasks = this.dbService.tasks.listBySession(session.id).filter(
+            (t) => ['succeeded', 'failed', 'cancelled', 'interrupted'].includes(t.status)
           );
 
-          for (const task of completedTasks) {
+          for (const task of terminalTasks) {
             report.resultsReconciled++;
             const expectedResultFile = path.join(outboxDir, `task-${task.id}-result.md`);
+            const expectedMessageFile = task.resultMessageId ? path.join(outboxDir, `${task.resultMessageId}.md`) : null;
 
-            if (!fs.existsSync(expectedResultFile)) {
+            if (!fs.existsSync(expectedResultFile) || (expectedMessageFile && !fs.existsSync(expectedMessageFile)) || !task.resultMessageId) {
               report.issuesDetected++;
-              const executionDetails = (task.payload?.executionDetails as TaskExecutionDetails) || {};
-              const title = task.title;
-              const outcome = task.status;
-              const bodyMarkdown = [
-                `# Task Result: ${title}`,
-                '',
-                `- **Task ID**: \`${task.id}\``,
-                `- **Status**: \`${outcome}\``,
-                `- **Completed At**: \`${task.completedAt || new Date().toISOString()}\``,
-                task.failureReason ? `- **Failure Reason**: ${task.failureReason}` : null,
-                '',
-                '### Summary',
-                task.description || 'No description provided.',
-                '',
-                '### Execution Details',
-                `- Changed Files: ${(executionDetails.changedFiles || []).length}`,
-                `- Commands Executed: ${(executionDetails.commandsExecuted || []).length}`,
-                executionDetails.commitHash ? `- Commit: \`${executionDetails.commitHash}\`` : null,
-              ]
-                .filter(Boolean)
-                .join('\n');
-
-              const formatted = formatBridgeMessage(
-                {
-                  id: task.resultMessageId || randomUUID(),
-                  protocol: 'v1',
-                  projectId: project.id,
-                  sessionId: session.id,
-                  sender: 'knot',
-                  recipient: 'chatgpt',
-                  type: 'task_result',
-                  createdAt: task.completedAt || new Date().toISOString(),
-                  metadata: {
-                    taskId: task.id,
-                    status: task.status,
-                  },
-                },
-                bodyMarkdown
-              );
-
-              fs.writeFileSync(expectedResultFile, formatted, 'utf-8');
-              report.details.reMaterializedResultFiles.push(task.id);
-              report.issuesRepaired++;
+              try {
+                const publisher = new TaskResultPublisher(bridgeRoot, this.dbService);
+                await publisher.publish({
+                  task,
+                  agentResponse: task.payload?.agentResponse as string | undefined,
+                  executionDetails: task.payload?.executionDetails as TaskExecutionDetails | undefined,
+                });
+                report.details.reMaterializedResultFiles.push(task.id);
+                report.issuesRepaired++;
+              } catch (pubErr) {
+                report.details.errors.push(
+                  `Failed to re-materialize result file for task ${task.id}: ${pubErr instanceof Error ? pubErr.message : String(pubErr)}`
+                );
+              }
             }
           }
         }

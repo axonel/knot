@@ -22,15 +22,24 @@ export class TaskQueue extends EventEmitter {
    * Tasks that were left in 'running' state are marked as 'failed' with an explanatory message,
    * preserving diagnostic state and enabling explicit retry without automatic rerun.
    */
-  public recover(sessionId?: string): { recoveredCount: number; recoveredTasks: Task[] } {
+  public recover(
+    sessionId?: string,
+    options?: { targetStatus?: 'failed' | 'interrupted'; failureReason?: string }
+  ): { recoveredCount: number; recoveredTasks: Task[] } {
     let recoveredCount = 0;
     const recoveredTasks: Task[] = [];
     const runningTasks = this.dbService.tasks.listRunning(sessionId);
+    const targetStatus = options?.targetStatus || 'failed';
+    const defaultReason =
+      targetStatus === 'interrupted'
+        ? 'Execution interrupted: Knot was terminated or restarted while task was in-flight.'
+        : 'Interrupted by application restart: task was in-flight when Knot closed. State preserved for diagnostic inspection or explicit retry.';
+    const failureReason = options?.failureReason || defaultReason;
 
     for (const task of runningTasks) {
       const updated = this.dbService.tasks.updateExecution(task.id, {
-        status: 'failed',
-        failureReason: 'Interrupted by application restart: task was in-flight when Knot closed. State preserved for diagnostic inspection or explicit retry.',
+        status: targetStatus,
+        failureReason,
         completedAt: new Date().toISOString(),
       });
 

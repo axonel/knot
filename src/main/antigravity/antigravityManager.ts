@@ -276,7 +276,7 @@ export class AntigravityManager extends EventEmitter {
   public async executeTaskTurn(
     sessionId: string,
     prompt: string,
-    options?: { taskId?: string }
+    options?: { taskId?: string; timeoutMs?: number }
   ): Promise<{
     response: string;
     durationSeconds?: number;
@@ -362,7 +362,7 @@ export class AntigravityManager extends EventEmitter {
     }
 
     try {
-      const result = await proc.sendMessage(trimmed);
+      const result = await proc.sendMessage(trimmed, { timeoutMs: options?.timeoutMs });
 
       if (result.conversationId) {
         this.dbService.agentSessions.updateConversationIdBySession(sessionId, 'antigravity', result.conversationId);
@@ -389,6 +389,11 @@ export class AntigravityManager extends EventEmitter {
         response: result.response,
         durationSeconds: result.durationSeconds,
       });
+
+      if (result.status !== 'SUCCESS') {
+        const failureReason = result.error || `Antigravity execution failed with status: ${result.status}`;
+        throw new Error(failureReason);
+      }
 
       const executionDetails: TaskExecutionDetails = {
         summary: result.response || (result.status === 'SUCCESS' ? 'Task execution completed successfully.' : 'Task execution failed.'),
@@ -448,6 +453,47 @@ export class AntigravityManager extends EventEmitter {
       provenance: 'knot_observed',
       title: 'Antigravity CLI process stopped',
       data: { exitCode: proc.lastExitCode },
+    });
+
+    this.emitEvent('status_changed', sessionId, { state: 'stopped' });
+  }
+
+  public async stopAll(): Promise<void> {
+    const sessionIds = Array.from(this.activeProcesses.keys());
+    for (const sid of sessionIds) {
+      try {
+        await this.stop(sid);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * Gracefully cancels an active task turn for a session.
+   * Interrupts with SIGINT first, then escalates to stop (SIGTERM/SIGKILL),
+   * rejecting any pending turn and marking the agent session stopped.
+   */
+  public async cancelTaskTurn(sessionId: string, reason?: string): Promise<void> {
+    const proc = this.activeProcesses.get(sessionId);
+    if (!proc) {
+      return;
+    }
+
+    proc.interrupt();
+    await proc.stop();
+    this.activeProcesses.delete(sessionId);
+    this.activeTaskBySession.delete(sessionId);
+    this.dbService.agentSessions.updateStatusBySession(sessionId, 'antigravity', 'stopped', proc.lastExitCode ?? 0);
+
+    this.dbService.events.append({
+      sessionId,
+      eventType: 'antigravity_turn_cancelled',
+      actor: 'knot',
+      source: 'orchestration_runtime',
+      provenance: 'knot_observed',
+      title: `Antigravity task turn cancelled: ${reason || 'User cancelled'}`,
+      data: { reason },
     });
 
     this.emitEvent('status_changed', sessionId, { state: 'stopped' });

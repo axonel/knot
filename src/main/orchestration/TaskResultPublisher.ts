@@ -37,15 +37,41 @@ export class TaskResultPublisher {
     }
 
     const paths = initSessionWorkspace(this.bridgeRoot, project.id, session.id);
-    const messageId = randomUUID();
+    const deterministicFileName = `task-${task.id}-result.md`;
+    const deterministicFilePath = path.join(paths.outboxDir, deterministicFileName);
+
+    // Idempotency check: if already published and files exist, return existing result without duplicate writes
+    if (task.resultMessageId) {
+      const existingOutboxFilePath = path.join(paths.outboxDir, `${task.resultMessageId}.md`);
+      const existingMsg = this.dbService.messages.get(task.resultMessageId);
+      if (existingMsg && fs.existsSync(deterministicFilePath) && fs.existsSync(existingOutboxFilePath)) {
+        return {
+          messageId: task.resultMessageId,
+          filePath: existingOutboxFilePath,
+          deterministicFilePath,
+        };
+      }
+    }
+
+    const messageId = task.resultMessageId || randomUUID();
     const now = new Date().toISOString();
     const details = options.executionDetails;
-    const summary = details?.summary || (agentResponse ? agentResponse.trim() : task.status === 'succeeded' ? 'Task execution completed successfully.' : 'Task execution failed.');
+    const summary = details?.summary || (
+      agentResponse
+        ? agentResponse.trim()
+        : task.status === 'succeeded'
+          ? 'Task execution completed successfully.'
+          : task.status === 'cancelled'
+            ? (task.failureReason || 'Task was cancelled by user.')
+            : task.status === 'interrupted'
+              ? (task.failureReason || 'Task execution was interrupted by application restart.')
+              : (task.failureReason || 'Task execution failed.')
+    );
 
     let bodyContent = `# Task Result: ${task.title}
 
 - **Task ID**: \`${task.id}\`
-- **Status**: **${task.status.toUpperCase()}**
+- **Status**: \`${task.status}\` (**${task.status.toUpperCase()}**)
 - **Priority**: \`${task.priority || 'normal'}\`
 - **Execution Mode**: \`${task.executionMode || 'default'}\`
 - **Dispatched At**: \`${task.dispatchedAt || 'N/A'}\`
@@ -108,34 +134,31 @@ ${summary}
       sanitizedBodyContent
     );
 
-    // 1. Write atomic outbox message: <messageId>.md
+    // 1. Write atomic outbox message: <messageId>.md with retry
     const outboxFileName = `${messageId}.md`;
     const outboxFilePath = path.join(paths.outboxDir, outboxFileName);
-    const tempFile1 = path.join(paths.outboxDir, `${outboxFileName}.tmp.${Date.now()}`);
-    fs.writeFileSync(tempFile1, formattedMessage, 'utf-8');
-    fs.renameSync(tempFile1, outboxFilePath);
+    this.atomicWriteWithRetry(outboxFilePath, formattedMessage);
 
-    // 2. Also write deterministic file: task-<taskId>-result.md for easy discovery
-    const deterministicFileName = `task-${task.id}-result.md`;
-    const deterministicFilePath = path.join(paths.outboxDir, deterministicFileName);
-    const tempFile2 = path.join(paths.outboxDir, `${deterministicFileName}.tmp.${Date.now()}`);
-    fs.writeFileSync(tempFile2, formattedMessage, 'utf-8');
-    fs.renameSync(tempFile2, deterministicFilePath);
+    // 2. Also write deterministic file: task-<taskId>-result.md with retry
+    this.atomicWriteWithRetry(deterministicFilePath, formattedMessage);
 
     // 3. Persist result message in SQLite messages table
-    const resultMsg = this.dbService.messages.append({
-      id: messageId,
-      sessionId: session.id,
-      sender: 'knot',
-      recipient: 'chatgpt',
-      messageType: 'task_result',
-      contentMarkdown: sanitizedBodyContent,
-      correlationId: task.id,
-      metadata: {
-        taskId: task.id,
-        status: task.status,
-      },
-    });
+    let resultMsg = this.dbService.messages.get(messageId);
+    if (!resultMsg) {
+      resultMsg = this.dbService.messages.append({
+        id: messageId,
+        sessionId: session.id,
+        sender: 'knot',
+        recipient: 'chatgpt',
+        messageType: 'task_result',
+        contentMarkdown: sanitizedBodyContent,
+        correlationId: task.id,
+        metadata: {
+          taskId: task.id,
+          status: task.status,
+        },
+      });
+    }
 
     // 4. Update task record with resultMessageId
     this.dbService.tasks.updateExecution(task.id, {
@@ -166,5 +189,34 @@ ${summary}
       filePath: outboxFilePath,
       deterministicFilePath,
     };
+  }
+
+  private atomicWriteWithRetry(targetPath: string, content: string, maxRetries = 3): void {
+    const dir = path.dirname(targetPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    let attempt = 0;
+    while (true) {
+      attempt++;
+      const tempFile = path.join(
+        dir,
+        `${path.basename(targetPath)}.tmp.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`
+      );
+      try {
+        fs.writeFileSync(tempFile, content, 'utf-8');
+        fs.renameSync(tempFile, targetPath);
+        return;
+      } catch (err) {
+        try {
+          if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+        } catch {
+          // ignore
+        }
+        if (attempt >= maxRetries) {
+          throw err;
+        }
+      }
+    }
   }
 }

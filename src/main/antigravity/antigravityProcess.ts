@@ -38,12 +38,25 @@ export class AntigravityProcess extends EventEmitter {
 
   private pendingTurnResolve: ((result: MappedResultEvent) => void) | null = null;
   private pendingTurnReject: ((err: Error) => void) | null = null;
+  private turnTimeoutTimer: NodeJS.Timeout | null = null;
+  private turnEscalationTimer: NodeJS.Timeout | null = null;
 
   constructor(public readonly config: AntigravityProcessConfig) {
     super();
     this.streamParser = new StreamParser();
     this._cliConversationId = config.resumeConversationId || null;
     this.setupParserListeners();
+  }
+
+  private clearTurnTimers(): void {
+    if (this.turnTimeoutTimer) {
+      clearTimeout(this.turnTimeoutTimer);
+      this.turnTimeoutTimer = null;
+    }
+    if (this.turnEscalationTimer) {
+      clearTimeout(this.turnEscalationTimer);
+      this.turnEscalationTimer = null;
+    }
   }
 
   public get state(): AntigravityProcessState {
@@ -157,6 +170,14 @@ export class AntigravityProcess extends EventEmitter {
           onStartSuccess();
         });
 
+        child.stdout.on('end', () => {
+          try {
+            this.streamParser.end();
+          } catch {
+            // ignore
+          }
+        });
+
         child.stderr.on('data', (chunk: Buffer | string) => {
           const text = chunk.toString();
           this.emit('stderr', text);
@@ -192,7 +213,7 @@ export class AntigravityProcess extends EventEmitter {
     });
   }
 
-  public async sendMessage(prompt: string): Promise<MappedResultEvent> {
+  public async sendMessage(prompt: string, options?: { timeoutMs?: number }): Promise<MappedResultEvent> {
     if (!this.child || this.child.killed || this._state === 'stopped') {
       await this.start();
     }
@@ -208,6 +229,29 @@ export class AntigravityProcess extends EventEmitter {
     this._currentTurnPending = true;
     this.setState('thinking');
 
+    const timeoutMs = options?.timeoutMs;
+    if (timeoutMs && timeoutMs > 0) {
+      this.turnTimeoutTimer = setTimeout(() => {
+        this.turnTimeoutTimer = null;
+        this.interrupt();
+        this.turnEscalationTimer = setTimeout(() => {
+          this.turnEscalationTimer = null;
+          if (this._currentTurnPending) {
+            this.stop().catch(() => {});
+          }
+        }, 2000);
+
+        if (this.pendingTurnReject) {
+          const reject = this.pendingTurnReject;
+          this.pendingTurnResolve = null;
+          this.pendingTurnReject = null;
+          this._currentTurnPending = false;
+          this.setState('error');
+          reject(new Error(`Task execution timed out after ${timeoutMs}ms`));
+        }
+      }, timeoutMs);
+    }
+
     const ndjsonMessage = JSON.stringify({
       event: 'user',
       message: {
@@ -221,6 +265,7 @@ export class AntigravityProcess extends EventEmitter {
 
       const stdin = this.child?.stdin;
       if (!stdin) {
+        this.clearTurnTimers();
         this._currentTurnPending = false;
         this.pendingTurnResolve = null;
         this.pendingTurnReject = null;
@@ -231,6 +276,7 @@ export class AntigravityProcess extends EventEmitter {
 
       stdin.write(ndjsonMessage, (err) => {
         if (err) {
+          this.clearTurnTimers();
           this._currentTurnPending = false;
           this.pendingTurnResolve = null;
           this.pendingTurnReject = null;
@@ -252,6 +298,7 @@ export class AntigravityProcess extends EventEmitter {
   }
 
   public async stop(): Promise<void> {
+    this.clearTurnTimers();
     if (!this.child || this.child.killed || this._state === 'stopped') {
       this.setState('stopped');
       return;
@@ -353,6 +400,7 @@ export class AntigravityProcess extends EventEmitter {
         }
       } else if (mapped.type === 'result') {
         const resultEvent = mapped as MappedResultEvent;
+        this.clearTurnTimers();
         if (resultEvent.conversationId) {
           this._cliConversationId = resultEvent.conversationId;
         }
@@ -365,7 +413,7 @@ export class AntigravityProcess extends EventEmitter {
         };
 
         this._currentTurnPending = false;
-        this.setState('ready');
+        this.setState(resultEvent.status === 'ERROR' ? 'error' : 'ready');
 
         this.emit('result', resultEvent);
 
@@ -384,11 +432,25 @@ export class AntigravityProcess extends EventEmitter {
   }
 
   private handleProcessExit(code: number | null, error: Error | null, signal?: string | null): void {
+    this.clearTurnTimers();
     this._lastExitCode = code;
     this._pid = null;
 
+    try {
+      this.streamParser.end();
+    } catch {
+      // ignore
+    }
+
     if (this.pendingTurnReject) {
-      this.pendingTurnReject(error || new Error(`Process exited with code ${code ?? signal}`));
+      const exitReason = error
+        ? error.message
+        : signal
+          ? `Process terminated by signal ${signal} without emitting a final result`
+          : code !== 0
+            ? `Process exited with code ${code} without emitting a final result`
+            : `Process exited prematurely with code 0 without emitting a final result`;
+      this.pendingTurnReject(error || new Error(exitReason));
       this.pendingTurnResolve = null;
       this.pendingTurnReject = null;
     }

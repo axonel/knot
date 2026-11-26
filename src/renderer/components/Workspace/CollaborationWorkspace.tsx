@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Layers,
   Compass,
@@ -38,6 +38,13 @@ export const CollaborationWorkspace: React.FC = () => {
   const [sessionPaths, setSessionPaths] = useState<SessionBridgePaths | null>(null);
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatusInfo | null>(null);
 
+  // Synchronous refs to prevent stale closure loops across async IPC events
+  const selectedProjectRef = useRef<Project | null>(null);
+  const selectedSessionRef = useRef<Session | null>(null);
+  const hasAutoSelectedRef = useRef<boolean>(false);
+  const isFetchingWorkspaceRef = useRef<boolean>(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Panel display toggles
   const [showLeftActivity, setShowLeftActivity] = useState(true);
   const [showRightExecution, setShowRightExecution] = useState(true);
@@ -58,8 +65,46 @@ export const CollaborationWorkspace: React.FC = () => {
   const [modalSessionTitle, setModalSessionTitle] = useState('');
   const [targetProjectForSession, setTargetProjectForSession] = useState<Project | null>(null);
 
-  const loadWorkspace = async () => {
+  const updateSelectedProject = (p: Project | null) => {
+    selectedProjectRef.current = p;
+    setSelectedProject(p);
+  };
+
+  const updateSelectedSession = (s: Session | null) => {
+    selectedSessionRef.current = s;
+    setSelectedSession(s);
+  };
+
+  const selectSession = async (project: Project, session: Session) => {
     if (!window.knotApi) return;
+
+    const isAlreadyActive =
+      selectedProjectRef.current?.id === project.id &&
+      selectedSessionRef.current?.id === session.id &&
+      sessionPaths !== null;
+
+    updateSelectedProject(project);
+    updateSelectedSession(session);
+
+    if (isAlreadyActive) {
+      return;
+    }
+
+    try {
+      const paths = await window.knotApi.bridge.initSessionBridge(project.id, session.id);
+      setSessionPaths(paths);
+      const status = await window.knotApi.bridge.getStatus(session.id);
+      setBridgeStatus(status);
+    } catch (err) {
+      console.error('[CollaborationWorkspace] Error initializing session bridge:', err);
+    }
+  };
+
+  const loadWorkspaceData = useCallback(async () => {
+    if (!window.knotApi) return;
+    if (isFetchingWorkspaceRef.current) return;
+    isFetchingWorkspaceRef.current = true;
+
     try {
       const projList = await window.knotApi.projects.list();
       setProjects(projList);
@@ -80,65 +125,54 @@ export const CollaborationWorkspace: React.FC = () => {
       setSessionsByProject(sMap);
       setTasksBySession(tMap);
 
-      // Check unresolved conflicts for selected project
-      const targetP = selectedProject || (projList.length > 0 ? projList[0] : null);
-      if (targetP && window.knotApi.context) {
-        const conflicts = await window.knotApi.context.listConflicts(targetP.id, true);
+      // Check unresolved conflicts for active or first project
+      const activeP = selectedProjectRef.current || (projList.length > 0 ? projList[0] : null);
+      if (activeP && window.knotApi.context) {
+        const conflicts = await window.knotApi.context.listConflicts(activeP.id, true);
         setUnresolvedConflictsCount(conflicts.length);
       }
 
-      // Restore or auto-select active project and session
-      if (!selectedProject && projList.length > 0) {
+      const status = await window.knotApi.bridge.getStatus(selectedSessionRef.current?.id);
+      setBridgeStatus(status);
+
+      // One-time initial auto-selection on application startup
+      if (!hasAutoSelectedRef.current && projList.length > 0) {
         const firstP = projList[0];
-        setSelectedProject(firstP);
         const sessions = sMap.get(firstP.id) || [];
         if (sessions.length > 0) {
-          selectSession(firstP, sessions[0]);
+          hasAutoSelectedRef.current = true;
+          await selectSession(firstP, sessions[0]);
         }
       }
-
-      const status = await window.knotApi.bridge.getStatus();
-      setBridgeStatus(status);
     } catch (err) {
       console.error('[CollaborationWorkspace] Failed to load workspace:', err);
+    } finally {
+      isFetchingWorkspaceRef.current = false;
     }
-  };
-
-  const selectSession = async (project: Project, session: Session) => {
-    if (!window.knotApi) return;
-    setSelectedProject(project);
-    setSelectedSession(session);
-
-    try {
-      const paths = await window.knotApi.bridge.initSessionBridge(project.id, session.id);
-      setSessionPaths(paths);
-      const status = await window.knotApi.bridge.getStatus(session.id);
-      setBridgeStatus(status);
-    } catch (err) {
-      console.error('[CollaborationWorkspace] Error initializing session bridge:', err);
-    }
-  };
+  }, []);
 
   useEffect(() => {
-    loadWorkspace();
+    loadWorkspaceData();
 
     if (!window.knotApi) return;
 
-    const unBridge = window.knotApi.bridge.onEvent((evt) => {
-      if (evt.type === 'workspace-ready' || evt.type === 'workspace-index-updated') {
-        loadWorkspace();
-      }
-    });
-
+    // Debounce orchestration event listener - refreshes task and queue state without self-triggering loops
     const unOrch = window.knotApi.orchestration.onEvent(() => {
-      loadWorkspace();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        loadWorkspaceData();
+      }, 150);
     });
 
     return () => {
-      unBridge();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
       unOrch();
     };
-  }, []);
+  }, [loadWorkspaceData]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +193,7 @@ export const CollaborationWorkspace: React.FC = () => {
       setShowNewProjectModal(false);
       setModalProjectName('');
       setModalRepoPath('');
-      await loadWorkspace();
+      await loadWorkspaceData();
       selectSession(created, s);
     } catch (err) {
       console.error('[CollaborationWorkspace] Failed to create project:', err);
@@ -178,7 +212,7 @@ export const CollaborationWorkspace: React.FC = () => {
 
       setShowNewSessionModal(false);
       setModalSessionTitle('');
-      await loadWorkspace();
+      await loadWorkspaceData();
       selectSession(targetProjectForSession, created);
     } catch (err) {
       console.error('[CollaborationWorkspace] Failed to create session:', err);
@@ -343,7 +377,7 @@ export const CollaborationWorkspace: React.FC = () => {
             </button>
 
             <button
-              onClick={loadWorkspace}
+              onClick={loadWorkspaceData}
               title="Refresh Workspace Data"
               className="p-1.5 rounded bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] hover:bg-[#004E72]/20 transition-all text-xs"
             >
@@ -369,7 +403,7 @@ export const CollaborationWorkspace: React.FC = () => {
             <div className="w-80 shrink-0 h-full">
               <ChatGptActivityPanel
                 session={selectedSession}
-                onRefresh={loadWorkspace}
+                onRefresh={loadWorkspaceData}
               />
             </div>
           )}
@@ -381,20 +415,20 @@ export const CollaborationWorkspace: React.FC = () => {
                 project={selectedProject}
                 session={selectedSession}
                 sessionPaths={sessionPaths}
-                onRefresh={loadWorkspace}
+                onRefresh={loadWorkspaceData}
               />
             ) : centerView === 'context' ? (
               <ContextVaultPanel
                 project={selectedProject}
                 session={selectedSession}
-                onRefresh={loadWorkspace}
+                onRefresh={loadWorkspaceData}
               />
             ) : (
               <UnifiedTimelinePanel
                 project={selectedProject}
                 session={selectedSession}
                 initialTaskId={selectedTimelineTaskId}
-                onRefresh={loadWorkspace}
+                onRefresh={loadWorkspaceData}
                 onNavigateToTask={(taskId) => {
                   setSelectedTimelineTaskId(taskId);
                   setCenterView('timeline');
@@ -410,7 +444,7 @@ export const CollaborationWorkspace: React.FC = () => {
             <div className="w-80 shrink-0 h-full">
               <AntigravityExecutionPanel
                 session={selectedSession}
-                onRefresh={loadWorkspace}
+                onRefresh={loadWorkspaceData}
               />
             </div>
           )}

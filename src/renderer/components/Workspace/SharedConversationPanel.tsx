@@ -46,10 +46,21 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
     }
   };
 
+  const msgDebounceTimer = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     loadMessages();
 
     if (!window.knotApi) return;
+
+    const debouncedLoad = () => {
+      if (msgDebounceTimer.current) {
+        clearTimeout(msgDebounceTimer.current);
+      }
+      msgDebounceTimer.current = setTimeout(() => {
+        loadMessages();
+      }, 150);
+    };
 
     // Listen to bridge and orchestration events for live update
     const unBridge = window.knotApi.bridge.onEvent((evt) => {
@@ -58,15 +69,18 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
         evt.type === 'message-published' ||
         evt.type === 'workspace-ready'
       ) {
-        loadMessages();
+        debouncedLoad();
       }
     });
 
     const unOrch = window.knotApi.orchestration.onEvent(() => {
-      loadMessages();
+      debouncedLoad();
     });
 
     return () => {
+      if (msgDebounceTimer.current) {
+        clearTimeout(msgDebounceTimer.current);
+      }
       unBridge();
       unOrch();
     };

@@ -110,7 +110,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
       .listTasks(session.id)
       .then((tasks) => setSessionTasks(tasks))
       .catch((err) => console.error('[UnifiedTimelinePanel] Error loading tasks:', err));
-  }, [session]);
+  }, [session?.id]);
 
   // Load events or trace based on view level and selected task
   const loadTimelineData = useCallback(async () => {
@@ -147,7 +147,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [viewLevel, selectedTaskId, session, project, sortOrder]);
+  }, [viewLevel, selectedTaskId, session?.id, project?.id, sortOrder]);
 
   useEffect(() => {
     loadTimelineData();

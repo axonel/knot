@@ -50,10 +50,21 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
     }
   };
 
+  const orchDebounceTimer = React.useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     loadData();
 
     if (!window.knotApi) return;
+
+    const debouncedLoad = () => {
+      if (orchDebounceTimer.current) {
+        clearTimeout(orchDebounceTimer.current);
+      }
+      orchDebounceTimer.current = setTimeout(() => {
+        loadData();
+      }, 150);
+    };
 
     const unAgy = window.knotApi.antigravity.onEvent((evt: AntigravityUiEvent) => {
       if (evt.sessionId === session?.id) {
@@ -62,16 +73,19 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
           { type: evt.type, timestamp: evt.timestamp, data: evt.data },
         ]);
         if (evt.type === 'status_changed' || evt.type === 'turn_completed') {
-          loadData();
+          debouncedLoad();
         }
       }
     });
 
     const unOrch = window.knotApi.orchestration.onEvent(() => {
-      loadData();
+      debouncedLoad();
     });
 
     return () => {
+      if (orchDebounceTimer.current) {
+        clearTimeout(orchDebounceTimer.current);
+      }
       unAgy();
       unOrch();
     };

@@ -42,6 +42,8 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
     }
   };
 
+  const actDebounceTimer = React.useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     loadActivities();
 
@@ -49,11 +51,19 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
 
     const unlisten = window.knotApi.bridge.onEvent((evt) => {
       if (evt.type === 'activity-received') {
-        loadActivities();
+        if (actDebounceTimer.current) {
+          clearTimeout(actDebounceTimer.current);
+        }
+        actDebounceTimer.current = setTimeout(() => {
+          loadActivities();
+        }, 150);
       }
     });
 
     return () => {
+      if (actDebounceTimer.current) {
+        clearTimeout(actDebounceTimer.current);
+      }
       unlisten();
     };
   }, [session?.id]);

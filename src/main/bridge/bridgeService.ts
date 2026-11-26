@@ -49,6 +49,7 @@ export class BridgeService {
   private lastInboundMessage: { id: string; timestamp: string; sender: string } | null = null;
   private lastOutboundMessage: { id: string; timestamp: string; sender: string } | null = null;
   private lifecycleState: BridgeLifecycleState = 'not_initialized';
+  private activeSessionPaths: SessionBridgePaths | null = null;
 
   constructor(options: BridgeServiceOptions) {
     this.lifecycleState = 'initializing';
@@ -120,11 +121,21 @@ export class BridgeService {
     }
   }
 
-  public initSessionBridge(projectId: string, sessionId: string): SessionBridgePaths {
+  public initSessionBridge(projectId: string, sessionId: string, force = false): SessionBridgePaths {
+    if (
+      !force &&
+      this.activeProjectId === projectId &&
+      this.activeSessionId === sessionId &&
+      this.activeSessionPaths
+    ) {
+      return this.activeSessionPaths;
+    }
+
     this.activeProjectId = projectId;
     this.activeSessionId = sessionId;
 
     const paths = initSessionWorkspace(this.bridgeRoot, projectId, sessionId);
+    this.activeSessionPaths = paths;
 
     // Watch the session's inbox
     this.watcher.watchInbox(paths.inboxDir);
@@ -914,6 +925,9 @@ export class BridgeService {
 
   public async close(): Promise<void> {
     this.lifecycleState = 'stopped';
+    this.activeSessionPaths = null;
+    this.activeProjectId = null;
+    this.activeSessionId = null;
     await this.watcher.close();
     this.eventListeners.clear();
     this.inboundListeners.clear();

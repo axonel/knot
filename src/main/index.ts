@@ -351,6 +351,18 @@ function createWindow(): void {
     }
   }
 
+  mainWindow.on('close', (e) => {
+    logger.info('Main window close requested.');
+    if (!isShuttingDown) {
+      e.preventDefault();
+      performGracefulShutdown();
+    }
+  });
+
+  mainWindow.on('unresponsive', () => {
+    logger.warn('Main window became unresponsive.');
+  });
+
   mainWindow.on('closed', () => {
     logger.info('Main window closed.');
     mainWindow = null;
@@ -928,11 +940,32 @@ ipcMain.handle('security:getDiagnostics', (event, projectId?: string) => {
   return diagnostics;
 });
 
-// App lifecycle & shutdown cleanup
-app.on('before-quit', async (event) => {
-  logger.info('Application received before-quit event. Initiating clean termination.');
-  event.preventDefault();
+// App lifecycle & graceful shutdown cleanup
+let isShuttingDown = false;
 
+async function performGracefulShutdown(): Promise<void> {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  logger.info('Application initiating clean, graceful shutdown...');
+
+  // Set hard watchdog limit of 5 seconds to ensure shutdown never hangs
+  const watchdog = setTimeout(() => {
+    logger.warn('Shutdown watchdog timer expired (5000ms). Force terminating process.');
+    app.exit(0);
+  }, 5000);
+  watchdog.unref();
+
+  // 1. Immediately destroy main window so UI unmounts and closes cleanly on screen
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    try {
+      mainWindow.destroy();
+    } catch {
+      // ignore
+    }
+    mainWindow = null;
+  }
+
+  // 2. Stop Orchestrator
   try {
     if (orchestrator) {
       orchestrator.close();
@@ -942,15 +975,25 @@ app.on('before-quit', async (event) => {
     logger.error('Error closing orchestrator on app quit', orchErr);
   }
 
+  // 3. Clean up Antigravity processes with bounded timeout
   try {
     if (antigravityManager) {
-      await antigravityManager.cleanup(3000);
+      await antigravityManager.cleanup(2000);
       logger.info('Antigravity processes cleaned up.');
     }
   } catch (agyErr) {
     logger.error('Error cleaning up Antigravity processes on quit', agyErr);
   }
 
+  // 4. Clean up Desktop Commander child process with bounded timeout and SIGKILL escalation
+  try {
+    await manager.cleanup(2000);
+    logger.info('Desktop Commander cleaned up.');
+  } catch (err) {
+    logger.error('Error during Desktop Commander cleanup on app quit', err);
+  }
+
+  // 5. Close Bridge Service & watchers
   try {
     if (bridgeService) {
       await bridgeService.close();
@@ -960,20 +1003,26 @@ app.on('before-quit', async (event) => {
     logger.error('Error closing bridge service on app quit', bridgeErr);
   }
 
-  try {
-    await manager.cleanup();
-  } catch (err) {
-    logger.error('Error during Desktop Commander cleanup on app quit', err);
-  } finally {
-    if (dbService) {
-      try {
-        dbService.close();
-        logger.info('Database closed cleanly.');
-      } catch (dbErr) {
-        logger.error('Error closing database on app quit', dbErr);
-      }
+  // 6. Close SQLite database safely
+  if (dbService) {
+    try {
+      dbService.close();
+      logger.info('Database closed cleanly.');
+    } catch (dbErr) {
+      logger.error('Error closing database on app quit', dbErr);
     }
-    app.exit(0);
+  }
+
+  clearTimeout(watchdog);
+  logger.info('Graceful shutdown completed successfully. Exiting.');
+  app.exit(0);
+}
+
+app.on('before-quit', (event) => {
+  logger.info('Application received before-quit event.');
+  if (!isShuttingDown) {
+    event.preventDefault();
+    performGracefulShutdown();
   }
 });
 
@@ -1095,6 +1144,8 @@ if (gotTheLock) {
 app.on('window-all-closed', () => {
   logger.info('All windows closed.');
   if (process.platform !== 'darwin') {
-    app.quit();
+    if (!isShuttingDown) {
+      performGracefulShutdown();
+    }
   }
 });

@@ -346,23 +346,39 @@ export class DesktopCommanderManager extends EventEmitter {
    * Safe application shutdown hook.
    * Ensures any running child process is cleanly terminated so no orphaned processes remain.
    */
-  public async cleanup(): Promise<void> {
+  public async cleanup(timeoutMs = 2500): Promise<void> {
     if (this.startupTimer) {
       clearTimeout(this.startupTimer);
       this.startupTimer = null;
     }
-    if (this.shutdownTimer) {
-      clearTimeout(this.shutdownTimer);
-      this.shutdownTimer = null;
+
+    if (!this.childProcess || !this.pid) {
+      this.state = 'Stopped';
+      return;
     }
 
-    if (this.childProcess && this.pid) {
-      this.addLog('system', `Application shutting down. Terminating managed process PID ${this.pid}...`);
-      try {
-        this.childProcess.kill('SIGTERM');
-      } catch {
-        // ignore
-      }
+    const targetPid = this.pid;
+    this.addLog('system', `Application shutting down. Terminating managed process PID ${targetPid}...`);
+
+    try {
+      const stopPromise = this.stop();
+      const timeoutPromise = new Promise<{ success: boolean; message: string }>((resolve) => {
+        setTimeout(() => {
+          if (this.childProcess) {
+            try {
+              this.childProcess.kill('SIGKILL');
+            } catch {
+              // ignore
+            }
+          }
+          resolve({ success: false, message: 'Shutdown timed out, forced SIGKILL' });
+        }, timeoutMs);
+      });
+
+      await Promise.race([stopPromise, timeoutPromise]);
+    } catch (err) {
+      this.addLog('stderr', `Error during process cleanup: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
       this.cleanUpChildReference();
       this.state = 'Stopped';
     }

@@ -29,7 +29,10 @@ describe('Linux Desktop Integration & Packaging', () => {
         const out = execSync(`desktop-file-validate "${desktopPath}"`, { encoding: 'utf-8' });
         expect(out).toBe('');
       } catch (err: unknown) {
-        // If system doesn't have desktop-file-validate, test passes gracefully
+        // If desktop-file-validate is not installed on the system (e.g. headless CI container), skip gracefully
+        if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'ENOENT') {
+          return;
+        }
         if (err && typeof err === 'object' && 'status' in err) {
           expect((err as { status: number }).status).toBe(0);
         }

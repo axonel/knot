@@ -207,6 +207,10 @@ fi
   describe('CLI Flag Handling', () => {
     it('responds to --version without launching full GUI', () => {
       const projectRoot = path.resolve(import.meta.dirname, '..');
+      const distMain = path.join(projectRoot, 'dist', 'main', 'index.js');
+      if (!fs.existsSync(distMain)) {
+        execSync('npm run build:main', { cwd: projectRoot, stdio: 'pipe' });
+      }
       const electronPath = path.join(projectRoot, 'node_modules', '.bin', 'electron');
       const res = spawnSync(electronPath, ['dist/main/index.js', '--version'], {
         cwd: projectRoot,
@@ -219,6 +223,10 @@ fi
 
     it('responds to --help without launching full GUI', () => {
       const projectRoot = path.resolve(import.meta.dirname, '..');
+      const distMain = path.join(projectRoot, 'dist', 'main', 'index.js');
+      if (!fs.existsSync(distMain)) {
+        execSync('npm run build:main', { cwd: projectRoot, stdio: 'pipe' });
+      }
       const electronPath = path.join(projectRoot, 'node_modules', '.bin', 'electron');
       const res = spawnSync(electronPath, ['dist/main/index.js', '--help'], {
         cwd: projectRoot,

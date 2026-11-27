@@ -6,9 +6,8 @@ import { ProjectManager } from './components/ProjectManager/ProjectManager.js';
 import { BridgeManager } from './components/Bridge/BridgeManager.js';
 import { AntigravityWorkspace } from './components/Antigravity/AntigravityWorkspace.js';
 import { CollaborationWorkspace } from './components/Workspace/CollaborationWorkspace.js';
-import { Layers, ShieldCheck, Lock } from 'lucide-react';
 import { isEditableTarget } from './utils/keyboardUtils.js';
-import { ClickSpark, SpotlightCard } from './components/ReactBits/index.js';
+import { ClickSpark } from './components/ReactBits/index.js';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState('workspace');
@@ -62,9 +61,9 @@ export const App: React.FC = () => {
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
-          {!isFocusMode && <Header />}
+          {!isFocusMode && <Header currentTab={currentTab} />}
 
-          <main className={`flex-1 overflow-hidden ${currentTab === 'workspace' ? 'p-0 flex flex-col' : 'overflow-y-auto p-6 space-y-6'}`}>
+          <main className={`flex-1 overflow-hidden ${currentTab === 'workspace' ? 'p-0 flex flex-col' : 'overflow-y-auto p-4 sm:p-6'}`}>
             {currentTab === 'workspace' ? (
               <CollaborationWorkspace
                 isFocusMode={isFocusMode}
@@ -85,49 +84,9 @@ export const App: React.FC = () => {
                 <BridgeManager />
               </section>
             ) : (
-              <>
-                {/* Main Desktop Commander Process Manager Section */}
-                <section>
-                  <ProcessManager />
-                </section>
-
-                {/* Architecture Overview Section */}
-                <section className="rounded-xl border border-[#292C2F] bg-[#1B1D1F] p-5 space-y-3 shadow-lg">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#A5A5A0] font-mono">
-                    <Layers size={14} className="text-[#E05252]" />
-                    <span>Multi-Agent Architecture</span>
-                  </div>
-                  <p className="text-xs text-[#F0F0ED]/90 leading-relaxed font-normal">
-                    <strong className="text-[#F0F0ED]">Knot</strong> connects the user's existing ChatGPT browser session to their local development environment and Antigravity CLI. ChatGPT acts as planner and orchestrator; Antigravity executes implementation tasks and reports results.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-[11px] text-[#A5A5A0]">
-                    <SpotlightCard
-                      spotlightColor="rgba(224, 82, 82, 0.1)"
-                      className="p-3 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1"
-                    >
-                      <div className="flex items-center gap-1.5 text-[#E05252] font-semibold text-xs">
-                        <ShieldCheck size={13} />
-                        <span>Process Isolation</span>
-                      </div>
-                      <p className="text-[#A5A5A0] leading-snug">
-                        Strict signal handling, isolated cgroups and PID tracking prevent orphan background processes.
-                      </p>
-                    </SpotlightCard>
-                    <SpotlightCard
-                      spotlightColor="rgba(224, 82, 82, 0.1)"
-                      className="p-3 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1"
-                    >
-                      <div className="flex items-center gap-1.5 text-[#E05252] font-semibold text-xs">
-                        <Lock size={13} />
-                        <span>Log Sanitization</span>
-                      </div>
-                      <p className="text-[#A5A5A0] leading-snug">
-                        Environment variables, credentials and authorization tokens are automatically scrubbed at the boundary.
-                      </p>
-                    </SpotlightCard>
-                  </div>
-                </section>
-              </>
+              <section className="w-full">
+                <ProcessManager />
+              </section>
             )}
           </main>
         </div>

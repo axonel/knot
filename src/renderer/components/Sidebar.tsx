@@ -8,7 +8,6 @@ import {
   Layers,
   ChevronLeft,
   ChevronRight,
-  ShieldCheck,
 } from 'lucide-react';
 import { Magnet } from './ReactBits/index.js';
 
@@ -163,56 +162,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* Bottom Environment Status & Collapse Trigger */}
-      <div className={isCollapsed ? 'px-1.5 space-y-2' : 'px-3 space-y-2'}>
-        {isCollapsed ? (
-          <div className="flex flex-col items-center gap-1.5 pt-2 border-t border-[#292C2F]">
-            <div
-              title="Process Isolation: Active"
-              className="p-2 rounded bg-[#000000] border border-[#292C2F] text-[#E05252]"
+      {/* Bottom Rail Collapse Trigger */}
+      <div className={isCollapsed ? 'px-1.5' : 'px-3'}>
+        <div className="pt-2 border-t border-[#292C2F]">
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              title={isCollapsed ? 'Expand Sidebar' : 'Collapse Rail'}
+              aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Rail'}
+              className={`w-full flex items-center justify-center ${
+                isCollapsed ? 'p-2' : 'gap-1.5 py-1.5 font-mono text-[11px]'
+              } rounded text-xs text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all cursor-pointer`}
             >
-              <ShieldCheck size={14} />
-            </div>
-            {onToggleCollapse && (
-              <Magnet padding={12} disabled={false}>
-                <button
-                  onClick={onToggleCollapse}
-                  title="Expand Sidebar"
-                  aria-label="Expand Sidebar"
-                  className="w-full flex items-center justify-center p-2 rounded text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all cursor-pointer"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </Magnet>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="p-2.5 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] text-[#A5A5A0]">
-                <div className="flex items-center gap-1.5 font-medium text-[#F0F0ED]">
-                  <ShieldCheck size={13} className="text-[#E05252]" />
-                  <span>Process Isolation</span>
-                </div>
-                <span className="text-[10px] font-mono text-[#E05252]">Active</span>
-              </div>
-              <div className="text-[10px] text-[#A5A5A0] font-mono leading-tight">
-                Desktop Commander Remote
-              </div>
-            </div>
-
-            {onToggleCollapse && (
-              <button
-                onClick={onToggleCollapse}
-                aria-label="Collapse Rail"
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded text-xs text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all cursor-pointer font-mono text-[11px]"
-              >
-                <ChevronLeft size={14} />
-                <span>Collapse Rail</span>
-              </button>
-            )}
-          </>
-        )}
+              {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={14} />}
+              {!isCollapsed && <span>Collapse Rail</span>}
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

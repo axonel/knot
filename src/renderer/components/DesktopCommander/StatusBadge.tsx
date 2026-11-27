@@ -11,17 +11,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ state, className = '' 
     switch (state) {
       case 'Running':
         return {
-          bg: 'bg-[#292C2F]/20',
-          border: 'border-[#292C2F]/60',
+          bg: 'bg-[#292C2F]/50',
+          border: 'border-[#292C2F]',
           text: 'text-[#F0F0ED]',
-          dot: 'bg-[#F0F0ED]',
+          dot: 'bg-[#E05252]',
         };
       case 'Starting':
         return {
-          bg: 'bg-[#292C2F]/15',
-          border: 'border-[#292C2F]/40',
-          text: 'text-[#F0F0ED]/90',
-          dot: 'bg-[#292C2F]',
+          bg: 'bg-[#292C2F]/30',
+          border: 'border-[#292C2F]',
+          text: 'text-[#F0F0ED]',
+          dot: 'bg-[#E05252]',
           ping: true,
         };
       case 'Stopping':
@@ -35,17 +35,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ state, className = '' 
       case 'Error':
         return {
           bg: 'bg-[#E05252]/20',
-          border: 'border-[#E05252]/60',
+          border: 'border-[#E05252]/50',
           text: 'text-[#E05252]',
           dot: 'bg-[#E05252]',
         };
       case 'Stopped':
       default:
         return {
-          bg: 'bg-[#F0F0ED]/5',
-          border: 'border-[#F0F0ED]/15',
-          text: 'text-[#F0F0ED]/60',
-          dot: 'bg-[#F0F0ED]/40',
+          bg: 'bg-[#000000]',
+          border: 'border-[#292C2F]',
+          text: 'text-[#A5A5A0]',
+          dot: 'bg-[#A5A5A0]/40',
         };
     }
   };

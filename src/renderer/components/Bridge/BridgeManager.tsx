@@ -197,7 +197,7 @@ export const BridgeManager: React.FC = () => {
             <select
               value={selectedProjectId || ''}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#292C2F]"
+              className="bg-[#000000] border border-[#F0F0ED]/10 text-[#F0F0ED] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#292C2F]"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -216,7 +216,7 @@ export const BridgeManager: React.FC = () => {
               <select
                 value={selectedSessionId || ''}
                 onChange={(e) => setSelectedSessionId(e.target.value)}
-                className="bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#292C2F]"
+                className="bg-[#000000] border border-[#F0F0ED]/10 text-[#F0F0ED] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#292C2F]"
               >
                 {sessions.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -230,7 +230,7 @@ export const BridgeManager: React.FC = () => {
 
         <button
           onClick={refreshBridgeData}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#F0F0ED] transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#F0F0ED] transition-colors"
         >
           <RefreshCw size={12} />
           <span>Sync Bridge</span>

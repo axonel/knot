@@ -224,7 +224,7 @@ export const AntigravityWorkspace: React.FC = () => {
             <select
               value={selectedProjectId || ''}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-[#111213] border border-[#F0F0ED]/15 rounded-lg px-2.5 py-1 text-xs text-[#F0F0ED] font-mono focus:outline-none"
+              className="bg-[#000000] border border-[#F0F0ED]/15 rounded-lg px-2.5 py-1 text-xs text-[#F0F0ED] font-mono focus:outline-none"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -240,7 +240,7 @@ export const AntigravityWorkspace: React.FC = () => {
               value={selectedSessionId || ''}
               onChange={(e) => setSelectedSessionId(e.target.value)}
               disabled={sessions.length === 0}
-              className="bg-[#111213] border border-[#F0F0ED]/15 rounded-lg px-2.5 py-1 text-xs text-[#F0F0ED] font-mono focus:outline-none disabled:opacity-40"
+              className="bg-[#000000] border border-[#F0F0ED]/15 rounded-lg px-2.5 py-1 text-xs text-[#F0F0ED] font-mono focus:outline-none disabled:opacity-40"
             >
               {sessions.length === 0 ? (
                 <option value="">No sessions</option>
@@ -257,7 +257,7 @@ export const AntigravityWorkspace: React.FC = () => {
 
         <button
           onClick={refreshSessionData}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED]/70 hover:text-[#F0F0ED] transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED]/70 hover:text-[#F0F0ED] transition-colors"
           title="Refresh session status"
         >
           <RefreshCw size={12} />

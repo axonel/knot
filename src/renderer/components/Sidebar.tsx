@@ -149,8 +149,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span
                       className={`text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
                         isActive
-                          ? 'bg-[#111213] text-[#E05252] border-[#E05252]/40 font-semibold'
-                          : 'bg-[#111213] text-[#A5A5A0]/60 border-[#292C2F]'
+                          ? 'bg-[#000000] text-[#E05252] border-[#E05252]/40 font-semibold'
+                          : 'bg-[#000000] text-[#A5A5A0]/60 border-[#292C2F]'
                       }`}
                     >
                       {item.badge}
@@ -169,7 +169,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex flex-col items-center gap-1.5 pt-2 border-t border-[#292C2F]">
             <div
               title="Process Isolation: Active"
-              className="p-2 rounded bg-[#111213] border border-[#292C2F] text-[#E05252]"
+              className="p-2 rounded bg-[#000000] border border-[#292C2F] text-[#E05252]"
             >
               <ShieldCheck size={14} />
             </div>
@@ -188,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         ) : (
           <>
-            <div className="p-2.5 rounded-lg bg-[#111213] border border-[#292C2F] space-y-1.5">
+            <div className="p-2.5 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1.5">
               <div className="flex items-center justify-between text-[11px] text-[#A5A5A0]">
                 <div className="flex items-center gap-1.5 font-medium text-[#F0F0ED]">
                   <ShieldCheck size={13} className="text-[#E05252]" />

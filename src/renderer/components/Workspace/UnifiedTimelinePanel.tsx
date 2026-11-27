@@ -398,7 +398,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#111213] text-[#F0F0ED] overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-[#000000] text-[#F0F0ED] overflow-hidden">
       {/* Top Header & View Level Selector */}
       <div className="p-3 bg-[#1B1D1F] border-b border-[#F0F0ED]/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-3">
@@ -410,7 +410,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
           </div>
 
           {/* Level Switcher: Project vs Session vs Task */}
-          <div className="flex items-center bg-[#111213] p-0.5 rounded-lg border border-[#F0F0ED]/10">
+          <div className="flex items-center bg-[#000000] p-0.5 rounded-lg border border-[#F0F0ED]/10">
             <button
               onClick={() => {
                 setViewLevel('project');
@@ -448,7 +448,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
               disabled={sessionTasks.length === 0}
               className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
                 viewLevel === 'task'
-                  ? 'bg-[#E05252] text-[#111213] font-bold'
+                  ? 'bg-[#E05252] text-black font-bold'
                   : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
               } ${sessionTasks.length === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
             >
@@ -466,7 +466,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
               onChange={(e) => {
                 if (e.target.value) handleSelectTask(e.target.value);
               }}
-              className="bg-[#111213] text-xs font-mono border border-[#F0F0ED]/10 rounded px-2.5 py-1 text-[#F0F0ED] focus:outline-none focus:border-[#292C2F] max-w-[200px] truncate"
+              className="bg-[#000000] text-xs font-mono border border-[#F0F0ED]/10 rounded px-2.5 py-1 text-[#F0F0ED] focus:outline-none focus:border-[#292C2F] max-w-[200px] truncate"
             >
               <option value="" disabled>
                 Select Task Trace...
@@ -485,7 +485,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
               if (onRefresh) onRefresh();
             }}
             title="Refresh Timeline"
-            className="p-1.5 rounded bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#F0F0ED] hover:bg-[#292C2F]/20 transition-all text-xs"
+            className="p-1.5 rounded bg-[#000000] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#F0F0ED] hover:bg-[#292C2F]/20 transition-all text-xs"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -502,7 +502,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search events, tools, commits..."
-            className="w-full bg-[#111213] text-xs pl-8 pr-2.5 py-1 rounded border border-[#F0F0ED]/10 text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:outline-none focus:border-[#292C2F]"
+            className="w-full bg-[#000000] text-xs pl-8 pr-2.5 py-1 rounded border border-[#F0F0ED]/10 text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:outline-none focus:border-[#292C2F]"
           />
           {searchQuery && (
             <button
@@ -524,7 +524,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
               className={`px-2 py-0.5 rounded text-[11px] font-mono transition-all ${
                 actorFilter === act
                   ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
-                  : 'bg-[#111213] text-[#F0F0ED]/60 hover:text-[#F0F0ED] border border-[#F0F0ED]/10'
+                  : 'bg-[#000000] text-[#F0F0ED]/60 hover:text-[#F0F0ED] border border-[#F0F0ED]/10'
               }`}
             >
               {act === 'all' ? 'All' : act.toUpperCase()}
@@ -553,7 +553,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
               className={`px-2 py-0.5 rounded text-[11px] transition-all ${
                 categoryFilter === cat
                   ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
-                  : 'bg-[#111213] text-[#F0F0ED]/60 hover:text-[#F0F0ED] border border-[#F0F0ED]/10'
+                  : 'bg-[#000000] text-[#F0F0ED]/60 hover:text-[#F0F0ED] border border-[#F0F0ED]/10'
               }`}
             >
               {label}
@@ -565,7 +565,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
         <button
           onClick={() => setSortOrder((o) => (o === 'ASC' ? 'DESC' : 'ASC'))}
           title={`Order: ${sortOrder === 'ASC' ? 'Oldest first (Chronological)' : 'Newest first'}`}
-          className="px-2 py-1 rounded bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED]/70 hover:text-[#F0F0ED] font-mono flex items-center gap-1"
+          className="px-2 py-1 rounded bg-[#000000] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED]/70 hover:text-[#F0F0ED] font-mono flex items-center gap-1"
         >
           <span>{sortOrder === 'ASC' ? 'ASC ↑' : 'DESC ↓'}</span>
         </button>
@@ -628,13 +628,13 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                         taskTrace.summary.status === 'succeeded'
                           ? 'bg-[#292C2F] text-[#F0F0ED]'
                           : taskTrace.summary.status === 'failed'
-                          ? 'bg-[#E05252] text-[#111213]'
+                          ? 'bg-[#E05252] text-black'
                           : 'bg-[#E05252]/20 text-[#E05252]'
                       }`}
                     >
                       {taskTrace.summary.status}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#111213] text-[#F0F0ED]/60 border border-[#F0F0ED]/10">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#000000] text-[#F0F0ED]/60 border border-[#F0F0ED]/10">
                       mode: {taskTrace.summary.executionMode}
                     </span>
                   </div>
@@ -656,7 +656,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                   {onNavigateToConversation && (
                     <button
                       onClick={onNavigateToConversation}
-                      className="px-3 py-1.5 rounded bg-[#111213] border border-[#F0F0ED]/20 text-xs text-[#F0F0ED]/80 hover:text-[#F0F0ED] transition-all flex items-center gap-1.5 font-medium"
+                      className="px-3 py-1.5 rounded bg-[#000000] border border-[#F0F0ED]/20 text-xs text-[#F0F0ED]/80 hover:text-[#F0F0ED] transition-all flex items-center gap-1.5 font-medium"
                     >
                       <ExternalLink size={12} />
                       <span>Conversation</span>
@@ -667,28 +667,28 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
 
               {/* Metrics Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-2 border-t border-[#F0F0ED]/10 text-xs">
-                <div className="p-2 bg-[#111213] rounded border border-[#F0F0ED]/5">
+                <div className="p-2 bg-[#000000] rounded border border-[#F0F0ED]/5">
                   <div className="text-[10px] uppercase font-mono text-[#F0F0ED]/50">Total Duration</div>
                   <div className="font-mono text-sm font-bold text-[#F0F0ED]">
                     {formatDurationMs(taskTrace.summary.totalDurationMs)}
                   </div>
                 </div>
 
-                <div className="p-2 bg-[#111213] rounded border border-[#F0F0ED]/5">
+                <div className="p-2 bg-[#000000] rounded border border-[#F0F0ED]/5">
                   <div className="text-[10px] uppercase font-mono text-[#F0F0ED]/50">Queue Wait</div>
                   <div className="font-mono text-sm font-bold text-[#F0F0ED]">
                     {formatDurationMs(taskTrace.summary.queueDurationMs)}
                   </div>
                 </div>
 
-                <div className="p-2 bg-[#111213] rounded border border-[#F0F0ED]/5">
+                <div className="p-2 bg-[#000000] rounded border border-[#F0F0ED]/5">
                   <div className="text-[10px] uppercase font-mono text-[#F0F0ED]/50">Execution Time</div>
                   <div className="font-mono text-sm font-bold text-[#E05252]">
                     {formatDurationMs(taskTrace.summary.executionDurationMs)}
                   </div>
                 </div>
 
-                <div className="p-2 bg-[#111213] rounded border border-[#F0F0ED]/5">
+                <div className="p-2 bg-[#000000] rounded border border-[#F0F0ED]/5">
                   <div className="text-[10px] uppercase font-mono text-[#F0F0ED]/50">Approver</div>
                   <div className="font-mono text-xs text-[#F0F0ED] truncate">
                     {taskTrace.summary.isApproved
@@ -759,9 +759,9 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                             isSuccess
                               ? 'bg-[#292C2F] text-[#F0F0ED]'
                               : isFail
-                              ? 'bg-[#E05252] text-[#111213]'
+                              ? 'bg-[#E05252] text-[#000000]'
                               : isPending
-                              ? 'bg-[#111213] text-[#F0F0ED]/40 border border-[#F0F0ED]/20'
+                              ? 'bg-[#000000] text-[#F0F0ED]/40 border border-[#F0F0ED]/20'
                               : 'bg-[#E05252]/20 text-[#E05252]'
                           }`}
                         >
@@ -777,7 +777,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                                   ? 'text-[#F0F0ED] bg-[#292C2F]/40'
                                   : isFail
                                   ? 'text-[#E05252] bg-[#E05252]/20'
-                                  : 'text-[#F0F0ED]/40 bg-[#111213]'
+                                  : 'text-[#F0F0ED]/40 bg-[#000000]'
                               }`}
                             >
                               {stage.status}
@@ -801,7 +801,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
 
                     {/* Stage Events Body */}
                     {isExpanded && (
-                      <div className="p-3 bg-[#111213]/50 border-t border-[#F0F0ED]/10 space-y-2">
+                      <div className="p-3 bg-[#000000]/50 border-t border-[#F0F0ED]/10 space-y-2">
                         {stage.events.length === 0 ? (
                           <div className="text-center py-3 text-xs text-[#F0F0ED]/40 font-mono italic">
                             No events recorded for this stage yet.
@@ -845,7 +845,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                                   </button>
 
                                   {expandedEventIds.has(ev.id) && (
-                                    <pre className="mt-1.5 p-2 bg-[#111213] rounded border border-[#F0F0ED]/10 text-[10px] font-mono text-[#F0F0ED]/80 overflow-x-auto max-h-48">
+                                    <pre className="mt-1.5 p-2 bg-[#000000] rounded border border-[#F0F0ED]/10 text-[10px] font-mono text-[#F0F0ED]/80 overflow-x-auto max-h-48">
                                       {JSON.stringify(ev.data, null, 2)}
                                     </pre>
                                   )}
@@ -890,7 +890,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                     >
                       {/* Timeline Dot on the line */}
                       <div
-                        className={`absolute -left-[23px] top-4 w-3 h-3 rounded-full border-2 border-[#111213] ${
+                        className={`absolute -left-[23px] top-4 w-3 h-3 rounded-full border-2 border-[#000000] ${
                           isError ? 'bg-[#E05252]' : 'bg-[#292C2F]'
                         }`}
                       />
@@ -955,7 +955,7 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
                           </button>
 
                           {isExpanded && (
-                            <pre className="mt-1.5 p-2 bg-[#111213] rounded border border-[#F0F0ED]/10 text-[10px] font-mono text-[#F0F0ED]/80 overflow-x-auto max-h-48">
+                            <pre className="mt-1.5 p-2 bg-[#000000] rounded border border-[#F0F0ED]/10 text-[10px] font-mono text-[#F0F0ED]/80 overflow-x-auto max-h-48">
                               {JSON.stringify(ev.data, null, 2)}
                             </pre>
                           )}
@@ -990,12 +990,12 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
             </div>
 
             <div className="p-4 flex-1 overflow-y-auto">
-              <pre className="p-3 bg-[#111213] rounded-lg border border-[#F0F0ED]/10 text-xs font-mono text-[#F0F0ED]/90 overflow-x-auto max-h-[50vh] whitespace-pre-wrap">
+              <pre className="p-3 bg-[#000000] rounded-lg border border-[#F0F0ED]/10 text-xs font-mono text-[#F0F0ED]/90 overflow-x-auto max-h-[50vh] whitespace-pre-wrap">
                 {exportContent}
               </pre>
             </div>
 
-            <div className="px-4 py-3 border-t border-[#F0F0ED]/10 flex items-center justify-end gap-2 bg-[#111213]">
+            <div className="px-4 py-3 border-t border-[#F0F0ED]/10 flex items-center justify-end gap-2 bg-[#000000]">
               <button
                 onClick={handleCopyExport}
                 className="px-3 py-1.5 rounded bg-[#1B1D1F] border border-[#292C2F] text-xs font-medium text-[#F0F0ED] hover:bg-[#292C2F] transition-colors flex items-center gap-1.5"

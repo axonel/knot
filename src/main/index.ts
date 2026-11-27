@@ -121,8 +121,8 @@ function getErrorHtml(title: string, details: string): string {
   <title>Knot — ${title}</title>
   <style>
     body {
-      background-color: #090B0D;
-      color: #F9F9F9;
+      background-color: #000000;
+      color: #F0F0ED;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 40px;
@@ -133,8 +133,8 @@ function getErrorHtml(title: string, details: string): string {
       min-height: 80vh;
     }
     .card {
-      background-color: #092634;
-      border: 1px solid rgba(255, 110, 66, 0.4);
+      background-color: #1B1D1F;
+      border: 1px solid rgba(224, 82, 82, 0.4);
       border-radius: 8px;
       padding: 32px;
       max-width: 680px;
@@ -142,7 +142,7 @@ function getErrorHtml(title: string, details: string): string {
       box-shadow: 0 8px 24px rgba(0,0,0,0.5);
     }
     h1 {
-      color: #FF6E42;
+      color: #E05252;
       font-size: 20px;
       margin-top: 0;
       display: flex;
@@ -150,16 +150,16 @@ function getErrorHtml(title: string, details: string): string {
       gap: 12px;
     }
     p {
-      color: #F9F9F9;
+      color: #F0F0ED;
       line-height: 1.6;
       font-size: 14px;
     }
     pre {
-      background-color: #090B0D;
+      background-color: #000000;
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 6px;
       padding: 16px;
-      color: #FF6E42;
+      color: #E05252;
       font-size: 12px;
       overflow-x: auto;
       white-space: pre-wrap;
@@ -213,7 +213,7 @@ function createWindow(): void {
     minWidth: 840,
     minHeight: 620,
     icon: iconPath,
-    backgroundColor: '#090B0D',
+    backgroundColor: '#000000',
     show: false,
     webPreferences: {
       preload: preloadExists ? preloadPath : undefined,

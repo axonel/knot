@@ -13,13 +13,13 @@ export const Header: React.FC = () => {
 
       <div className="flex items-center gap-3 text-xs">
         <Magnet padding={8} disabled={false}>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111213] border border-[#292C2F] text-[#F0F0ED] font-mono text-[11px] shadow-2xs cursor-default">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#000000] border border-[#292C2F] text-[#F0F0ED] font-mono text-[11px] shadow-2xs cursor-default">
             <GitBranch size={12} className="text-[#E05252]" />
             <span>axonel/knot</span>
           </div>
         </Magnet>
 
-        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#111213] border border-[#292C2F] text-[11px] text-[#A5A5A0] font-mono">
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#000000] border border-[#292C2F] text-[11px] text-[#A5A5A0] font-mono">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E05252] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E05252]"></span>

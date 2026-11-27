@@ -537,7 +537,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#111213] relative">
+    <div className="flex h-full w-full overflow-hidden bg-[#000000] relative">
       {/* Workspace Project Tree: Inline in Wide Mode, Slide-Over Drawer in Compact or Focus Mode */}
       <div
         aria-hidden={isCompact || isFocusMode ? compactDrawer !== 'projects' : !showProjectTree}
@@ -553,7 +553,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
         }
       >
         {(isCompact || isFocusMode) && (
-          <div className="flex items-center justify-between px-3 py-2 border-b border-[#F0F0ED]/10 bg-[#111213]">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-[#F0F0ED]/10 bg-[#000000]">
             <div className="flex items-center gap-2">
               <FolderGit2 size={14} className="text-[#E05252]" />
               <span className="text-xs font-mono font-bold text-[#F0F0ED]">Projects & Sessions</span>
@@ -620,14 +620,14 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] ${
                 (isCompact || isFocusMode ? compactDrawer === 'projects' : showProjectTree)
                   ? 'bg-[#292C2F] text-[#F0F0ED] border-[#292C2F] font-semibold'
-                  : 'bg-[#111213] text-[#F0F0ED]/70 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                  : 'bg-[#000000] text-[#F0F0ED]/70 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
               }`}
             >
               <FolderGit2 size={13} className="text-[#E05252] shrink-0" />
               <span className="truncate max-w-[100px] sm:max-w-[140px]">
                 {selectedProject ? selectedProject.name : 'Projects'}
               </span>
-              <span className="text-[10px] font-mono px-1 rounded bg-[#111213]/60 text-[#F0F0ED]/60 shrink-0">
+              <span className="text-[10px] font-mono px-1 rounded bg-[#000000]/60 text-[#F0F0ED]/60 shrink-0">
                 {projects.length}
               </span>
             </button>
@@ -644,7 +644,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
           </div>
 
           {/* Center Cluster: 3-Way Workspace View Switcher */}
-          <div className="flex items-center bg-[#111213] p-0.5 rounded-lg border border-[#F0F0ED]/10">
+          <div className="flex items-center bg-[#000000] p-0.5 rounded-lg border border-[#F0F0ED]/10">
             <button
               onClick={() => setCenterView('conversation')}
               title="Conversation View (Shortcut: 1)"
@@ -708,7 +708,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] ${
                 (isCompact || isFocusMode ? compactDrawer === 'activity' : showLeftActivity)
                   ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
-                  : 'bg-[#111213] text-[#F0F0ED]/60 border border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                  : 'bg-[#000000] text-[#F0F0ED]/60 border border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
               }`}
             >
               <Compass size={12} />
@@ -730,7 +730,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] ${
                 (isCompact || isFocusMode ? compactDrawer === 'execution' : showRightExecution)
                   ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
-                  : 'bg-[#111213] text-[#F0F0ED]/60 border border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                  : 'bg-[#000000] text-[#F0F0ED]/60 border border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
               }`}
             >
               <Sparkles size={12} />
@@ -745,7 +745,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] ${
                 isFocusMode
                   ? 'bg-[#E05252] text-[#F0F0ED] font-bold shadow-xs'
-                  : 'bg-[#111213] text-[#F0F0ED]/60 border border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                  : 'bg-[#000000] text-[#F0F0ED]/60 border border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
               }`}
             >
               {isFocusMode ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
@@ -758,7 +758,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               onClick={() => setShowShortcutsModal(true)}
               title="Keyboard Shortcuts Reference (?)"
               aria-label="Keyboard Shortcuts Reference (?)"
-              className="px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all bg-[#111213] text-[#F0F0ED]/80 border border-[#F0F0ED]/10 hover:text-[#F0F0ED] hover:border-[#F0F0ED]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] cursor-pointer font-mono"
+              className="px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all bg-[#000000] text-[#F0F0ED]/80 border border-[#F0F0ED]/10 hover:text-[#F0F0ED] hover:border-[#F0F0ED]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] cursor-pointer font-mono"
             >
               <Keyboard size={13} className="text-[#E05252]" />
               <span className="hidden lg:inline text-[10px] text-[#F0F0ED]/60">?</span>
@@ -772,7 +772,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] ${
                 showDiagnostic
                   ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
-                  : 'bg-[#111213] text-[#F0F0ED]/60 border border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                  : 'bg-[#000000] text-[#F0F0ED]/60 border border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
               }`}
             >
               <ShieldCheck size={12} />
@@ -785,7 +785,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               onClick={() => setShowReliabilityModal(true)}
               title="Runtime Reliability & Recovery Diagnostics"
               aria-label="Runtime Reliability and Recovery Diagnostics"
-              className="p-1.5 rounded text-xs font-medium flex items-center transition-all bg-[#111213] text-[#F0F0ED]/80 border border-[#F0F0ED]/10 hover:text-[#F0F0ED] hover:border-[#F0F0ED]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] cursor-pointer"
+              className="p-1.5 rounded text-xs font-medium flex items-center transition-all bg-[#000000] text-[#F0F0ED]/80 border border-[#F0F0ED]/10 hover:text-[#F0F0ED] hover:border-[#F0F0ED]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] cursor-pointer"
             >
               <Wrench size={12} className="text-[#E05252]" />
             </button>
@@ -796,7 +796,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               onClick={() => setShowSecurityModal(true)}
               title="Security Boundaries & Threat Policy"
               aria-label="Security Boundaries and Threat Policy"
-              className="p-1.5 rounded text-xs font-medium flex items-center transition-all bg-[#111213] text-[#F0F0ED]/80 border border-[#F0F0ED]/10 hover:text-[#F0F0ED] hover:border-[#F0F0ED]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] cursor-pointer"
+              className="p-1.5 rounded text-xs font-medium flex items-center transition-all bg-[#000000] text-[#F0F0ED]/80 border border-[#F0F0ED]/10 hover:text-[#F0F0ED] hover:border-[#F0F0ED]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] cursor-pointer"
             >
               <ShieldAlert size={12} className="text-[#E05252]" />
             </button>
@@ -806,7 +806,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               onClick={loadWorkspaceData}
               title="Refresh Workspace Data"
               aria-label="Refresh Workspace Data"
-              className="p-1.5 rounded bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#F0F0ED] hover:bg-[#292C2F]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] transition-all text-xs cursor-pointer"
+              className="p-1.5 rounded bg-[#000000] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#F0F0ED] hover:bg-[#292C2F]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] transition-all text-xs cursor-pointer"
             >
               <RefreshCw size={12} />
             </button>
@@ -815,7 +815,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
 
         {/* Diagnostic Banner if active or warning */}
         {(showDiagnostic || (selectedProject && !selectedProject.repositoryPath)) && (
-          <div className="p-3 border-b border-[#F0F0ED]/10 bg-[#111213] shrink-0 overflow-x-auto">
+          <div className="p-3 border-b border-[#F0F0ED]/10 bg-[#000000] shrink-0 overflow-x-auto">
             <DirectoryAccessDiagnostic
               project={selectedProject}
               bridgeStatus={bridgeStatus}
@@ -891,7 +891,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
             }
           >
             {(isCompact || isFocusMode) && (
-              <div className="flex items-center justify-between px-3 py-2 border-b border-[#F0F0ED]/10 bg-[#111213]">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-[#F0F0ED]/10 bg-[#000000]">
                 <div className="flex items-center gap-2">
                   <Compass size={14} className="text-[#292C2F]" />
                   <span className="text-xs font-mono font-bold text-[#F0F0ED]">ChatGPT Planner / Activity</span>
@@ -959,7 +959,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
             }
           >
             {(isCompact || isFocusMode) && (
-              <div className="flex items-center justify-between px-3 py-2 border-b border-[#F0F0ED]/10 bg-[#111213]">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-[#F0F0ED]/10 bg-[#000000]">
                 <div className="flex items-center gap-2">
                   <Sparkles size={14} className="text-[#E05252]" />
                   <span className="text-xs font-mono font-bold text-[#F0F0ED]">Antigravity Worker / Execution</span>
@@ -1012,7 +1012,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
                 value={modalProjectName}
                 onChange={(e) => setModalProjectName(e.target.value)}
                 placeholder="e.g. My Next.js Web App"
-                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
+                className="w-full bg-[#000000] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
               />
             </div>
 
@@ -1024,12 +1024,12 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
                   value={modalRepoPath}
                   onChange={(e) => setModalRepoPath(e.target.value)}
                   placeholder="/home/user/projects/my-app"
-                  className="flex-1 bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
+                  className="flex-1 bg-[#000000] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
                 />
                 <button
                   type="button"
                   onClick={handleSelectDirectory}
-                  className="px-3 py-2 bg-[#111213] hover:bg-[#292C2F]/30 text-[#F0F0ED] border border-[#F0F0ED]/10 rounded-lg text-xs cursor-pointer"
+                  className="px-3 py-2 bg-[#000000] hover:bg-[#292C2F]/30 text-[#F0F0ED] border border-[#F0F0ED]/10 rounded-lg text-xs cursor-pointer"
                 >
                   Browse
                 </button>
@@ -1040,7 +1040,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               <button
                 type="button"
                 onClick={() => setShowNewProjectModal(false)}
-                className="px-3 py-1.5 rounded-lg bg-[#111213] text-[#F0F0ED]/70 hover:text-[#F0F0ED] text-xs cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-[#000000] text-[#F0F0ED]/70 hover:text-[#F0F0ED] text-xs cursor-pointer"
               >
                 Cancel
               </button>
@@ -1077,7 +1077,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
                 value={modalSessionTitle}
                 onChange={(e) => setModalSessionTitle(e.target.value)}
                 placeholder="e.g. Implement user auth flow"
-                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
+                className="w-full bg-[#000000] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
               />
             </div>
 
@@ -1085,7 +1085,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               <button
                 type="button"
                 onClick={() => setShowNewSessionModal(false)}
-                className="px-3 py-1.5 rounded-lg bg-[#111213] text-[#F0F0ED]/70 hover:text-[#F0F0ED] text-xs cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-[#000000] text-[#F0F0ED]/70 hover:text-[#F0F0ED] text-xs cursor-pointer"
               >
                 Cancel
               </button>

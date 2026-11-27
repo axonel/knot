@@ -129,7 +129,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-3.5 bg-[#111213] border-b border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-[#000000] border-b border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-lg bg-[#292C2F]/40 text-[#E05252] border border-[#292C2F]">
               <Keyboard size={16} />
@@ -166,7 +166,7 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
                 <span>{category.title}</span>
               </h3>
 
-              <div className="bg-[#111213]/70 rounded-lg border border-[#F0F0ED]/10 divide-y divide-[#F0F0ED]/5 overflow-hidden">
+              <div className="bg-[#000000]/70 rounded-lg border border-[#F0F0ED]/10 divide-y divide-[#F0F0ED]/5 overflow-hidden">
                 {category.items.map((item, idx) => (
                   <div
                     key={idx}
@@ -209,14 +209,14 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
               <span className="font-semibold text-[#F0F0ED] block">Typing & Approval Safety Guardrails:</span>
               <p>
                 Navigation and approval shortcuts are suspended while typing inside inputs, textareas, code editors, or
-                dialogs. Task approval with <kbd className="px-1 py-0.5 rounded bg-[#111213] font-mono text-[10px]">Ctrl+Enter</kbd> strictly executes only when an active task is in the awaiting-approval state.
+                dialogs. Task approval with <kbd className="px-1 py-0.5 rounded bg-[#000000] font-mono text-[10px]">Ctrl+Enter</kbd> strictly executes only when an active task is in the awaiting-approval state.
               </p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 bg-[#111213] border-t border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3 bg-[#000000] border-t border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
           <span className="text-[11px] text-[#F0F0ED]/50 font-mono">
             Press <kbd className="px-1.5 py-0.5 rounded bg-[#1B1D1F] text-[#F0F0ED] border border-[#F0F0ED]/20 text-[10px]">Esc</kbd> anytime to close
           </span>

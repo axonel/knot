@@ -66,7 +66,7 @@ export const StopProcessModal: React.FC<StopProcessModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="stop-process-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111213]/85 backdrop-blur-xs select-none animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 select-none animate-in fade-in duration-150"
       onClick={() => {
         if (!isStopping) onCancel();
       }}
@@ -76,7 +76,7 @@ export const StopProcessModal: React.FC<StopProcessModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-3.5 bg-[#111213] border-b border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-[#000000] border-b border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-lg bg-rose-950/60 text-rose-400 border border-rose-800">
               <AlertOctagon size={16} />
@@ -105,7 +105,7 @@ export const StopProcessModal: React.FC<StopProcessModalProps> = ({
         {/* Content Body */}
         <div className="p-5 space-y-4 text-xs">
           {/* Target Process Identification */}
-          <div className="p-3 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 space-y-2">
+          <div className="p-3 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Cpu size={14} className="text-[#E05252]" />
@@ -151,7 +151,7 @@ export const StopProcessModal: React.FC<StopProcessModalProps> = ({
               <span>Termination & Escalation Policy</span>
             </span>
 
-            <div className="p-3 rounded-lg bg-[#111213]/80 border border-[#F0F0ED]/10 space-y-2 text-[11px] text-[#F0F0ED]/70 leading-relaxed font-mono">
+            <div className="p-3 rounded-lg bg-[#000000]/80 border border-[#F0F0ED]/10 space-y-2 text-[11px] text-[#F0F0ED]/70 leading-relaxed font-mono">
               <p>
                 <strong className="text-[#F0F0ED]">1. Graceful Phase:</strong> Knot sends a standard OS <code className="text-[#E05252]">SIGINT</code>/<code className="text-[#E05252]">SIGTERM</code> signal, allowing buffers to flush and file descriptors to close cleanly.
               </p>
@@ -184,7 +184,7 @@ export const StopProcessModal: React.FC<StopProcessModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-5 py-3.5 bg-[#111213] border-t border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3.5 bg-[#000000] border-t border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
           <span className="text-[10px] font-mono text-[#F0F0ED]/50">
             Press <kbd className="px-1 py-0.5 rounded bg-[#1B1D1F] text-[#F0F0ED]/80 border border-[#F0F0ED]/20">Esc</kbd> to cancel
           </span>

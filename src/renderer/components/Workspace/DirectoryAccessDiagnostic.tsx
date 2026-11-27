@@ -54,7 +54,7 @@ export const DirectoryAccessDiagnostic: React.FC<DirectoryAccessDiagnosticProps>
         </div>
         <button
           onClick={handleCopy}
-          className="px-2 py-1 rounded bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/80 hover:text-[#F0F0ED] hover:bg-[#292C2F]/20 transition-all text-[11px] font-mono flex items-center gap-1"
+          className="px-2 py-1 rounded bg-[#000000] border border-[#F0F0ED]/10 text-[#F0F0ED]/80 hover:text-[#F0F0ED] hover:bg-[#292C2F]/20 transition-all text-[11px] font-mono flex items-center gap-1"
         >
           {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
           <span>{copied ? 'Copied' : 'Copy allowedDirectories'}</span>
@@ -64,7 +64,7 @@ export const DirectoryAccessDiagnostic: React.FC<DirectoryAccessDiagnosticProps>
       {/* Directory & Watcher Status Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
         {/* Bridge Directory Status */}
-        <div className="p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 flex items-start gap-2">
+        <div className="p-2.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 flex items-start gap-2">
           <HardDrive size={14} className="text-[#292C2F] mt-0.5 shrink-0" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
@@ -94,7 +94,7 @@ export const DirectoryAccessDiagnostic: React.FC<DirectoryAccessDiagnosticProps>
         </div>
 
         {/* Project Repository Status */}
-        <div className="p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 flex items-start gap-2">
+        <div className="p-2.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 flex items-start gap-2">
           <FolderGit2 size={14} className="text-[#E05252] mt-0.5 shrink-0" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
@@ -116,7 +116,7 @@ export const DirectoryAccessDiagnostic: React.FC<DirectoryAccessDiagnosticProps>
         </div>
 
         {/* Inbox Watcher & Multi-Session Status */}
-        <div className="p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 flex items-start gap-2">
+        <div className="p-2.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 flex items-start gap-2">
           <Radio size={14} className={`mt-0.5 shrink-0 ${watcherActive ? 'text-emerald-400' : 'text-amber-400'}`} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
@@ -140,7 +140,7 @@ export const DirectoryAccessDiagnostic: React.FC<DirectoryAccessDiagnosticProps>
 
       {/* Execution Telemetry Summary */}
       {(bridgeStatus?.latestDispatchedTask || bridgeStatus?.latestPublishedResult) && (
-        <div className="flex flex-wrap items-center gap-3 p-2 rounded-lg bg-[#111213]/80 border border-[#F0F0ED]/5 text-[10px] font-mono text-[#F0F0ED]/70">
+        <div className="flex flex-wrap items-center gap-3 p-2 rounded-lg bg-[#000000]/80 border border-[#F0F0ED]/5 text-[10px] font-mono text-[#F0F0ED]/70">
           {bridgeStatus.latestDispatchedTask && (
             <div className="flex items-center gap-1.5 truncate">
               <Activity size={12} className="text-[#E05252] shrink-0" />

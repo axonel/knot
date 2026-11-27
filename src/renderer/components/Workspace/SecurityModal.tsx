@@ -96,10 +96,10 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111213]/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
       <div className="relative w-full max-w-3xl max-h-[90vh] bg-[#1B1D1F] border border-[#292C2F] rounded-lg shadow-2xl flex flex-col overflow-hidden text-[#F0F0ED]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#292C2F]/60 bg-[#111213]/40">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#292C2F]/60 bg-[#000000]/40">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded bg-[#292C2F]/30 text-[#E05252]">
               <ShieldAlert size={20} />
@@ -141,7 +141,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
           )}
 
           {/* Project Trust Policy Card */}
-          <div className="p-4 bg-[#111213]/60 border border-[#292C2F]/60 rounded space-y-3">
+          <div className="p-4 bg-[#000000]/60 border border-[#292C2F]/60 rounded space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Lock size={16} className="text-[#E05252]" />
@@ -184,7 +184,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
                   <button
                     onClick={handleTogglePolicy}
                     disabled={updating}
-                    className="px-3 py-1 bg-[#E05252] hover:bg-[#E05252]/90 text-[#111213] font-bold rounded text-xs transition-colors"
+                    className="px-3 py-1 bg-[#E05252] hover:bg-[#E05252]/90 text-[#000000] font-bold rounded text-xs transition-colors"
                   >
                     Confirm & Enable Trusted Mode
                   </button>
@@ -220,7 +220,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
           {/* Grid of Safeguards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Task Authorization & Content Hash Binding */}
-            <div className="p-4 bg-[#111213]/40 border border-[#292C2F]/40 rounded space-y-2">
+            <div className="p-4 bg-[#000000]/40 border border-[#292C2F]/40 rounded space-y-2">
               <div className="flex items-center gap-2 font-bold text-[#F0F0ED]">
                 <FileCode size={14} className="text-[#E05252]" />
                 <span>Task Authorization & Integrity</span>
@@ -251,7 +251,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
             </div>
 
             {/* Antigravity CLI Permissions */}
-            <div className="p-4 bg-[#111213]/40 border border-[#292C2F]/40 rounded space-y-2">
+            <div className="p-4 bg-[#000000]/40 border border-[#292C2F]/40 rounded space-y-2">
               <div className="flex items-center gap-2 font-bold text-[#F0F0ED]">
                 <ShieldCheck size={14} className="text-[#E05252]" />
                 <span>Antigravity Process Hardening</span>
@@ -277,7 +277,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
             </div>
 
             {/* Filesystem Boundary & Symlink Guards */}
-            <div className="p-4 bg-[#111213]/40 border border-[#292C2F]/40 rounded space-y-2">
+            <div className="p-4 bg-[#000000]/40 border border-[#292C2F]/40 rounded space-y-2">
               <div className="flex items-center gap-2 font-bold text-[#F0F0ED]">
                 <FolderGit2 size={14} className="text-[#E05252]" />
                 <span>Filesystem Boundary Isolation</span>
@@ -303,7 +303,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
             </div>
 
             {/* Electron & IPC Boundary */}
-            <div className="p-4 bg-[#111213]/40 border border-[#292C2F]/40 rounded space-y-2">
+            <div className="p-4 bg-[#000000]/40 border border-[#292C2F]/40 rounded space-y-2">
               <div className="flex items-center gap-2 font-bold text-[#F0F0ED]">
                 <Lock size={14} className="text-[#E05252]" />
                 <span>Electron Renderer & IPC Boundary</span>
@@ -330,7 +330,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
           </div>
 
           {/* Unauthenticated Bridge Notice */}
-          <div className="p-3 bg-[#111213]/40 border border-[#292C2F]/30 rounded text-[#F0F0ED]/60 leading-relaxed text-[11px]">
+          <div className="p-3 bg-[#000000]/40 border border-[#292C2F]/30 rounded text-[#F0F0ED]/60 leading-relaxed text-[11px]">
             <strong className="text-[#F0F0ED]/90">Bridge Trust Notice:</strong> The filesystem
             bridge operates over local directories. Frontmatter metadata claims (such as{' '}
             <code className="text-[#E05252]">sender: chatgpt</code>) reflect transport attribution,
@@ -340,7 +340,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end px-6 py-3 border-t border-[#292C2F]/60 bg-[#111213]/40">
+        <div className="flex items-center justify-end px-6 py-3 border-t border-[#292C2F]/60 bg-[#000000]/40">
           <button
             onClick={onClose}
             className="px-4 py-1.5 rounded text-xs font-bold bg-[#292C2F] hover:bg-[#292C2F]/80 text-[#F0F0ED] transition-colors"

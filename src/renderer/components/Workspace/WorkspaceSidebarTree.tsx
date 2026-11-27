@@ -138,7 +138,7 @@ export const WorkspaceSidebarTree: React.FC<WorkspaceSidebarTreeProps> = ({
                       onCreateSession(project);
                     }}
                     title="Add session to project"
-                    className="p-1 rounded hover:bg-[#111213] text-[#A5A5A0] hover:text-[#F0F0ED] transition-all"
+                    className="p-1 rounded hover:bg-[#000000] text-[#A5A5A0] hover:text-[#F0F0ED] transition-all"
                   >
                     <Plus size={12} />
                   </button>

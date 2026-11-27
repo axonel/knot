@@ -156,7 +156,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
       aria-label="Git Change Inspection and Diff Viewer"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150"
     >
-      <div className="w-full max-w-6xl h-[88vh] bg-[#111213] border border-[#F0F0ED]/15 rounded-xl shadow-2xl flex flex-col overflow-hidden text-[#F0F0ED]">
+      <div className="w-full max-w-6xl h-[88vh] bg-[#000000] border border-[#F0F0ED]/15 rounded-xl shadow-2xl flex flex-col overflow-hidden text-[#F0F0ED]">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between px-4 py-3 bg-[#1B1D1F] border-b border-[#F0F0ED]/10 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -304,7 +304,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                         placeholder="Filter changed files..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded pl-8 pr-2.5 py-1 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
+                        className="w-full bg-[#000000] border border-[#F0F0ED]/10 rounded pl-8 pr-2.5 py-1 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
                       />
                     </div>
 
@@ -315,7 +315,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                         className={`px-1.5 py-0.5 rounded border transition-colors ${
                           activeFilter === 'all'
                             ? 'bg-[#292C2F] text-[#F0F0ED] border-[#292C2F]'
-                            : 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                            : 'bg-[#000000] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
                         }`}
                       >
                         All ({inspection.summary.totalFiles})
@@ -325,7 +325,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                         className={`px-1.5 py-0.5 rounded border transition-colors ${
                           activeFilter === 'added'
                             ? 'bg-[#292C2F] text-[#F0F0ED] border-[#292C2F]'
-                            : 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                            : 'bg-[#000000] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
                         }`}
                       >
                         Added
@@ -335,7 +335,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                         className={`px-1.5 py-0.5 rounded border transition-colors ${
                           activeFilter === 'modified'
                             ? 'bg-[#292C2F] text-[#F0F0ED] border-[#292C2F]'
-                            : 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                            : 'bg-[#000000] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
                         }`}
                       >
                         Modified
@@ -345,7 +345,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                         className={`px-1.5 py-0.5 rounded border transition-colors ${
                           activeFilter === 'deleted'
                             ? 'bg-[#292C2F] text-[#F0F0ED] border-[#292C2F]'
-                            : 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                            : 'bg-[#000000] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
                         }`}
                       >
                         Deleted
@@ -355,7 +355,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                         className={`px-1.5 py-0.5 rounded border transition-colors ${
                           activeFilter === 'staged'
                             ? 'bg-[#292C2F] text-[#F0F0ED] border-[#292C2F]'
-                            : 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                            : 'bg-[#000000] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
                         }`}
                       >
                         Staged ({inspection.summary.stagedCount})
@@ -365,7 +365,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                         className={`px-1.5 py-0.5 rounded border transition-colors ${
                           activeFilter === 'unstaged'
                             ? 'bg-[#292C2F] text-[#F0F0ED] border-[#292C2F]'
-                            : 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
+                            : 'bg-[#000000] text-[#F0F0ED]/60 border-[#F0F0ED]/10 hover:text-[#F0F0ED]'
                         }`}
                       >
                         Unstaged ({inspection.summary.unstagedCount})
@@ -376,7 +376,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                           className={`px-1.5 py-0.5 rounded border transition-colors ${
                             activeFilter === 'uncertain'
                               ? 'bg-[#E05252] text-[#F0F0ED] border-[#E05252]'
-                              : 'bg-[#111213] text-[#E05252] border-[#E05252]/60 hover:text-[#F0F0ED]'
+                              : 'bg-[#000000] text-[#E05252] border-[#E05252]/60 hover:text-[#F0F0ED]'
                           }`}
                         >
                           Uncertain ({inspection.summary.uncertainCount})
@@ -432,7 +432,7 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
                 </div>
 
                 {/* Right Panel: Unified Diff View */}
-                <div className="flex-1 flex flex-col min-w-0 bg-[#111213] overflow-hidden">
+                <div className="flex-1 flex flex-col min-w-0 bg-[#000000] overflow-hidden">
                   {selectedFile ? (
                     <>
                       {/* Selected File Details Bar */}

@@ -56,9 +56,6 @@ const THEMES: Record<'dark' | 'light', Palette> = {
 
 const SHAPES: SpotlightShape[] = ['circle', 'beam'];
 
-const NOISE =
-  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
-
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const falloff = (color: string, softness: number) => {
@@ -100,7 +97,6 @@ const SpotlightCard = ({
 }: SpotlightCardProps) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const lightRef = useRef<HTMLSpanElement>(null);
-  const grainRef = useRef<HTMLSpanElement>(null);
   const edgeRef = useRef<HTMLSpanElement>(null);
   const wakeRef = useRef<(() => void) | null>(null);
   const palette = THEMES[theme] ?? THEMES.dark;
@@ -117,7 +113,7 @@ const SpotlightCard = ({
     smoothing: clamp(smoothing, 0, 1),
     ambient,
     flare,
-    grain: clamp(grain, 0, 1)
+    grain: 0
   };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -129,14 +125,13 @@ const SpotlightCard = ({
   useEffect(() => {
     const root = rootRef.current;
     const light = lightRef.current;
-    const noise = grainRef.current;
     const edge = edgeRef.current;
-    if (!root || !light || !noise || !edge) return undefined;
+    if (!root || !light || !edge) return undefined;
 
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     const state = { x: 0, y: 0, presence: 0, flare: 0, time: Math.random() * 60, pressed: false, visible: true };
     const pointer = { x: 0, y: 0, active: false };
-    const drawn = { light: '', edge: '', noise: '' };
+    const drawn = { light: '', edge: '' };
     let focus: Element | null = null;
     let raf = 0;
     let last = 0;
@@ -165,13 +160,6 @@ const SpotlightCard = ({
       }
       light.style.opacity = String(Math.min(1, state.presence * s.intensity * boost));
       edge.style.opacity = String(Math.min(1, state.presence * s.borderGlow * boost));
-      const grainy = s.grain > 0 ? gradient(s, size, state.x, state.y, '#000 0%, transparent 100%') : 'none';
-      if (grainy !== drawn.noise) {
-        drawn.noise = grainy;
-        noise.style.webkitMaskImage = grainy;
-        noise.style.maskImage = grainy;
-      }
-      noise.style.opacity = String(state.presence * s.grain);
     };
 
     const tick = (now: number) => {
@@ -320,12 +308,6 @@ const SpotlightCard = ({
       <span
         ref={lightRef}
         className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] opacity-0"
-        aria-hidden="true"
-      />
-      <span
-        ref={grainRef}
-        className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] bg-[length:160px_160px] opacity-0 mix-blend-overlay"
-        style={{ backgroundImage: NOISE }}
         aria-hidden="true"
       />
       {children}

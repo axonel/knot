@@ -109,7 +109,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
       role="dialog"
       aria-modal="true"
       aria-labelledby="reliability-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111213]/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
       onClick={onClose}
     >
       <div
@@ -117,7 +117,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="px-6 py-4 bg-[#111213] border-b border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 bg-[#000000] border-b border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-[#292C2F]/30 text-[#E05252]">
               <Wrench size={20} />
@@ -154,7 +154,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
             <button
               onClick={fetchDiagnostics}
               disabled={loading || reconciling}
-              className="px-3 py-1.5 rounded text-xs font-medium text-[#F0F0ED]/80 bg-[#111213] border border-[#F0F0ED]/15 hover:text-[#F0F0ED] hover:border-[#F0F0ED]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              className="px-3 py-1.5 rounded text-xs font-medium text-[#F0F0ED]/80 bg-[#000000] border border-[#F0F0ED]/15 hover:text-[#F0F0ED] hover:border-[#F0F0ED]/30 flex items-center gap-1.5 transition-colors disabled:opacity-50"
             >
               <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
               <span>Refresh</span>
@@ -163,7 +163,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
             <button
               onClick={handleReconcile}
               disabled={reconciling || loading}
-              className="px-3.5 py-1.5 rounded text-xs font-bold text-[#111213] bg-[#E05252] hover:bg-[#E05252]/90 flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
+              className="px-3.5 py-1.5 rounded text-xs font-bold text-[#000000] bg-[#E05252] hover:bg-[#E05252]/90 flex items-center gap-1.5 transition-colors disabled:opacity-50 shadow-sm"
             >
               <Wrench size={13} className={reconciling ? 'animate-spin' : ''} />
               <span>{reconciling ? 'Reconciling...' : 'Run State Reconciliation'}</span>
@@ -183,7 +183,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
           {/* Subsystems Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Database Card */}
-            <div className="p-4 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 flex flex-col justify-between">
+            <div className="p-4 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-[#F0F0ED]/70 uppercase tracking-wider font-mono flex items-center gap-1.5">
                   <Database size={14} className="text-[#292C2F]" /> SQLite Storage
@@ -215,7 +215,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
             </div>
 
             {/* Bridge Lifecycle Card */}
-            <div className="p-4 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 flex flex-col justify-between">
+            <div className="p-4 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-[#F0F0ED]/70 uppercase tracking-wider font-mono flex items-center gap-1.5">
                   <FolderGit2 size={14} className="text-[#292C2F]" /> Bridge Filesystem
@@ -255,7 +255,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
             </div>
 
             {/* Orchestration & Execution Card */}
-            <div className="p-4 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 flex flex-col justify-between">
+            <div className="p-4 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-bold text-[#F0F0ED]/70 uppercase tracking-wider font-mono flex items-center gap-1.5">
                   <Cpu size={14} className="text-[#292C2F]" /> Task Execution
@@ -299,7 +299,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
           </div>
 
           {/* Reconciliation History Section */}
-          <div className="rounded-lg bg-[#111213] border border-[#F0F0ED]/10 p-5 space-y-4">
+          <div className="rounded-lg bg-[#000000] border border-[#F0F0ED]/10 p-5 space-y-4">
             <div className="flex items-center justify-between border-b border-[#F0F0ED]/10 pb-3">
               <div className="flex items-center gap-2">
                 <Clock size={16} className="text-[#E05252]" />
@@ -447,7 +447,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3 bg-[#111213] border-t border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
+        <div className="px-6 py-3 bg-[#000000] border-t border-[#F0F0ED]/10 flex items-center justify-between shrink-0">
           <span className="text-[11px] text-[#F0F0ED]/40 font-mono">
             Knot Runtime v1.0.0 &bull; SQLite Canonical State Authority
           </span>

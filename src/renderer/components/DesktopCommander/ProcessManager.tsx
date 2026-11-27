@@ -214,7 +214,7 @@ export const ProcessManager: React.FC = () => {
       {/* Process Telemetry Info Grid */}
       <div className="grid grid-cols-3 gap-3 mt-4">
         {/* PID info */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10">
+        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/10">
           <Hash size={14} className="text-[#292C2F]" />
           <div className="flex flex-col">
             <span className="text-[10px] uppercase font-mono tracking-wider text-[#F0F0ED]/50">
@@ -227,7 +227,7 @@ export const ProcessManager: React.FC = () => {
         </div>
 
         {/* Started At */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10">
+        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/10">
           <Clock size={14} className="text-[#292C2F]" />
           <div className="flex flex-col">
             <span className="text-[10px] uppercase font-mono tracking-wider text-[#F0F0ED]/50">
@@ -240,7 +240,7 @@ export const ProcessManager: React.FC = () => {
         </div>
 
         {/* Stopped At / Exit Code */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10">
+        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/10">
           <Clock size={14} className="text-[#E05252]" />
           <div className="flex flex-col">
             <span className="text-[10px] uppercase font-mono tracking-wider text-[#F0F0ED]/50">

@@ -73,7 +73,7 @@ export const UndoNotificationBanner: React.FC<UndoNotificationBannerProps> = ({
           </p>
 
           {/* Progress Countdown Bar */}
-          <div className="w-full h-1 bg-[#111213] rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-[#000000] rounded-full overflow-hidden">
             <div
               className="h-full bg-[#E05252] transition-all duration-200"
               style={{

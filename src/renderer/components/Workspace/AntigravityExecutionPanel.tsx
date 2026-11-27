@@ -227,7 +227,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
       case 'queued':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#111213] text-[#A5A5A0] border border-[#292C2F]">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#000000] text-[#A5A5A0] border border-[#292C2F]">
             <Clock size={10} className="text-[#A5A5A0]" /> Queued
           </span>
         );
@@ -276,7 +276,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
               <ShieldAlert size={10} /> Error
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#111213] text-[#A5A5A0] border border-[#292C2F]">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#000000] text-[#A5A5A0] border border-[#292C2F]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#A5A5A0]" />
               Idle
             </span>
@@ -290,8 +290,8 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
           data-testid={`highlighted-task-card-${highlightedTask.id}`}
           className={`p-3.5 border-b space-y-2 shrink-0 ${
             highlightedTask.status === 'awaiting_approval'
-              ? 'bg-[#111213] border-[#E05252]/40'
-              : 'bg-[#111213] border-[#292C2F]'
+              ? 'bg-[#000000] border-[#E05252]/40'
+              : 'bg-[#000000] border-[#292C2F]'
           }`}
         >
           <div className="flex items-center justify-between text-xs">
@@ -366,7 +366,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                   >
                     <CheckCircle2 size={12} />
                     <span>Approve & Dispatch</span>
-                    <kbd className="hidden sm:inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#111213] border border-white/20 text-[#F0F0ED]">
+                    <kbd className="hidden sm:inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#000000] border border-white/20 text-[#F0F0ED]">
                       Ctrl+Enter
                     </kbd>
                   </button>
@@ -385,7 +385,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                     onClick={() => handleReject(highlightedTask)}
                     disabled={actionLoading === highlightedTask.id}
                     data-testid="reject-task-btn"
-                    className="px-3 py-1 rounded bg-[#111213] hover:bg-rose-950/50 text-[#E05252] border border-[#E05252]/40 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                    className="px-3 py-1 rounded bg-[#000000] hover:bg-rose-950/50 text-[#E05252] border border-[#E05252]/40 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
                   >
                     <XCircle size={12} />
                     <span>Reject</span>
@@ -408,7 +408,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                     onClick={() => handleCancel(highlightedTask)}
                     disabled={actionLoading === highlightedTask.id}
                     data-testid="cancel-task-btn"
-                    className="px-2.5 py-1 rounded bg-[#111213] hover:bg-rose-950/50 text-[#E05252] border border-[#E05252]/40 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
+                    className="px-2.5 py-1 rounded bg-[#000000] hover:bg-rose-950/50 text-[#E05252] border border-[#E05252]/40 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
                   >
                     <XCircle size={12} />
                     <span>Cancel Task</span>
@@ -436,7 +436,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
       )}
 
       {/* Tabs */}
-      <div className="flex items-center border-b border-[#292C2F] bg-[#111213] px-3 shrink-0">
+      <div className="flex items-center border-b border-[#292C2F] bg-[#000000] px-3 shrink-0">
         <button
           onClick={() => setActiveTab('queue')}
           className={`px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -463,7 +463,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-[#111213]">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-[#000000]">
         {activeTab === 'queue' ? (
           tasks.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#A5A5A0] text-xs">
@@ -508,7 +508,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                         e.stopPropagation();
                         setInspectingTaskId(task.id);
                       }}
-                      className="px-2 py-0.5 rounded bg-[#111213] hover:bg-[#292C2F] text-[#F0F0ED] border border-[#292C2F] text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer"
+                      className="px-2 py-0.5 rounded bg-[#000000] hover:bg-[#292C2F] text-[#F0F0ED] border border-[#292C2F] text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer"
                     >
                       <GitCommit size={10} /> Inspect Changes
                     </button>

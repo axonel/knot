@@ -108,7 +108,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
         );
       case 'stopped':
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#111213] text-[#F0F0ED]/50 border border-[#F0F0ED]/10">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#000000] text-[#F0F0ED]/50 border border-[#F0F0ED]/10">
             Stopped
           </span>
         );
@@ -120,7 +120,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
         );
       default:
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#111213] text-[#F0F0ED]/40 border border-[#F0F0ED]/10">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#000000] text-[#F0F0ED]/40 border border-[#F0F0ED]/10">
             {processState}
           </span>
         );
@@ -156,7 +156,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
         {/* Action Controls */}
         <div className="flex items-center gap-2">
           {/* Mode Selector */}
-          <div className="flex items-center gap-1.5 bg-[#111213] border border-[#F0F0ED]/15 rounded-lg px-2.5 py-1.5">
+          <div className="flex items-center gap-1.5 bg-[#000000] border border-[#F0F0ED]/15 rounded-lg px-2.5 py-1.5">
             <Cpu size={14} className="text-[#292C2F]" />
             <span className="text-[11px] text-[#F0F0ED]/60">Mode:</span>
             <select
@@ -208,7 +208,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
             <button
               onClick={onResume}
               disabled={!isInstalled || disabled}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/20 text-[#F0F0ED]/80 text-xs font-medium hover:bg-[#111213]/80 hover:text-[#F0F0ED] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/20 text-[#F0F0ED]/80 text-xs font-medium hover:bg-[#000000]/80 hover:text-[#F0F0ED] transition-colors"
               title="Resume previous conversation"
             >
               <span>Resume Session</span>
@@ -228,7 +228,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
           </div>
           <button
             onClick={copyAuthCommand}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111213] border border-[#E05252]/40 font-mono text-[#F0F0ED] hover:bg-[#111213]/80 transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#000000] border border-[#E05252]/40 font-mono text-[#F0F0ED] hover:bg-[#000000]/80 transition-colors shrink-0"
           >
             {copiedAuth ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
             <span>agy</span>
@@ -238,7 +238,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
 
       {/* Meta Pills */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
-        <div className="bg-[#111213]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
+        <div className="bg-[#000000]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
           <Folder size={14} className="text-[#292C2F] shrink-0" />
           <div className="truncate">
             <span className="text-[#F0F0ED]/40 text-[10px] block">CWD</span>
@@ -248,7 +248,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
           </div>
         </div>
 
-        <div className="bg-[#111213]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
+        <div className="bg-[#000000]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
           <Hash size={14} className="text-[#292C2F] shrink-0" />
           <div className="truncate">
             <span className="text-[#F0F0ED]/40 text-[10px] block">CONVERSATION ID</span>
@@ -258,7 +258,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
           </div>
         </div>
 
-        <div className="bg-[#111213]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
+        <div className="bg-[#000000]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
           <Activity size={14} className="text-[#292C2F] shrink-0" />
           <div>
             <span className="text-[#F0F0ED]/40 text-[10px] block">PID / EXIT</span>

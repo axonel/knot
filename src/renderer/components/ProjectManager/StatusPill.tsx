@@ -7,7 +7,7 @@ interface StatusPillProps {
 }
 
 export const StatusPill: React.FC<StatusPillProps> = ({ status, type = 'session' }) => {
-  let bgClass = 'bg-[#111213]';
+  let bgClass = 'bg-[#000000]';
   let borderClass = 'border-[#F0F0ED]/20';
   let textClass = 'text-[#F0F0ED]/70';
   let label = status;
@@ -33,7 +33,7 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, type = 'session'
         label = 'Completed';
         break;
       case 'archived':
-        bgClass = 'bg-[#111213]';
+        bgClass = 'bg-[#000000]';
         borderClass = 'border-[#F0F0ED]/10';
         textClass = 'text-[#F0F0ED]/40';
         label = 'Archived';
@@ -67,7 +67,7 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, type = 'session'
         label = 'Failed';
         break;
       case 'cancelled':
-        bgClass = 'bg-[#111213]';
+        bgClass = 'bg-[#000000]';
         borderClass = 'border-[#F0F0ED]/10';
         textClass = 'text-[#F0F0ED]/40';
         label = 'Cancelled';

@@ -46,7 +46,7 @@ export const Composer: React.FC<ComposerProps> = ({
       </div>
 
       {/* Input area */}
-      <div className="relative flex items-end gap-2 bg-[#111213] rounded-lg border border-[#F0F0ED]/15 p-2 focus-within:border-[#292C2F] transition-colors">
+      <div className="relative flex items-end gap-2 bg-[#000000] rounded-lg border border-[#F0F0ED]/15 p-2 focus-within:border-[#292C2F] transition-colors">
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}

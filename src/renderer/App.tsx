@@ -8,7 +8,7 @@ import { AntigravityWorkspace } from './components/Antigravity/AntigravityWorksp
 import { CollaborationWorkspace } from './components/Workspace/CollaborationWorkspace.js';
 import { Layers, ShieldCheck, Lock } from 'lucide-react';
 import { isEditableTarget } from './utils/keyboardUtils.js';
-import { ClickSpark, Noise, SpotlightCard } from './components/ReactBits/index.js';
+import { ClickSpark, SpotlightCard } from './components/ReactBits/index.js';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState('workspace');
@@ -50,10 +50,7 @@ export const App: React.FC = () => {
 
   return (
     <ClickSpark sparkColor="#E05252" sparkSize={6} sparkRadius={22}>
-      <div className="flex h-screen w-screen overflow-hidden bg-[#111213] text-[#F0F0ED] font-sans relative selection:bg-[#E05252]/30 selection:text-[#F0F0ED]">
-        {/* Subtle physical workstation texture */}
-        <Noise opacity={0.05} size={1.5} blendMode="overlay" className="fixed inset-0 pointer-events-none z-50" />
-
+      <div className="flex h-screen w-screen overflow-hidden bg-[#000000] text-[#F0F0ED] font-sans relative selection:bg-[#E05252]/30 selection:text-[#F0F0ED]">
         {/* Navigation Sidebar */}
         <Sidebar
           currentTab={currentTab}
@@ -106,7 +103,7 @@ export const App: React.FC = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-[11px] text-[#A5A5A0]">
                     <SpotlightCard
                       spotlightColor="rgba(224, 82, 82, 0.1)"
-                      className="p-3 rounded-lg bg-[#111213] border border-[#292C2F] space-y-1"
+                      className="p-3 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1"
                     >
                       <div className="flex items-center gap-1.5 text-[#E05252] font-semibold text-xs">
                         <ShieldCheck size={13} />
@@ -118,7 +115,7 @@ export const App: React.FC = () => {
                     </SpotlightCard>
                     <SpotlightCard
                       spotlightColor="rgba(224, 82, 82, 0.1)"
-                      className="p-3 rounded-lg bg-[#111213] border border-[#292C2F] space-y-1"
+                      className="p-3 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1"
                     >
                       <div className="flex items-center gap-1.5 text-[#E05252] font-semibold text-xs">
                         <Lock size={13} />

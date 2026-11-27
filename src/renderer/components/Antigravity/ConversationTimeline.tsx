@@ -119,7 +119,7 @@ export const ConversationTimeline: React.FC<ConversationTimelineProps> = ({
                 className={`max-w-[85%] rounded-xl p-3.5 leading-relaxed break-words ${
                   isUser
                     ? 'bg-[#292C2F] text-[#F0F0ED] shadow-sm'
-                    : 'bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/90 shadow-sm'
+                    : 'bg-[#000000] border border-[#F0F0ED]/10 text-[#F0F0ED]/90 shadow-sm'
                 }`}
               >
                 <div className="whitespace-pre-wrap font-sans text-xs">
@@ -136,7 +136,7 @@ export const ConversationTimeline: React.FC<ConversationTimelineProps> = ({
             {activeTools.map((t, idx) => (
               <div
                 key={idx}
-                className="rounded-lg border border-[#292C2F]/40 bg-[#111213] p-3 space-y-2 shadow-inner"
+                className="rounded-lg border border-[#292C2F]/40 bg-[#000000] p-3 space-y-2 shadow-inner"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 font-mono text-xs font-medium text-[#F0F0ED]">
@@ -194,7 +194,7 @@ export const ConversationTimeline: React.FC<ConversationTimelineProps> = ({
               </span>
             </div>
 
-            <div className="max-w-[85%] rounded-xl p-3.5 bg-[#111213] border border-[#292C2F]/40 text-[#F0F0ED]/90 shadow-sm space-y-2">
+            <div className="max-w-[85%] rounded-xl p-3.5 bg-[#000000] border border-[#292C2F]/40 text-[#F0F0ED]/90 shadow-sm space-y-2">
               <div className="whitespace-pre-wrap font-sans text-xs">
                 {streamingText}
                 <span className="inline-block w-1.5 h-3 ml-1 bg-[#E05252] animate-pulse" />

@@ -83,10 +83,10 @@ export const HandshakeModal: React.FC<HandshakeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111213]/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000000]/80 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-2xl bg-[#1B1D1F] border border-[#F0F0ED]/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-[#F0F0ED]/10 flex items-center justify-between bg-[#111213]/40">
+        <div className="px-6 py-4 border-b border-[#F0F0ED]/10 flex items-center justify-between bg-[#000000]/40">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#E05252]/20 border border-[#E05252]/30 flex items-center justify-center text-[#E05252]">
               <Zap size={18} />
@@ -158,7 +158,7 @@ export const HandshakeModal: React.FC<HandshakeModalProps> = ({
               )}
             </div>
           ) : (
-            <div className="p-4 rounded-xl bg-[#111213] border border-[#F0F0ED]/10 flex items-start gap-3">
+            <div className="p-4 rounded-xl bg-[#000000] border border-[#F0F0ED]/10 flex items-start gap-3">
               <HelpCircle size={18} className="text-[#292C2F] shrink-0 mt-0.5" />
               <div className="text-xs text-[#F0F0ED]/70 leading-relaxed">
                 This test creates an outbox challenge file, provides you with a pre-formatted prompt for ChatGPT, and watches the inbox for the matching signed response.
@@ -169,7 +169,7 @@ export const HandshakeModal: React.FC<HandshakeModalProps> = ({
           {/* Stepper Steps */}
           <div className="space-y-4">
             {/* Step 1: Generate Challenge */}
-            <div className="p-3.5 rounded-xl bg-[#111213] border border-[#F0F0ED]/10 space-y-2">
+            <div className="p-3.5 rounded-xl bg-[#000000] border border-[#F0F0ED]/10 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-[#F0F0ED] flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-[#292C2F] text-[#F0F0ED] flex items-center justify-center text-[10px] font-mono">
@@ -193,7 +193,7 @@ export const HandshakeModal: React.FC<HandshakeModalProps> = ({
             </div>
 
             {/* Step 2: Copy Prompt */}
-            <div className="p-3.5 rounded-xl bg-[#111213] border border-[#F0F0ED]/10 space-y-2.5">
+            <div className="p-3.5 rounded-xl bg-[#000000] border border-[#F0F0ED]/10 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-[#F0F0ED] flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-[#292C2F] text-[#F0F0ED] flex items-center justify-center text-[10px] font-mono">
@@ -227,7 +227,7 @@ export const HandshakeModal: React.FC<HandshakeModalProps> = ({
             </div>
 
             {/* Step 3: Instructions & Verification Details */}
-            <div className="p-3.5 rounded-xl bg-[#111213] border border-[#F0F0ED]/10 space-y-2 text-xs text-[#F0F0ED]/70">
+            <div className="p-3.5 rounded-xl bg-[#000000] border border-[#F0F0ED]/10 space-y-2 text-xs text-[#F0F0ED]/70">
               <span className="text-xs font-semibold text-[#F0F0ED] flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#292C2F] text-[#F0F0ED] flex items-center justify-center text-[10px] font-mono">
                   3
@@ -248,7 +248,7 @@ export const HandshakeModal: React.FC<HandshakeModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-3.5 border-t border-[#F0F0ED]/10 bg-[#111213]/40 flex items-center justify-between">
+        <div className="px-6 py-3.5 border-t border-[#F0F0ED]/10 bg-[#000000]/40 flex items-center justify-between">
           <div className="text-[11px] text-[#F0F0ED]/40 font-mono flex items-center gap-1.5">
             <FileCode size={13} className="text-[#292C2F]" />
             <span>Self-contained local filesystem protocol v1</span>

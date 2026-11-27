@@ -112,7 +112,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               type="checkbox"
               checked={includeArchived}
               onChange={(e) => setIncludeArchived(e.target.checked)}
-              className="rounded border-[#F0F0ED]/20 bg-[#111213] text-[#292C2F] focus:ring-0 focus:ring-offset-0"
+              className="rounded border-[#F0F0ED]/20 bg-[#000000] text-[#292C2F] focus:ring-0 focus:ring-offset-0"
             />
             <span>Show archived</span>
           </label>
@@ -153,7 +153,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
       ) : filteredProjects.length === 0 ? (
         /* Empty State */
         <div className="p-12 text-center rounded-xl border border-dashed border-[#F0F0ED]/10 bg-[#1B1D1F]/30 space-y-4">
-          <div className="w-12 h-12 mx-auto rounded-full bg-[#111213] border border-[#F0F0ED]/10 flex items-center justify-center text-[#292C2F]">
+          <div className="w-12 h-12 mx-auto rounded-full bg-[#000000] border border-[#F0F0ED]/10 flex items-center justify-center text-[#292C2F]">
             <FolderGit2 size={24} />
           </div>
           <div className="space-y-1">
@@ -186,7 +186,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 flex items-center justify-center text-[#292C2F] shrink-0 group-hover:border-[#292C2F]/40 transition-colors">
+                  <div className="w-8 h-8 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 flex items-center justify-center text-[#292C2F] shrink-0 group-hover:border-[#292C2F]/40 transition-colors">
                     <FolderGit2 size={16} />
                   </div>
                   <div className="min-w-0">
@@ -205,7 +205,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   <button
                     onClick={(e) => handleToggleArchive(e, project)}
                     title={project.archivedAt ? 'Unarchive Project' : 'Archive Project'}
-                    className="p-1.5 rounded-lg text-[#F0F0ED]/40 hover:text-[#F0F0ED] hover:bg-[#111213] transition-colors"
+                    className="p-1.5 rounded-lg text-[#F0F0ED]/40 hover:text-[#F0F0ED] hover:bg-[#000000] transition-colors"
                   >
                     {project.archivedAt ? <ArchiveRestore size={14} /> : <Archive size={14} />}
                   </button>
@@ -252,7 +252,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
       {/* New Project Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111213]/80 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#000000]/80 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-xl bg-[#1B1D1F] border border-[#F0F0ED]/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0ED]/10">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#F0F0ED]">
@@ -279,7 +279,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   placeholder="e.g. knot or my-project"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden"
                 />
               </div>
 
@@ -293,12 +293,12 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                     placeholder="/home/user/projects/my-repo"
                     value={repositoryPath}
                     onChange={(e) => setRepositoryPath(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden font-mono"
+                    className="flex-1 px-3 py-2 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden font-mono"
                   />
                   <button
                     type="button"
                     onClick={handleSelectDirectory}
-                    className="px-3 py-2 rounded-lg bg-[#111213] border border-[#F0F0ED]/20 hover:border-[#292C2F] text-xs text-[#F0F0ED]/80 hover:text-[#F0F0ED] transition-colors cursor-pointer"
+                    className="px-3 py-2 rounded-lg bg-[#000000] border border-[#F0F0ED]/20 hover:border-[#292C2F] text-xs text-[#F0F0ED]/80 hover:text-[#F0F0ED] transition-colors cursor-pointer"
                   >
                     Browse
                   </button>
@@ -314,7 +314,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   placeholder="https://github.com/org/repo"
                   value={repositoryRemote}
                   onChange={(e) => setRepositoryRemote(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden font-mono"
+                  className="w-full px-3 py-2 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden font-mono"
                 />
               </div>
 
@@ -322,7 +322,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#F0F0ED]/70 hover:bg-[#111213] transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#F0F0ED]/70 hover:bg-[#000000] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

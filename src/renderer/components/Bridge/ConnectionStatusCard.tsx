@@ -81,7 +81,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
       case 'not_configured':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#111213] text-[#F0F0ED]/40 border border-[#F0F0ED]/10">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#000000] text-[#F0F0ED]/40 border border-[#F0F0ED]/10">
             <Clock size={13} />
             Not Initialized
           </span>
@@ -126,7 +126,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm ${
               hasSession && isWorkspaceReady
                 ? 'bg-[#E05252] hover:bg-[#E05252]/90 text-[#F0F0ED] cursor-pointer'
-                : 'bg-[#111213] text-[#F0F0ED]/30 border border-[#F0F0ED]/10 cursor-not-allowed'
+                : 'bg-[#000000] text-[#F0F0ED]/30 border border-[#F0F0ED]/10 cursor-not-allowed'
             }`}
             title={!hasSession ? 'Select a project and session first' : undefined}
           >
@@ -139,7 +139,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
       {/* Grid of Status Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Workspace Root */}
-        <div className="p-3 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 space-y-1.5">
+        <div className="p-3 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 space-y-1.5">
           <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
             <span className="flex items-center gap-1">
               <Folder size={12} className="text-[#292C2F]" />
@@ -169,7 +169,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
         </div>
 
         {/* Desktop Commander MCP Status */}
-        <div className="p-3 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 space-y-1.5">
+        <div className="p-3 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 space-y-1.5">
           <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
             <span className="flex items-center gap-1">
               <Terminal size={12} className="text-[#292C2F]" />
@@ -196,7 +196,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
         </div>
 
         {/* MCP Permissions & Verification */}
-        <div className="p-3 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 space-y-1.5">
+        <div className="p-3 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 space-y-1.5">
           <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
             <span className="flex items-center gap-1">
               <ShieldCheck size={12} className="text-[#292C2F]" />
@@ -220,7 +220,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
       </div>
 
       {/* Real-time Diagnostics Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-[#111213]/80 border border-[#F0F0ED]/10 text-[11px] font-mono text-[#F0F0ED]/70">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-[#000000]/80 border border-[#F0F0ED]/10 text-[11px] font-mono text-[#F0F0ED]/70">
         <div className="flex items-center gap-2">
           <span
             className={`w-2 h-2 rounded-full ${

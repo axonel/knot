@@ -181,7 +181,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
               type="checkbox"
               checked={includeArchived}
               onChange={(e) => setIncludeArchived(e.target.checked)}
-              className="rounded border-[#F0F0ED]/20 bg-[#111213] text-[#292C2F] focus:ring-0 focus:ring-offset-0"
+              className="rounded border-[#F0F0ED]/20 bg-[#000000] text-[#292C2F] focus:ring-0 focus:ring-offset-0"
             />
             <span>Show archived</span>
           </label>
@@ -222,7 +222,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
       ) : sessions.length === 0 ? (
         /* Empty State */
         <div className="p-10 text-center rounded-xl border border-dashed border-[#F0F0ED]/10 bg-[#1B1D1F]/30 space-y-3">
-          <div className="w-10 h-10 mx-auto rounded-full bg-[#111213] border border-[#F0F0ED]/10 flex items-center justify-center text-[#292C2F]">
+          <div className="w-10 h-10 mx-auto rounded-full bg-[#000000] border border-[#F0F0ED]/10 flex items-center justify-center text-[#292C2F]">
             <MessageSquare size={20} />
           </div>
           <div className="space-y-1">
@@ -271,7 +271,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <button
                       onClick={(e) => handleStatusTransition(e, session.id, 'paused')}
                       title="Pause Session"
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#E05252]/40 text-[#E05252] hover:bg-[#E05252]/10 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#000000] border border-[#E05252]/40 text-[#E05252] hover:bg-[#E05252]/10 transition-colors cursor-pointer"
                     >
                       <Pause size={12} />
                       <span>Pause</span>
@@ -279,7 +279,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <button
                       onClick={(e) => handleStatusTransition(e, session.id, 'completed')}
                       title="Mark Completed"
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#000000] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
                     >
                       <CheckCircle2 size={12} />
                       <span>Complete</span>
@@ -300,7 +300,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <button
                       onClick={(e) => handleStatusTransition(e, session.id, 'completed')}
                       title="Mark Completed"
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#000000] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
                     >
                       <CheckCircle2 size={12} />
                       <span>Complete</span>
@@ -313,7 +313,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <button
                       onClick={(e) => handleStatusTransition(e, session.id, 'active')}
                       title="Reopen Session"
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#000000] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
                     >
                       <Play size={12} />
                       <span>Reopen</span>
@@ -321,7 +321,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                     <button
                       onClick={(e) => handleStatusTransition(e, session.id, 'archived')}
                       title="Archive Session"
-                      className="p-1.5 rounded-lg text-[#F0F0ED]/40 hover:text-[#F0F0ED] hover:bg-[#111213] transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg text-[#F0F0ED]/40 hover:text-[#F0F0ED] hover:bg-[#000000] transition-colors cursor-pointer"
                     >
                       <Archive size={13} />
                     </button>
@@ -332,7 +332,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   <button
                     onClick={(e) => handleStatusTransition(e, session.id, 'active')}
                     title="Unarchive Session"
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#F0F0ED]/20 text-[#F0F0ED]/80 hover:bg-[#111213]/80 transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#000000] border border-[#F0F0ED]/20 text-[#F0F0ED]/80 hover:bg-[#000000]/80 transition-colors cursor-pointer"
                   >
                     <ArchiveRestore size={12} />
                     <span>Unarchive</span>
@@ -346,7 +346,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
 
       {/* New Session Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111213]/80 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#000000]/80 backdrop-blur-xs p-4">
           <div className="w-full max-w-md rounded-xl bg-[#1B1D1F] border border-[#F0F0ED]/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0F0ED]/10">
               <div className="flex items-center gap-2 text-sm font-semibold text-[#F0F0ED]">
@@ -372,7 +372,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                   placeholder={`e.g. Implement SQLite storage (optional)`}
                   value={sessionTitle}
                   onChange={(e) => setSessionTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden"
+                  className="w-full px-3 py-2 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden"
                 />
                 <p className="text-[11px] text-[#F0F0ED]/40 mt-1">
                   Leave empty to generate a default timestamped session title.
@@ -383,7 +383,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#F0F0ED]/70 hover:bg-[#111213] transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#F0F0ED]/70 hover:bg-[#000000] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>

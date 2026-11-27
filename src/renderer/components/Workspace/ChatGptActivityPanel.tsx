@@ -142,14 +142,14 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
           onClick={loadActivities}
           disabled={loading}
           title="Reload activities"
-          className="p-1.5 rounded-lg bg-[#111213] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs cursor-pointer"
+          className="p-1.5 rounded-lg bg-[#000000] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs cursor-pointer"
         >
           <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-2.5 bg-[#111213] border-b border-[#292C2F] space-y-2 shrink-0">
+      <div className="p-2.5 bg-[#000000] border-b border-[#292C2F] space-y-2 shrink-0">
         <div className="relative">
           <Search size={12} className="absolute left-2.5 top-2.5 text-[#A5A5A0]" />
           <input
@@ -193,7 +193,7 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
       </div>
 
       {/* Activity List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2.5 bg-[#111213]">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2.5 bg-[#000000]">
         {!session ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#A5A5A0] text-xs">
             Select a session to view activity.
@@ -224,7 +224,7 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {getCategoryBadge(category)}
                     {reference && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#111213] text-[#F0F0ED]/90 border border-[#292C2F]">
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#000000] text-[#F0F0ED]/90 border border-[#292C2F]">
                         <ExternalLink size={9} className="text-[#E05252]" />
                         {reference}
                       </span>

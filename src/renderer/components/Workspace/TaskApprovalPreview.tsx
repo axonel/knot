@@ -124,7 +124,7 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
   return (
     <div
       data-testid={`approval-preview-${task.id}`}
-      className="rounded-lg border border-[#292C2F] bg-[#111213] overflow-hidden text-xs my-1.5 shadow-sm"
+      className="rounded-lg border border-[#292C2F] bg-[#000000] overflow-hidden text-xs my-1.5 shadow-sm"
     >
       {/* Header Toggle */}
       <button
@@ -161,7 +161,7 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
 
       {/* Expandable Preview Details */}
       {isExpanded && (
-        <div className="p-3 space-y-3 border-t border-[#292C2F] bg-[#111213]">
+        <div className="p-3 space-y-3 border-t border-[#292C2F] bg-[#000000]">
           {/* Explicit Unexecuted Proposal Disclaimer */}
           <div
             data-testid="preview-proposal-disclaimer"

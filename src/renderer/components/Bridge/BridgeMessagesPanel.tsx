@@ -83,7 +83,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
       case 'file_review':
         return 'bg-purple-900/40 text-purple-200 border-purple-700/50';
       default:
-        return 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10';
+        return 'bg-[#000000] text-[#F0F0ED]/60 border-[#F0F0ED]/10';
     }
   };
 
@@ -98,7 +98,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div className="flex p-0.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs">
+          <div className="flex p-0.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 text-xs">
             <button
               onClick={() => setActiveFilter('all')}
               className={`px-2.5 py-1 rounded-md transition-colors ${
@@ -157,7 +157,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
           <button
             onClick={onRefresh}
             title="Refresh Messages"
-            className="p-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/60 hover:text-[#F0F0ED] hover:bg-[#111213]/80 transition-colors"
+            className="p-1.5 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 text-[#F0F0ED]/60 hover:text-[#F0F0ED] hover:bg-[#000000]/80 transition-colors"
           >
             <RefreshCw size={13} />
           </button>
@@ -196,7 +196,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
           )
         ) : activeFilter === 'canonical' ? (
           /* Canonical markdown view */
-          <div className="p-4 rounded-xl bg-[#111213] border border-[#F0F0ED]/10 space-y-3">
+          <div className="p-4 rounded-xl bg-[#000000] border border-[#F0F0ED]/10 space-y-3">
             <div className="flex items-center justify-between border-b border-[#F0F0ED]/10 pb-2 text-xs font-mono text-[#F0F0ED]/60">
               <span className="flex items-center gap-1.5">
                 <FileText size={14} className="text-[#292C2F]" />
@@ -245,7 +245,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
                 key={msg.id}
                 className={`p-3 rounded-xl border transition-all ${
                   isChatGPT
-                    ? 'bg-[#111213] border-[#E05252]/20 hover:border-[#E05252]/40'
+                    ? 'bg-[#000000] border-[#E05252]/20 hover:border-[#E05252]/40'
                     : 'bg-[#1B1D1F]/70 border-[#292C2F]/40 hover:border-[#292C2F]'
                 }`}
               >
@@ -263,7 +263,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
                           ? 'bg-[#E05252]/15 text-[#E05252] border-[#E05252]/30'
                           : isKnot
                           ? 'bg-[#292C2F]/30 text-[#F0F0ED] border-[#292C2F]'
-                          : 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10'
+                          : 'bg-[#000000] text-[#F0F0ED]/60 border-[#F0F0ED]/10'
                       }`}
                     >
                       {isChatGPT ? (
@@ -334,7 +334,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
             <ArrowUpRight size={13} className="text-[#292C2F]" />
             Send Outbound Message to ChatGPT
           </span>
-          <span className="text-[10px] font-mono text-[#F0F0ED]/40 bg-[#111213] px-2 py-0.5 rounded border border-[#F0F0ED]/10">
+          <span className="text-[10px] font-mono text-[#F0F0ED]/40 bg-[#000000] px-2 py-0.5 rounded border border-[#F0F0ED]/10">
             type: message
           </span>
         </div>
@@ -345,7 +345,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
             onChange={(e) => setOutboundText(e.target.value)}
             placeholder="Type your markdown instruction or task for ChatGPT..."
             rows={3}
-            className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-xl p-3 text-xs text-[#F0F0ED] placeholder-[#F0F0ED]/30 focus:outline-none focus:border-[#292C2F] font-mono resize-none transition-colors"
+            className="w-full bg-[#000000] border border-[#F0F0ED]/10 rounded-xl p-3 text-xs text-[#F0F0ED] placeholder-[#F0F0ED]/30 focus:outline-none focus:border-[#292C2F] font-mono resize-none transition-colors"
           />
         </div>
 
@@ -359,7 +359,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm ${
               outboundText.trim() && !isSending
                 ? 'bg-[#292C2F] hover:bg-[#292C2F]/80 text-[#F0F0ED] cursor-pointer'
-                : 'bg-[#111213] text-[#F0F0ED]/30 border border-[#F0F0ED]/10 cursor-not-allowed'
+                : 'bg-[#000000] text-[#F0F0ED]/30 border border-[#F0F0ED]/10 cursor-not-allowed'
             }`}
           >
             <Send size={13} />

@@ -11,7 +11,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { Message, Project, Session, SessionBridgePaths } from '../../../shared/types.js';
-import { SpotlightCard, Waves, ShinyText } from '../ReactBits/index.js';
+import { SpotlightCard, ShinyText } from '../ReactBits/index.js';
 
 interface SharedConversationPanelProps {
   project: Project | null;
@@ -131,7 +131,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
       case 'system':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#111213] text-[#A5A5A0] border border-[#292C2F]">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#000000] text-[#A5A5A0] border border-[#292C2F]">
             <Terminal size={10} className="text-[#A5A5A0]" /> Knot
           </span>
         );
@@ -139,7 +139,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#111213] border border-[#292C2F] rounded-xl overflow-hidden shadow-lg">
+    <div className="flex flex-col h-full bg-[#000000] border border-[#292C2F] rounded-xl overflow-hidden shadow-lg">
       {/* Panel Header */}
       <div className="px-4 py-3 bg-[#1B1D1F] border-b border-[#292C2F] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -150,7 +150,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
                 {session ? session.title : 'Select a Session'}
               </h2>
               {project && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#111213] text-[#A5A5A0] border border-[#292C2F]">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#000000] text-[#A5A5A0] border border-[#292C2F]">
                   {project.name}
                 </span>
               )}
@@ -167,7 +167,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
             <button
               onClick={handleCopyPath}
               title="Copy conversation.md path"
-              className="p-1.5 rounded-lg bg-[#111213] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs flex items-center gap-1 cursor-pointer"
+              className="p-1.5 rounded-lg bg-[#000000] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs flex items-center gap-1 cursor-pointer"
             >
               {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
               <span className="text-[10px] hidden sm:inline">{copied ? 'Copied' : 'Path'}</span>
@@ -178,7 +178,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
             <button
               onClick={handleOpenFolder}
               title="Open session directory in file manager"
-              className="p-1.5 rounded-lg bg-[#111213] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs flex items-center gap-1 cursor-pointer"
+              className="p-1.5 rounded-lg bg-[#000000] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs flex items-center gap-1 cursor-pointer"
             >
               <FolderOpen size={12} />
               <span className="text-[10px] hidden sm:inline">Folder</span>
@@ -192,7 +192,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
             }}
             disabled={loading}
             title="Reload conversation"
-            className="p-1.5 rounded-lg bg-[#111213] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs cursor-pointer"
+            className="p-1.5 rounded-lg bg-[#000000] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs cursor-pointer"
           >
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -200,16 +200,14 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
       </div>
 
       {/* Messages Scroll Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#111213] relative">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#000000] relative">
         {!session ? (
           <div className="h-full relative flex flex-col items-center justify-center text-center p-8 text-[#A5A5A0]">
-            <Waves lineColor="rgba(240, 240, 237, 0.04)" accentColor="rgba(224, 82, 82, 0.2)" className="absolute inset-0 pointer-events-none" />
             <FileText size={32} className="mb-2 text-[#292C2F] relative z-10" />
             <ShinyText text="Select a project and session to inspect collaboration." speed={3} className="text-xs font-medium text-[#F0F0ED] relative z-10" />
           </div>
         ) : messages.length === 0 ? (
           <div className="h-full relative flex flex-col items-center justify-center text-center p-8 text-[#A5A5A0]">
-            <Waves lineColor="rgba(240, 240, 237, 0.04)" accentColor="rgba(224, 82, 82, 0.2)" className="absolute inset-0 pointer-events-none" />
             <Sparkles size={32} className="mb-2 text-[#E05252] relative z-10" />
             <p className="text-xs font-semibold text-[#F0F0ED] relative z-10">No messages recorded yet</p>
             <p className="text-[11px] mt-1 max-w-sm text-[#A5A5A0] relative z-10">
@@ -233,7 +231,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
                     ? 'bg-[#1B1D1F] border-[#E05252]/30 mr-6'
                     : isGpt
                     ? 'bg-[#1B1D1F] border-[#292C2F] mr-6'
-                    : 'bg-[#111213] border-[#292C2F]'
+                    : 'bg-[#000000] border-[#292C2F]'
                 }`}
               >
                 {/* Message Header */}

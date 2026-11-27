@@ -16,6 +16,7 @@ import type { Task, Session, AntigravityStatus, AntigravityUiEvent } from '../..
 import { GitDiffViewer } from './GitDiffViewer.js';
 import { TaskApprovalPreview } from './TaskApprovalPreview.js';
 import { useTaskUndoManager, type PendingTaskAction } from '../../hooks/useTaskUndoManager.js';
+import { SpotlightCard, Magnet, CountUp } from '../ReactBits/index.js';
 
 interface AntigravityExecutionPanelProps {
   session: Session | null;
@@ -159,23 +160,22 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
     }
   };
 
+  // Expose handleApprove to parent via callback prop for global Ctrl+Enter shortcut
   useEffect(() => {
-    onRegisterApproveHandler?.(handleApprove);
-    return () => {
-      onRegisterApproveHandler?.(null);
-    };
-  }, [onRegisterApproveHandler, session?.id, effectiveGetPendingAction]);
+    if (onRegisterApproveHandler) {
+      onRegisterApproveHandler(handleApprove);
+      return () => onRegisterApproveHandler(null);
+    }
+  }, [onRegisterApproveHandler, session?.id]);
 
-  const handleReject = (targetTask: Task) => {
-    // 3-second undo grace period
-    if (effectiveIsTaskPending(targetTask.id)) return;
-    effectiveScheduleUndo(targetTask, 'reject');
+  // Three-second undoable reject
+  const handleReject = (task: Task) => {
+    effectiveScheduleUndo(task, 'reject');
   };
 
-  const handleCancel = (targetTask: Task) => {
-    // 3-second undo grace period
-    if (effectiveIsTaskPending(targetTask.id)) return;
-    effectiveScheduleUndo(targetTask, 'cancel');
+  // Three-second undoable cancel
+  const handleCancel = (task: Task) => {
+    effectiveScheduleUndo(task, 'cancel');
   };
 
   const handleRetry = async (taskId: string) => {
@@ -184,153 +184,143 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
     try {
       await window.knotApi.orchestration.retryTask(taskId);
       await loadData();
+      onRefresh?.();
     } catch (err) {
-      console.error('[AntigravityExecutionPanel] Failed to retry task:', err);
+      console.error('[AntigravityExecutionPanel] Retry failed:', err);
     } finally {
       setActionLoading(null);
     }
   };
 
   const getStatusBadge = (task: Task) => {
-    // Check pending undo action first
-    if (effectiveIsTaskPending(task.id)) {
-      const pending = effectiveGetPendingAction(task.id);
-      const isCancel = pending?.actionType === 'cancel';
-      return (
-        <span
-          data-testid={`status-badge-pending-${task.id}`}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/50 animate-pulse"
-        >
-          <RotateCcw size={10} />
-          <span>{isCancel ? `Cancelling (${pending?.secondsRemaining}s)` : `Rejecting (${pending?.secondsRemaining}s)`}</span>
-        </span>
-      );
-    }
-
-    const tStatus = task.status;
-    const approvalStatus = task.approvalStatus;
-
-    if (tStatus === 'awaiting_approval' || approvalStatus === 'awaiting_approval') {
-      return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-950/60 text-amber-300 border border-amber-800">
-          <ShieldAlert size={10} /> Awaiting Approval
-        </span>
-      );
-    }
-    switch (tStatus) {
+    switch (task.status) {
+      case 'awaiting_approval':
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#E05252] border border-[#E05252]/40">
+            <AlertTriangle size={10} className="text-[#E05252]" /> Awaiting Approval
+          </span>
+        );
       case 'running':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#004E72]/40 text-[#F9F9F9] border border-[#004E72]">
-            <Play size={10} className="text-[#FF6E42] animate-pulse" /> Running
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#E05252] border border-[#E05252]/40">
+            <Play size={10} className="text-[#E05252] animate-pulse" /> Running
           </span>
         );
       case 'succeeded':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950/60 text-emerald-300 border border-emerald-800">
-            <CheckCircle2 size={10} /> Succeeded
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#F0F0ED] border border-emerald-500/40">
+            <CheckCircle2 size={10} className="text-emerald-400" /> Succeeded
           </span>
         );
       case 'failed':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-rose-950/60 text-rose-300 border border-rose-800">
-            <AlertTriangle size={10} /> Failed
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#E05252] border border-[#E05252]/50">
+            <XCircle size={10} className="text-[#E05252]" /> Failed
           </span>
         );
       case 'cancelled':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#092634] text-[#F9F9F9]/50 border border-[#F9F9F9]/10">
-            <XCircle size={10} /> Cancelled
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#A5A5A0] border border-[#292C2F]">
+            <XCircle size={10} className="text-[#A5A5A0]" /> Cancelled
           </span>
         );
       case 'queued':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#004E72]/20 text-[#F9F9F9]/80 border border-[#004E72]/40">
-            <Clock size={10} /> Queued
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#111213] text-[#A5A5A0] border border-[#292C2F]">
+            <Clock size={10} className="text-[#A5A5A0]" /> Queued
           </span>
         );
     }
   };
 
-  const awaitingApprovalTask = tasks.find((t) => t.status === 'awaiting_approval');
+  // Determine highlighted task: priority to running, awaiting_approval, or selected task
+  const activeOrPendingTask = tasks.find(
+    (t) => t.status === 'running' || t.status === 'awaiting_approval'
+  );
   const highlightedTask =
     (selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : null) ||
-    awaitingApprovalTask ||
-    runningTask;
+    runningTask ||
+    activeOrPendingTask ||
+    tasks[0] ||
+    null;
 
   const isHighlightedPending = highlightedTask ? effectiveIsTaskPending(highlightedTask.id) : false;
   const highlightedPendingAction = highlightedTask ? effectiveGetPendingAction(highlightedTask.id) : undefined;
-  const isPendingRejection = isHighlightedPending && highlightedPendingAction?.actionType === 'reject';
-  const isPendingCancellation = isHighlightedPending && highlightedPendingAction?.actionType === 'cancel';
+  const isPendingCancellation = highlightedPendingAction?.actionType === 'cancel';
+  const isPendingRejection = highlightedPendingAction?.actionType === 'reject';
 
   return (
-    <div className="flex flex-col h-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-[#1B1D1F] border border-[#292C2F] rounded-xl overflow-hidden shadow-md">
       {/* Header */}
-      <div className="px-4 py-3 bg-[#092634] border-b border-[#F9F9F9]/10 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 bg-[#1B1D1F] border-b border-[#292C2F] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Sparkles size={16} className="text-[#FF6E42]" />
+          <Sparkles size={16} className="text-[#E05252]" />
           <div>
-            <h3 className="text-xs font-bold text-[#F9F9F9]">Antigravity Execution</h3>
-            <div className="text-[10px] text-[#F9F9F9]/40 font-mono">
-              Implementation Worker
+            <h3 className="text-xs font-bold text-[#F0F0ED]">Antigravity Execution</h3>
+            <div className="text-[10px] text-[#A5A5A0] font-mono">
+              Deterministic task execution engine
             </div>
           </div>
         </div>
 
-        {/* Worker Status Chip */}
+        {/* Process Status Pill */}
         <div className="flex items-center gap-1.5">
-          <span
-            className={`w-2 h-2 rounded-full ${
-              status?.state === 'ready'
-                ? 'bg-emerald-400'
-                : status?.state === 'thinking' || status?.state === 'starting'
-                ? 'bg-[#FF6E42] animate-pulse'
-                : 'bg-zinc-500'
-            }`}
-          />
-          <span className="text-[10px] font-mono uppercase text-[#F9F9F9]/60">
-            {status?.state || 'Stopped'}
-          </span>
+          {status?.state === 'running' ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#292C2F] text-[#E05252] border border-[#E05252]/40">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E05252] animate-ping" />
+              Running
+            </span>
+          ) : status?.state === 'error' ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#292C2F] text-[#E05252] border border-[#E05252]">
+              <ShieldAlert size={10} /> Error
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#111213] text-[#A5A5A0] border border-[#292C2F]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#A5A5A0]" />
+              Idle
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Highlighted Active or Approval Card */}
+      {/* Active / Highlighted Task Banner */}
       {highlightedTask && (
         <div
           data-testid={`highlighted-task-card-${highlightedTask.id}`}
-          className={`p-3 border-b space-y-2 shrink-0 ${
+          className={`p-3.5 border-b space-y-2 shrink-0 ${
             highlightedTask.status === 'awaiting_approval'
-              ? 'bg-amber-950/20 border-amber-800/40'
-              : 'bg-[#004E72]/10 border-[#004E72]/30'
+              ? 'bg-[#111213] border-[#E05252]/40'
+              : 'bg-[#111213] border-[#292C2F]'
           }`}
         >
           <div className="flex items-center justify-between text-xs">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#FF6E42]">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#E05252]">
               {highlightedTask.status === 'awaiting_approval' ? 'Requires Approval' : 'Active Task'}
             </span>
             {getStatusBadge(highlightedTask)}
           </div>
 
-          <h4 className="text-xs font-bold text-[#F9F9F9]">{highlightedTask.title}</h4>
+          <h4 className="text-xs font-bold text-[#F0F0ED]">{highlightedTask.title}</h4>
 
           {/* Pending 3-Second Undo Grace Period Banner */}
           {isHighlightedPending && highlightedPendingAction && (
             <div
               data-testid={`active-task-pending-banner-${highlightedTask.id}`}
-              className="p-2.5 rounded-lg bg-[#092634] border border-[#FF6E42]/60 space-y-1.5 animate-in fade-in duration-150"
+              className="p-2.5 rounded-lg bg-[#1B1D1F] border border-[#E05252]/60 space-y-1.5 animate-in fade-in duration-150"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="p-1 rounded bg-[#FF6E42]/20 text-[#FF6E42]">
+                  <div className="p-1 rounded bg-[#E05252]/20 text-[#E05252]">
                     <RotateCcw size={13} className="animate-pulse" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#FF6E42]">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#E05252]">
                       {isPendingCancellation ? 'Cancellation Scheduled' : 'Rejection Scheduled'}
                     </span>
                     <span
                       data-testid={`active-task-countdown-${highlightedTask.id}`}
-                      className="ml-2 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[#FF6E42] text-[#090B0D]"
+                      className="ml-2 px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#E05252] text-[#F0F0ED]"
                     >
                       {highlightedPendingAction.secondsRemaining}s remaining
                     </span>
@@ -341,14 +331,14 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                   onClick={() => effectiveUndoAction(highlightedTask.id)}
                   data-testid="undo-task-action-btn"
                   aria-label={`Undo ${highlightedPendingAction.actionType} for ${highlightedTask.title}`}
-                  className="px-2.5 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-bold flex items-center gap-1 border border-[#FF6E42]/50 hover:border-[#FF6E42] cursor-pointer"
+                  className="px-2.5 py-1 rounded bg-[#292C2F] hover:bg-[#32363a] text-[#F0F0ED] text-xs font-bold flex items-center gap-1 border border-[#E05252] cursor-pointer"
                 >
-                  <RotateCcw size={11} className="text-[#FF6E42]" />
+                  <RotateCcw size={11} className="text-[#E05252]" />
                   <span>Undo</span>
                 </button>
               </div>
 
-              <p className="text-[10px] text-[#F9F9F9]/70 font-mono">
+              <p className="text-[10px] text-[#A5A5A0] font-mono">
                 {isPendingCancellation
                   ? 'Task execution continues in background until the grace period expires without undo.'
                   : 'Action will dispatch to backend when the 3-second timer expires.'}
@@ -366,26 +356,28 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
           <div className="flex items-center gap-2 pt-1">
             {highlightedTask.status === 'awaiting_approval' ? (
               <>
-                <button
-                  onClick={() => handleApprove(highlightedTask.id)}
-                  disabled={actionLoading === highlightedTask.id || isPendingRejection}
-                  title={isPendingRejection ? 'Task is currently scheduled for rejection' : 'Approve & Dispatch Task (Ctrl+Enter)'}
-                  aria-label="Approve and Dispatch Task (Ctrl+Enter)"
-                  className="px-3 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 disabled:opacity-40 disabled:cursor-not-allowed text-[#F9F9F9] text-xs font-semibold flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] cursor-pointer"
-                >
-                  <CheckCircle2 size={12} />
-                  <span>Approve & Dispatch</span>
-                  <kbd className="hidden sm:inline-flex px-1.5 py-0.2 rounded text-[10px] font-mono bg-[#090B0D]/60 border border-[#F9F9F9]/20 text-[#F9F9F9]/70">
-                    Ctrl+Enter
-                  </kbd>
-                </button>
+                <Magnet padding={12} disabled={false}>
+                  <button
+                    onClick={() => handleApprove(highlightedTask.id)}
+                    disabled={actionLoading === highlightedTask.id || isPendingRejection}
+                    title={isPendingRejection ? 'Task is currently scheduled for rejection' : 'Approve & Dispatch Task (Ctrl+Enter)'}
+                    aria-label="Approve and Dispatch Task (Ctrl+Enter)"
+                    className="px-3 py-1.5 rounded bg-[#E05252] hover:bg-[#ef6565] disabled:opacity-40 disabled:cursor-not-allowed text-[#F0F0ED] text-xs font-semibold flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] cursor-pointer shadow-xs"
+                  >
+                    <CheckCircle2 size={12} />
+                    <span>Approve & Dispatch</span>
+                    <kbd className="hidden sm:inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#111213] border border-white/20 text-[#F0F0ED]">
+                      Ctrl+Enter
+                    </kbd>
+                  </button>
+                </Magnet>
                 {isPendingRejection ? (
                   <button
                     onClick={() => effectiveUndoAction(highlightedTask.id)}
                     data-testid="undo-rejection-btn"
-                    className="px-3 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-semibold flex items-center gap-1.5 border border-[#FF6E42] cursor-pointer"
+                    className="px-3 py-1 rounded bg-[#292C2F] hover:bg-[#32363a] text-[#F0F0ED] text-xs font-semibold flex items-center gap-1.5 border border-[#E05252] cursor-pointer"
                   >
-                    <RotateCcw size={12} className="text-[#FF6E42]" />
+                    <RotateCcw size={12} className="text-[#E05252]" />
                     <span>Undo Rejection</span>
                   </button>
                 ) : (
@@ -393,7 +385,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                     onClick={() => handleReject(highlightedTask)}
                     disabled={actionLoading === highlightedTask.id}
                     data-testid="reject-task-btn"
-                    className="px-3 py-1 rounded bg-[#090B0D] hover:bg-rose-950/50 text-rose-300 border border-rose-800 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                    className="px-3 py-1 rounded bg-[#111213] hover:bg-rose-950/50 text-[#E05252] border border-[#E05252]/40 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
                   >
                     <XCircle size={12} />
                     <span>Reject</span>
@@ -406,9 +398,9 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                   <button
                     onClick={() => effectiveUndoAction(highlightedTask.id)}
                     data-testid="undo-cancellation-btn"
-                    className="px-2.5 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-semibold flex items-center gap-1.5 border border-[#FF6E42] cursor-pointer"
+                    className="px-2.5 py-1 rounded bg-[#292C2F] hover:bg-[#32363a] text-[#F0F0ED] text-xs font-semibold flex items-center gap-1.5 border border-[#E05252] cursor-pointer"
                   >
-                    <RotateCcw size={12} className="text-[#FF6E42]" />
+                    <RotateCcw size={12} className="text-[#E05252]" />
                     <span>Undo Cancellation</span>
                   </button>
                 ) : (
@@ -416,7 +408,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                     onClick={() => handleCancel(highlightedTask)}
                     disabled={actionLoading === highlightedTask.id}
                     data-testid="cancel-task-btn"
-                    className="px-2.5 py-1 rounded bg-[#090B0D] hover:bg-rose-950/50 text-rose-300 border border-rose-800 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
+                    className="px-2.5 py-1 rounded bg-[#111213] hover:bg-rose-950/50 text-[#E05252] border border-[#E05252]/40 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
                   >
                     <XCircle size={12} />
                     <span>Cancel Task</span>
@@ -424,7 +416,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                 )}
                 <button
                   onClick={() => setInspectingTaskId(highlightedTask.id)}
-                  className="px-2.5 py-1 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
+                  className="px-2.5 py-1 rounded bg-[#292C2F] hover:bg-[#32363a] text-[#F0F0ED] text-xs font-medium flex items-center gap-1 transition-all cursor-pointer border border-[#292C2F]"
                 >
                   <GitCommit size={12} />
                   <span>Inspect Git Changes</span>
@@ -433,7 +425,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
             ) : (
               <button
                 onClick={() => setInspectingTaskId(highlightedTask.id)}
-                className="px-2.5 py-1 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
+                className="px-2.5 py-1 rounded bg-[#292C2F] hover:bg-[#32363a] text-[#F0F0ED] text-xs font-medium flex items-center gap-1 transition-all cursor-pointer border border-[#292C2F]"
               >
                 <GitCommit size={12} />
                 <span>Inspect Git Changes</span>
@@ -444,40 +436,40 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
       )}
 
       {/* Tabs */}
-      <div className="flex items-center border-b border-[#F9F9F9]/10 bg-[#092634]/50 px-3 shrink-0">
+      <div className="flex items-center border-b border-[#292C2F] bg-[#111213] px-3 shrink-0">
         <button
           onClick={() => setActiveTab('queue')}
-          className={`px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'queue'
-              ? 'border-[#FF6E42] text-[#F9F9F9] font-bold'
-              : 'border-transparent text-[#F9F9F9]/50 hover:text-[#F9F9F9]'
+              ? 'border-[#E05252] text-[#F0F0ED] font-bold'
+              : 'border-transparent text-[#A5A5A0] hover:text-[#F0F0ED]'
           }`}
         >
           <ListTodo size={12} />
-          <span>Task Queue ({tasks.length})</span>
+          <span>Task Queue (<CountUp to={tasks.length} />)</span>
         </button>
 
         <button
           onClick={() => setActiveTab('stream')}
-          className={`px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-all ${
+          className={`px-3 py-2 text-xs font-medium border-b-2 flex items-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'stream'
-              ? 'border-[#FF6E42] text-[#F9F9F9] font-bold'
-              : 'border-transparent text-[#F9F9F9]/50 hover:text-[#F9F9F9]'
+              ? 'border-[#E05252] text-[#F0F0ED] font-bold'
+              : 'border-transparent text-[#A5A5A0] hover:text-[#F0F0ED]'
           }`}
         >
           <Terminal size={12} />
-          <span>Live Stream ({streamEvents.length})</span>
+          <span>Live Stream (<CountUp to={streamEvents.length} />)</span>
         </button>
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-[#111213]">
         {activeTab === 'queue' ? (
           tasks.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#F9F9F9]/40 text-xs">
-              <ListTodo size={24} className="mb-2 text-[#004E72] opacity-50" />
-              <p className="font-semibold text-[#F9F9F9]/70">No tasks in queue</p>
-              <p className="text-[11px] mt-1 max-w-xs text-[#F9F9F9]/40">
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#A5A5A0] text-xs">
+              <ListTodo size={24} className="mb-2 text-[#E05252] opacity-50" />
+              <p className="font-semibold text-[#F0F0ED]">No tasks in queue</p>
+              <p className="text-[11px] mt-1 max-w-xs text-[#A5A5A0]">
                 Tasks delegated by ChatGPT will automatically appear and queue here for execution.
               </p>
             </div>
@@ -485,25 +477,26 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
             tasks.map((task) => {
               const isSelected = selectedTaskId === task.id || (!selectedTaskId && highlightedTask?.id === task.id);
               return (
-                <div
+                <SpotlightCard
                   key={task.id}
+                  spotlightColor="rgba(224, 82, 82, 0.1)"
                   onClick={() => onSelectTaskId?.(task.id)}
-                  className={`p-2.5 rounded-lg bg-[#092634]/40 border space-y-1.5 transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-lg bg-[#1B1D1F] border space-y-1.5 transition-all cursor-pointer ${
                     isSelected
-                      ? 'border-[#FF6E42] bg-[#004E72]/20 shadow-xs'
-                      : 'border-[#F9F9F9]/10 hover:border-[#004E72]/40'
+                      ? 'border-[#E05252] bg-[#292C2F]/50 shadow-xs'
+                      : 'border-[#292C2F] hover:border-[#E05252]/40'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-semibold text-xs text-[#F9F9F9] truncate">
+                      <span className="font-semibold text-xs text-[#F0F0ED] truncate">
                         {task.title}
                       </span>
                     </div>
                     {getStatusBadge(task)}
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] font-mono text-[#F9F9F9]/40 pt-1">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-[#A5A5A0] pt-1">
                     <span>Priority: {task.priority || 'normal'}</span>
                     <span>{new Date(task.createdAt).toLocaleTimeString()}</span>
                   </div>
@@ -515,7 +508,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                         e.stopPropagation();
                         setInspectingTaskId(task.id);
                       }}
-                      className="px-2 py-0.5 rounded bg-[#090B0D] hover:bg-[#004E72]/40 text-[#F9F9F9]/80 hover:text-[#F9F9F9] border border-[#F9F9F9]/10 text-[10px] font-mono flex items-center gap-1 transition-all"
+                      className="px-2 py-0.5 rounded bg-[#111213] hover:bg-[#292C2F] text-[#F0F0ED] border border-[#292C2F] text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer"
                     >
                       <GitCommit size={10} /> Inspect Changes
                     </button>
@@ -526,31 +519,31 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                           handleRetry(task.id);
                         }}
                         disabled={actionLoading === task.id}
-                        className="px-2 py-0.5 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-[10px] font-mono flex items-center gap-1 transition-all"
+                        className="px-2 py-0.5 rounded bg-[#292C2F] hover:bg-[#32363a] text-[#F0F0ED] text-[10px] font-mono flex items-center gap-1 transition-all cursor-pointer border border-[#292C2F]"
                       >
                         <RotateCcw size={10} /> Retry Task
                       </button>
                     )}
                   </div>
-                </div>
+                </SpotlightCard>
               );
             })
           )
         ) : (
           /* Live Stream view */
           streamEvents.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#F9F9F9]/40 text-xs font-mono">
+            <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#A5A5A0] text-xs font-mono">
               Waiting for execution stream events...
             </div>
           ) : (
             <div className="space-y-1 font-mono text-[11px]">
               {streamEvents.map((evt, idx) => (
-                <div key={idx} className="p-1.5 rounded bg-[#092634]/30 border border-[#F9F9F9]/5">
-                  <div className="flex items-center justify-between text-[10px] text-[#FF6E42]">
-                    <span>{evt.type}</span>
-                    <span className="text-[#F9F9F9]/30">{new Date(evt.timestamp).toLocaleTimeString()}</span>
+                <div key={idx} className="p-2 rounded bg-[#1B1D1F] border border-[#292C2F]">
+                  <div className="flex items-center justify-between text-[10px] text-[#E05252]">
+                    <span className="font-bold">{evt.type}</span>
+                    <span className="text-[#A5A5A0]">{new Date(evt.timestamp).toLocaleTimeString()}</span>
                   </div>
-                  <pre className="text-[10px] text-[#F9F9F9]/80 overflow-x-auto whitespace-pre-wrap mt-0.5">
+                  <pre className="text-[10px] text-[#F0F0ED] overflow-x-auto whitespace-pre-wrap mt-1 font-mono">
                     {JSON.stringify(evt.data, null, 2)}
                   </pre>
                 </div>

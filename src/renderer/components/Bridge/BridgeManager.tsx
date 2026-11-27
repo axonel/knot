@@ -164,7 +164,7 @@ export const BridgeManager: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="py-24 text-center text-xs font-mono text-[#F9F9F9]/50 animate-pulse">
+      <div className="py-24 text-center text-xs font-mono text-[#F0F0ED]/50 animate-pulse">
         Loading bridge environment...
       </div>
     );
@@ -172,13 +172,13 @@ export const BridgeManager: React.FC = () => {
 
   if (projects.length === 0) {
     return (
-      <div className="p-8 rounded-2xl bg-[#092634] border border-[#F9F9F9]/10 text-center space-y-4">
-        <div className="w-12 h-12 rounded-xl bg-[#004E72]/30 border border-[#004E72] flex items-center justify-center mx-auto text-[#FF6E42]">
+      <div className="p-8 rounded-2xl bg-[#1B1D1F] border border-[#F0F0ED]/10 text-center space-y-4">
+        <div className="w-12 h-12 rounded-xl bg-[#292C2F]/30 border border-[#292C2F] flex items-center justify-center mx-auto text-[#E05252]">
           <FolderGit2 size={24} />
         </div>
         <div className="space-y-1">
-          <h3 className="text-sm font-semibold text-[#F9F9F9]">No Projects Found</h3>
-          <p className="text-xs text-[#F9F9F9]/60 max-w-md mx-auto leading-relaxed">
+          <h3 className="text-sm font-semibold text-[#F0F0ED]">No Projects Found</h3>
+          <p className="text-xs text-[#F0F0ED]/60 max-w-md mx-auto leading-relaxed">
             The ChatGPT Bridge operates within project and session sandboxes. Please create a project and session in the &quot;Projects &amp; Sessions&quot; tab first.
           </p>
         </div>
@@ -189,15 +189,15 @@ export const BridgeManager: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Session Selection Toolbar */}
-      <div className="rounded-xl border border-[#F9F9F9]/10 bg-[#092634]/70 p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F]/70 p-3 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-3">
           {/* Project Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-[#F9F9F9]/50 font-mono text-[11px] uppercase">Project:</span>
+            <span className="text-[#F0F0ED]/50 font-mono text-[11px] uppercase">Project:</span>
             <select
               value={selectedProjectId || ''}
               onChange={(e) => setSelectedProjectId(e.target.value)}
-              className="bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#004E72]"
+              className="bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#292C2F]"
             >
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -209,14 +209,14 @@ export const BridgeManager: React.FC = () => {
 
           {/* Session Selector */}
           <div className="flex items-center gap-2">
-            <span className="text-[#F9F9F9]/50 font-mono text-[11px] uppercase">Session:</span>
+            <span className="text-[#F0F0ED]/50 font-mono text-[11px] uppercase">Session:</span>
             {sessions.length === 0 ? (
-              <span className="text-[#F9F9F9]/40 italic">No sessions in project</span>
+              <span className="text-[#F0F0ED]/40 italic">No sessions in project</span>
             ) : (
               <select
                 value={selectedSessionId || ''}
                 onChange={(e) => setSelectedSessionId(e.target.value)}
-                className="bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#004E72]"
+                className="bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-[#292C2F]"
               >
                 {sessions.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -230,7 +230,7 @@ export const BridgeManager: React.FC = () => {
 
         <button
           onClick={refreshBridgeData}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#F0F0ED] transition-colors"
         >
           <RefreshCw size={12} />
           <span>Sync Bridge</span>

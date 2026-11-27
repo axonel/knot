@@ -11,6 +11,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import type { EventItem, Session } from '../../../shared/types.js';
+import { SpotlightCard } from '../ReactBits/index.js';
 
 interface ChatGptActivityPanelProps {
   session: Session | null;
@@ -72,37 +73,37 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
     switch (category?.toLowerCase()) {
       case 'repo_inspection':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#004E72]/40 text-[#F9F9F9] border border-[#004E72]">
-            <Compass size={10} className="text-[#FF6E42]" /> Repo Inspection
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#F0F0ED] border border-[#292C2F]">
+            <Compass size={10} className="text-[#E05252]" /> Repo Inspection
           </span>
         );
       case 'code_review':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/40">
-            <FileCode2 size={10} className="text-[#FF6E42]" /> Code Review
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#E05252] border border-[#E05252]/30">
+            <FileCode2 size={10} className="text-[#E05252]" /> Code Review
           </span>
         );
       case 'pr_review':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-purple-950/50 text-purple-300 border border-purple-800">
-            <GitPullRequest size={10} className="text-purple-400" /> PR Review
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#F0F0ED] border border-[#292C2F]">
+            <GitPullRequest size={10} className="text-[#E05252]" /> PR Review
           </span>
         );
       case 'planning':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-950/50 text-amber-300 border border-amber-800">
-            <Lightbulb size={10} className="text-amber-400" /> Planning
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#E05252] border border-[#E05252]/40">
+            <Lightbulb size={10} className="text-[#E05252]" /> Planning
           </span>
         );
       case 'verification':
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950/50 text-emerald-300 border border-emerald-800">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#F0F0ED] border border-emerald-500/30">
             <CheckCircle2 size={10} className="text-emerald-400" /> Verification
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#092634] text-[#F9F9F9]/70 border border-[#F9F9F9]/10">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#A5A5A0] border border-[#292C2F]">
             Activity
           </span>
         );
@@ -125,14 +126,14 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
   });
 
   return (
-    <div className="flex flex-col h-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-[#1B1D1F] border border-[#292C2F] rounded-xl overflow-hidden shadow-md">
       {/* Header */}
-      <div className="px-4 py-3 bg-[#092634] border-b border-[#F9F9F9]/10 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 bg-[#1B1D1F] border-b border-[#292C2F] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <Compass size={16} className="text-[#FF6E42]" />
+          <Compass size={16} className="text-[#E05252]" />
           <div>
-            <h3 className="text-xs font-bold text-[#F9F9F9]">ChatGPT-Reported Activity</h3>
-            <div className="text-[10px] text-[#F9F9F9]/40 font-mono">
+            <h3 className="text-xs font-bold text-[#F0F0ED]">ChatGPT-Reported Activity</h3>
+            <div className="text-[10px] text-[#A5A5A0] font-mono">
               Orchestrator inspection & planning
             </div>
           </div>
@@ -141,37 +142,37 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
           onClick={loadActivities}
           disabled={loading}
           title="Reload activities"
-          className="p-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] hover:bg-[#004E72]/20 transition-all text-xs"
+          className="p-1.5 rounded-lg bg-[#111213] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs cursor-pointer"
         >
           <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="p-2.5 bg-[#092634]/50 border-b border-[#F9F9F9]/10 space-y-2 shrink-0">
+      <div className="p-2.5 bg-[#111213] border-b border-[#292C2F] space-y-2 shrink-0">
         <div className="relative">
-          <Search size={12} className="absolute left-2.5 top-2.5 text-[#F9F9F9]/40" />
+          <Search size={12} className="absolute left-2.5 top-2.5 text-[#A5A5A0]" />
           <input
             type="text"
             placeholder="Search activities..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg pl-8 pr-2.5 py-1 text-xs text-[#F9F9F9] placeholder-[#F9F9F9]/30 focus:outline-none focus:border-[#004E72]"
+            className="w-full bg-[#1B1D1F] border border-[#292C2F] rounded-lg pl-8 pr-2.5 py-1 text-xs text-[#F0F0ED] placeholder-[#A5A5A0]/40 focus:outline-none focus:border-[#E05252] font-sans"
           />
         </div>
 
         {/* Category Filter Chips */}
         <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] font-mono scrollbar-none">
-          <Filter size={11} className="text-[#F9F9F9]/40 shrink-0 ml-0.5" />
+          <Filter size={11} className="text-[#A5A5A0]/60 shrink-0 ml-0.5" />
           {['all', 'repo_inspection', 'code_review', 'pr_review', 'planning', 'verification'].map(
             (cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-2 py-0.5 rounded whitespace-nowrap transition-all ${
+                className={`px-2 py-0.5 rounded whitespace-nowrap transition-all cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
-                    : 'bg-[#090B0D] text-[#F9F9F9]/50 hover:text-[#F9F9F9]'
+                    ? 'bg-[#292C2F] text-[#F0F0ED] font-bold border border-[#E05252]/40'
+                    : 'bg-[#1B1D1F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F]/50 border border-transparent'
                 }`}
               >
                 {cat === 'all'
@@ -192,16 +193,16 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
       </div>
 
       {/* Activity List */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2.5 bg-[#111213]">
         {!session ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#F9F9F9]/40 text-xs">
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#A5A5A0] text-xs">
             Select a session to view activity.
           </div>
         ) : filteredActivities.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#F9F9F9]/40 text-xs">
-            <Compass size={24} className="mb-2 text-[#004E72] opacity-50" />
-            <p className="font-semibold text-[#F9F9F9]/70">No activity reports yet</p>
-            <p className="text-[11px] mt-1 max-w-xs text-[#F9F9F9]/40">
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-[#A5A5A0] text-xs">
+            <Compass size={24} className="mb-2 text-[#E05252] opacity-50" />
+            <p className="font-semibold text-[#F0F0ED]">No activity reports yet</p>
+            <p className="text-[11px] mt-1 max-w-xs text-[#A5A5A0]">
               When ChatGPT inspects repositories, reviews PRs or drafts plans, it writes activity reports here.
             </p>
           </div>
@@ -213,31 +214,32 @@ export const ChatGptActivityPanel: React.FC<ChatGptActivityPanelProps> = ({ sess
             const summary = String(data.summary || '');
 
             return (
-              <div
+              <SpotlightCard
                 key={act.id}
-                className="p-3 rounded-lg bg-[#092634]/40 border border-[#F9F9F9]/10 space-y-1.5 transition-all hover:border-[#004E72]/50"
+                spotlightColor="rgba(224, 82, 82, 0.08)"
+                className="p-3 rounded-lg bg-[#1B1D1F] border border-[#292C2F] space-y-1.5 transition-all hover:border-[#E05252]/40"
               >
                 {/* Header Row */}
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {getCategoryBadge(category)}
                     {reference && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono bg-[#090B0D] text-[#F9F9F9]/70 border border-[#F9F9F9]/10">
-                        <ExternalLink size={9} className="text-[#FF6E42]" />
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#111213] text-[#F0F0ED]/90 border border-[#292C2F]">
+                        <ExternalLink size={9} className="text-[#E05252]" />
                         {reference}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-mono text-[#F9F9F9]/40">
+                  <span className="text-[10px] font-mono text-[#A5A5A0]">
                     {act.createdAt ? new Date(act.createdAt).toLocaleTimeString() : ''}
                   </span>
                 </div>
 
                 {/* Summary Text */}
-                <div className="text-xs text-[#F9F9F9]/80 leading-relaxed font-sans whitespace-pre-wrap">
+                <div className="text-xs text-[#F0F0ED]/90 leading-relaxed font-sans whitespace-pre-wrap">
                   {summary}
                 </div>
-              </div>
+              </SpotlightCard>
             );
           })
         )}

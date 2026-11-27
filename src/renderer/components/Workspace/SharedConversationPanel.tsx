@@ -11,6 +11,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { Message, Project, Session, SessionBridgePaths } from '../../../shared/types.js';
+import { SpotlightCard, Waves, ShinyText } from '../ReactBits/index.js';
 
 interface SharedConversationPanelProps {
   project: Project | null;
@@ -110,51 +111,51 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
     switch (sender.toLowerCase()) {
       case 'user':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#004E72]/30 text-[#F9F9F9] border border-[#004E72]">
-            <User size={10} className="text-[#F9F9F9]" /> User
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#F0F0ED] border border-[#292C2F]">
+            <User size={10} className="text-[#F0F0ED]" /> User
           </span>
         );
       case 'chatgpt':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#004E72]/40 text-[#F9F9F9] border border-[#004E72]">
-            <Bot size={10} className="text-[#FF6E42]" /> ChatGPT (Orchestrator)
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#F0F0ED] border border-[#292C2F]">
+            <Bot size={10} className="text-[#E05252]" /> ChatGPT (Orchestrator)
           </span>
         );
       case 'antigravity':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/40">
-            <Sparkles size={10} className="text-[#FF6E42]" /> Antigravity (Executor)
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#292C2F] text-[#E05252] border border-[#E05252]/40">
+            <Sparkles size={10} className="text-[#E05252]" /> Antigravity (Executor)
           </span>
         );
       case 'knot':
       case 'system':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#092634] text-[#F9F9F9]/70 border border-[#F9F9F9]/10">
-            <Terminal size={10} className="text-[#004E72]" /> Knot
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#111213] text-[#A5A5A0] border border-[#292C2F]">
+            <Terminal size={10} className="text-[#A5A5A0]" /> Knot
           </span>
         );
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-[#111213] border border-[#292C2F] rounded-xl overflow-hidden shadow-lg">
       {/* Panel Header */}
-      <div className="px-4 py-3 bg-[#092634] border-b border-[#F9F9F9]/10 flex items-center justify-between shrink-0">
+      <div className="px-4 py-3 bg-[#1B1D1F] border-b border-[#292C2F] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <FileText size={16} className="text-[#FF6E42] shrink-0" />
+          <FileText size={16} className="text-[#E05252] shrink-0" />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h2 className="text-xs font-bold text-[#F9F9F9] truncate">
+              <h2 className="text-xs font-bold text-[#F0F0ED] truncate font-sans">
                 {session ? session.title : 'Select a Session'}
               </h2>
               {project && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#090B0D] text-[#F9F9F9]/60 border border-[#F9F9F9]/10">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#111213] text-[#A5A5A0] border border-[#292C2F]">
                   {project.name}
                 </span>
               )}
             </div>
-            <div className="text-[10px] text-[#F9F9F9]/40 font-mono truncate">
+            <div className="text-[10px] text-[#A5A5A0] font-mono truncate">
               {sessionPaths?.conversationFile || 'Canonical conversation.md snapshot'}
             </div>
           </div>
@@ -166,7 +167,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
             <button
               onClick={handleCopyPath}
               title="Copy conversation.md path"
-              className="p-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] hover:bg-[#004E72]/20 transition-all text-xs flex items-center gap-1"
+              className="p-1.5 rounded-lg bg-[#111213] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs flex items-center gap-1 cursor-pointer"
             >
               {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
               <span className="text-[10px] hidden sm:inline">{copied ? 'Copied' : 'Path'}</span>
@@ -177,7 +178,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
             <button
               onClick={handleOpenFolder}
               title="Open session directory in file manager"
-              className="p-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] hover:bg-[#004E72]/20 transition-all text-xs flex items-center gap-1"
+              className="p-1.5 rounded-lg bg-[#111213] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs flex items-center gap-1 cursor-pointer"
             >
               <FolderOpen size={12} />
               <span className="text-[10px] hidden sm:inline">Folder</span>
@@ -191,7 +192,7 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
             }}
             disabled={loading}
             title="Reload conversation"
-            className="p-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] hover:bg-[#004E72]/20 transition-all text-xs"
+            className="p-1.5 rounded-lg bg-[#111213] border border-[#292C2F] text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all text-xs cursor-pointer"
           >
             <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -199,17 +200,19 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
       </div>
 
       {/* Messages Scroll Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#111213] relative">
         {!session ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 text-[#F9F9F9]/40">
-            <FileText size={32} className="mb-2 text-[#F9F9F9]/20" />
-            <p className="text-xs font-medium">Select a project and session from the sidebar to view the conversation.</p>
+          <div className="h-full relative flex flex-col items-center justify-center text-center p-8 text-[#A5A5A0]">
+            <Waves lineColor="rgba(240, 240, 237, 0.04)" accentColor="rgba(224, 82, 82, 0.2)" className="absolute inset-0 pointer-events-none" />
+            <FileText size={32} className="mb-2 text-[#292C2F] relative z-10" />
+            <ShinyText text="Select a project and session to inspect collaboration." speed={3} className="text-xs font-medium text-[#F0F0ED] relative z-10" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8 text-[#F9F9F9]/40">
-            <Sparkles size={32} className="mb-2 text-[#004E72]" />
-            <p className="text-xs font-semibold text-[#F9F9F9]">No messages recorded yet</p>
-            <p className="text-[11px] mt-1 max-w-sm">
+          <div className="h-full relative flex flex-col items-center justify-center text-center p-8 text-[#A5A5A0]">
+            <Waves lineColor="rgba(240, 240, 237, 0.04)" accentColor="rgba(224, 82, 82, 0.2)" className="absolute inset-0 pointer-events-none" />
+            <Sparkles size={32} className="mb-2 text-[#E05252] relative z-10" />
+            <p className="text-xs font-semibold text-[#F0F0ED] relative z-10">No messages recorded yet</p>
+            <p className="text-[11px] mt-1 max-w-sm text-[#A5A5A0] relative z-10">
               ChatGPT can write to the inbox via Desktop Commander MCP, or you can send a message using Knot.
             </p>
           </div>
@@ -220,39 +223,40 @@ export const SharedConversationPanel: React.FC<SharedConversationPanelProps> = (
             const isGpt = msg.sender === 'chatgpt';
 
             return (
-              <div
+              <SpotlightCard
                 key={msg.id}
+                spotlightColor="rgba(224, 82, 82, 0.08)"
                 className={`p-3.5 rounded-xl border transition-all ${
                   isUser
-                    ? 'bg-[#004E72]/15 border-[#004E72]/30 ml-6'
+                    ? 'bg-[#1B1D1F] border-[#292C2F] ml-6'
                     : isAgent
-                    ? 'bg-[#FF6E42]/5 border-[#FF6E42]/20 mr-6'
+                    ? 'bg-[#1B1D1F] border-[#E05252]/30 mr-6'
                     : isGpt
-                    ? 'bg-[#092634] border-[#004E72]/40 mr-6'
-                    : 'bg-[#092634]/50 border-[#F9F9F9]/10'
+                    ? 'bg-[#1B1D1F] border-[#292C2F] mr-6'
+                    : 'bg-[#111213] border-[#292C2F]'
                 }`}
               >
                 {/* Message Header */}
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#F9F9F9]/5 text-[11px]">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#292C2F] text-[11px]">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[#F9F9F9]/40 text-[10px]">#{msg.sequence}</span>
+                    <span className="font-mono text-[#A5A5A0] text-[10px]">#{msg.sequence}</span>
                     {renderSenderBadge(msg.sender)}
                     {msg.recipient && (
-                      <span className="text-[10px] text-[#F9F9F9]/40 font-mono">
-                        → {msg.recipient}
+                      <span className="text-[10px] text-[#A5A5A0] font-mono">
+                        &rarr; {msg.recipient}
                       </span>
                     )}
                   </div>
-                  <span className="font-mono text-[10px] text-[#F9F9F9]/40">
+                  <span className="font-mono text-[10px] text-[#A5A5A0]">
                     {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString() : ''}
                   </span>
                 </div>
 
                 {/* Markdown Message Body */}
-                <div className="text-xs text-[#F9F9F9]/90 leading-relaxed whitespace-pre-wrap font-sans">
+                <div className="text-xs text-[#F0F0ED] leading-relaxed whitespace-pre-wrap font-sans">
                   {msg.contentMarkdown}
                 </div>
-              </div>
+              </SpotlightCard>
             );
           })
         )}

@@ -77,34 +77,34 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'handshake':
-        return 'bg-[#FF6E42]/20 text-[#FF6E42] border-[#FF6E42]/40';
+        return 'bg-[#E05252]/20 text-[#E05252] border-[#E05252]/40';
       case 'task_proposal':
-        return 'bg-[#004E72]/40 text-[#F9F9F9] border-[#004E72]';
+        return 'bg-[#292C2F]/40 text-[#F0F0ED] border-[#292C2F]';
       case 'file_review':
         return 'bg-purple-900/40 text-purple-200 border-purple-700/50';
       default:
-        return 'bg-[#090B0D] text-[#F9F9F9]/60 border-[#F9F9F9]/10';
+        return 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10';
     }
   };
 
   return (
-    <div className="rounded-xl border border-[#F9F9F9]/10 bg-[#092634] p-5 shadow-lg flex flex-col space-y-4">
+    <div className="rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F] p-5 shadow-lg flex flex-col space-y-4">
       {/* Panel Header & Filter Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F9F9F9]/10 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0F0ED]/10 pb-3">
         <div className="flex items-center gap-2">
-          <MessageSquare size={16} className="text-[#FF6E42]" />
-          <h3 className="text-sm font-semibold text-[#F9F9F9]">Bridge Message Stream</h3>
-          <span className="text-xs font-mono text-[#F9F9F9]/40">({messages.length} total)</span>
+          <MessageSquare size={16} className="text-[#E05252]" />
+          <h3 className="text-sm font-semibold text-[#F0F0ED]">Bridge Message Stream</h3>
+          <span className="text-xs font-mono text-[#F0F0ED]/40">({messages.length} total)</span>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div className="flex p-0.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-xs">
+          <div className="flex p-0.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs">
             <button
               onClick={() => setActiveFilter('all')}
               className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeFilter === 'all'
-                  ? 'bg-[#004E72] text-[#F9F9F9] font-medium'
-                  : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                  ? 'bg-[#292C2F] text-[#F0F0ED] font-medium'
+                  : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
               }`}
             >
               All ({messages.length})
@@ -113,8 +113,8 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
               onClick={() => setActiveFilter('inbound')}
               className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeFilter === 'inbound'
-                  ? 'bg-[#004E72] text-[#F9F9F9] font-medium'
-                  : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                  ? 'bg-[#292C2F] text-[#F0F0ED] font-medium'
+                  : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
               }`}
             >
               Inbound ({messages.filter((m) => m.sender === 'chatgpt').length})
@@ -123,8 +123,8 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
               onClick={() => setActiveFilter('outbound')}
               className={`px-2.5 py-1 rounded-md transition-colors ${
                 activeFilter === 'outbound'
-                  ? 'bg-[#004E72] text-[#F9F9F9] font-medium'
-                  : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                  ? 'bg-[#292C2F] text-[#F0F0ED] font-medium'
+                  : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
               }`}
             >
               Outbound ({messages.filter((m) => m.sender !== 'chatgpt').length})
@@ -145,8 +145,8 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
               onClick={() => setActiveFilter('canonical')}
               className={`px-2.5 py-1 rounded-md transition-colors flex items-center gap-1 ${
                 activeFilter === 'canonical'
-                  ? 'bg-[#004E72] text-[#F9F9F9] font-medium'
-                  : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                  ? 'bg-[#292C2F] text-[#F0F0ED] font-medium'
+                  : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
               }`}
             >
               <FileText size={12} />
@@ -157,7 +157,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
           <button
             onClick={onRefresh}
             title="Refresh Messages"
-            className="p-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/60 hover:text-[#F9F9F9] hover:bg-[#090B0D]/80 transition-colors"
+            className="p-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/60 hover:text-[#F0F0ED] hover:bg-[#111213]/80 transition-colors"
           >
             <RefreshCw size={13} />
           </button>
@@ -168,7 +168,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
       <div className="space-y-3 min-h-[220px] max-h-[460px] overflow-y-auto pr-1">
         {activeFilter === 'rejected' ? (
           rejectedEvents.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[#F9F9F9]/40 italic">
+            <div className="py-12 text-center text-xs text-[#F0F0ED]/40 italic">
               No rejected messages. All inbound files adhered to protocol v1.
             </div>
           ) : (
@@ -196,16 +196,16 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
           )
         ) : activeFilter === 'canonical' ? (
           /* Canonical markdown view */
-          <div className="p-4 rounded-xl bg-[#090B0D] border border-[#F9F9F9]/10 space-y-3">
-            <div className="flex items-center justify-between border-b border-[#F9F9F9]/10 pb-2 text-xs font-mono text-[#F9F9F9]/60">
+          <div className="p-4 rounded-xl bg-[#111213] border border-[#F0F0ED]/10 space-y-3">
+            <div className="flex items-center justify-between border-b border-[#F0F0ED]/10 pb-2 text-xs font-mono text-[#F0F0ED]/60">
               <span className="flex items-center gap-1.5">
-                <FileText size={14} className="text-[#004E72]" />
+                <FileText size={14} className="text-[#292C2F]" />
                 conversation.md (Canonical Single-Writer View)
               </span>
-              <span className="text-[10px] text-[#F9F9F9]/40">Knot exclusive writer</span>
+              <span className="text-[10px] text-[#F0F0ED]/40">Knot exclusive writer</span>
             </div>
             {messages.length === 0 ? (
-              <div className="text-xs text-[#F9F9F9]/40 py-8 text-center italic">
+              <div className="text-xs text-[#F0F0ED]/40 py-8 text-center italic">
                 No conversation history yet. Send a message to ChatGPT or run a handshake test.
               </div>
             ) : (
@@ -213,15 +213,15 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
                 {messages.map((m) => (
                   <div
                     key={m.id}
-                    className="p-3 rounded-lg bg-[#092634]/60 border border-[#F9F9F9]/5 space-y-1.5"
+                    className="p-3 rounded-lg bg-[#1B1D1F]/60 border border-[#F0F0ED]/5 space-y-1.5"
                   >
-                    <div className="flex items-center justify-between text-[11px] text-[#F9F9F9]/50 border-b border-[#F9F9F9]/5 pb-1">
-                      <span className="font-semibold text-[#F9F9F9]">
+                    <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/50 border-b border-[#F0F0ED]/5 pb-1">
+                      <span className="font-semibold text-[#F0F0ED]">
                         ### [{m.sequence}] {m.sender.toUpperCase()} ({m.messageType})
                       </span>
                       <span>{new Date(m.createdAt).toLocaleString()}</span>
                     </div>
-                    <div className="whitespace-pre-wrap text-[#F9F9F9]/80 text-[11px] leading-relaxed pt-1">
+                    <div className="whitespace-pre-wrap text-[#F0F0ED]/80 text-[11px] leading-relaxed pt-1">
                       {m.contentMarkdown}
                     </div>
                   </div>
@@ -230,7 +230,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
             )}
           </div>
         ) : filteredMessages.length === 0 ? (
-          <div className="py-12 text-center text-xs text-[#F9F9F9]/40 italic space-y-1">
+          <div className="py-12 text-center text-xs text-[#F0F0ED]/40 italic space-y-1">
             <div>No messages in this view.</div>
             <div className="text-[11px]">Send an outbound message below or run a handshake test.</div>
           </div>
@@ -245,14 +245,14 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
                 key={msg.id}
                 className={`p-3 rounded-xl border transition-all ${
                   isChatGPT
-                    ? 'bg-[#090B0D] border-[#FF6E42]/20 hover:border-[#FF6E42]/40'
-                    : 'bg-[#092634]/70 border-[#004E72]/40 hover:border-[#004E72]'
+                    ? 'bg-[#111213] border-[#E05252]/20 hover:border-[#E05252]/40'
+                    : 'bg-[#1B1D1F]/70 border-[#292C2F]/40 hover:border-[#292C2F]'
                 }`}
               >
                 {/* Header row */}
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] text-[#F9F9F9]/40 font-semibold">
+                    <span className="font-mono text-[10px] text-[#F0F0ED]/40 font-semibold">
                       #{msg.sequence}
                     </span>
 
@@ -260,10 +260,10 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
                         isChatGPT
-                          ? 'bg-[#FF6E42]/15 text-[#FF6E42] border-[#FF6E42]/30'
+                          ? 'bg-[#E05252]/15 text-[#E05252] border-[#E05252]/30'
                           : isKnot
-                          ? 'bg-[#004E72]/30 text-[#F9F9F9] border-[#004E72]'
-                          : 'bg-[#090B0D] text-[#F9F9F9]/60 border-[#F9F9F9]/10'
+                          ? 'bg-[#292C2F]/30 text-[#F0F0ED] border-[#292C2F]'
+                          : 'bg-[#111213] text-[#F0F0ED]/60 border-[#F0F0ED]/10'
                       }`}
                     >
                       {isChatGPT ? (
@@ -290,14 +290,14 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-[#F9F9F9]/40 flex items-center gap-1">
+                    <span className="text-[10px] font-mono text-[#F0F0ED]/40 flex items-center gap-1">
                       <Clock size={10} />
                       {new Date(msg.createdAt).toLocaleTimeString()}
                     </span>
 
                     <button
                       onClick={() => toggleExpand(msg.id)}
-                      className="p-1 text-[#F9F9F9]/40 hover:text-[#F9F9F9] transition-colors"
+                      className="p-1 text-[#F0F0ED]/40 hover:text-[#F0F0ED] transition-colors"
                       title={isExpanded ? 'Collapse' : 'Expand full text'}
                     >
                       {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
@@ -306,7 +306,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
                 </div>
 
                 {/* Content preview or full body */}
-                <div className="mt-2 text-xs text-[#F9F9F9]/90 font-mono leading-relaxed whitespace-pre-wrap">
+                <div className="mt-2 text-xs text-[#F0F0ED]/90 font-mono leading-relaxed whitespace-pre-wrap">
                   {isExpanded || msg.contentMarkdown.length <= 160
                     ? msg.contentMarkdown
                     : `${msg.contentMarkdown.slice(0, 160)}...`}
@@ -314,7 +314,7 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
 
                 {/* Footer details if correlation */}
                 {msg.correlationId && (
-                  <div className="mt-2 pt-1 border-t border-[#F9F9F9]/5 text-[10px] font-mono text-[#F9F9F9]/40 truncate">
+                  <div className="mt-2 pt-1 border-t border-[#F0F0ED]/5 text-[10px] font-mono text-[#F0F0ED]/40 truncate">
                     Correlation: {msg.correlationId}
                   </div>
                 )}
@@ -327,14 +327,14 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
       {/* Outbound Message Form */}
       <form
         onSubmit={handleSendMessage}
-        className="pt-3 border-t border-[#F9F9F9]/10 space-y-2.5"
+        className="pt-3 border-t border-[#F0F0ED]/10 space-y-2.5"
       >
-        <div className="flex items-center justify-between text-xs text-[#F9F9F9]/60">
-          <span className="font-semibold text-[#F9F9F9] flex items-center gap-1.5">
-            <ArrowUpRight size={13} className="text-[#004E72]" />
+        <div className="flex items-center justify-between text-xs text-[#F0F0ED]/60">
+          <span className="font-semibold text-[#F0F0ED] flex items-center gap-1.5">
+            <ArrowUpRight size={13} className="text-[#292C2F]" />
             Send Outbound Message to ChatGPT
           </span>
-          <span className="text-[10px] font-mono text-[#F9F9F9]/40 bg-[#090B0D] px-2 py-0.5 rounded border border-[#F9F9F9]/10">
+          <span className="text-[10px] font-mono text-[#F0F0ED]/40 bg-[#111213] px-2 py-0.5 rounded border border-[#F0F0ED]/10">
             type: message
           </span>
         </div>
@@ -345,21 +345,21 @@ export const BridgeMessagesPanel: React.FC<BridgeMessagesPanelProps> = ({
             onChange={(e) => setOutboundText(e.target.value)}
             placeholder="Type your markdown instruction or task for ChatGPT..."
             rows={3}
-            className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-xl p-3 text-xs text-[#F9F9F9] placeholder-[#F9F9F9]/30 focus:outline-none focus:border-[#004E72] font-mono resize-none transition-colors"
+            className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-xl p-3 text-xs text-[#F0F0ED] placeholder-[#F0F0ED]/30 focus:outline-none focus:border-[#292C2F] font-mono resize-none transition-colors"
           />
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-[#F9F9F9]/40">
+        <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/40">
           <div className="leading-tight">
-            Atomic write to outbox; single-writer sync to <code className="text-[#F9F9F9]/60">conversation.md</code>.
+            Atomic write to outbox; single-writer sync to <code className="text-[#F0F0ED]/60">conversation.md</code>.
           </div>
           <button
             type="submit"
             disabled={!outboundText.trim() || isSending}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm ${
               outboundText.trim() && !isSending
-                ? 'bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] cursor-pointer'
-                : 'bg-[#090B0D] text-[#F9F9F9]/30 border border-[#F9F9F9]/10 cursor-not-allowed'
+                ? 'bg-[#292C2F] hover:bg-[#292C2F]/80 text-[#F0F0ED] cursor-pointer'
+                : 'bg-[#111213] text-[#F0F0ED]/30 border border-[#F0F0ED]/10 cursor-not-allowed'
             }`}
           >
             <Send size={13} />

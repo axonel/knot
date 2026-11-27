@@ -190,20 +190,20 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
   const renderSenderIcon = (sender: MessageSender) => {
     switch (sender) {
       case 'user':
-        return <User size={14} className="text-[#F9F9F9]" />;
+        return <User size={14} className="text-[#F0F0ED]" />;
       case 'chatgpt':
-        return <Bot size={14} className="text-[#FF6E42]" />;
+        return <Bot size={14} className="text-[#E05252]" />;
       case 'antigravity':
-        return <Bot size={14} className="text-[#004E72]" />;
+        return <Bot size={14} className="text-[#292C2F]" />;
       case 'system':
       default:
-        return <Terminal size={14} className="text-[#F9F9F9]/60" />;
+        return <Terminal size={14} className="text-[#F0F0ED]/60" />;
     }
   };
 
   if (isLoading && !session) {
     return (
-      <div className="p-8 text-center text-xs text-[#F9F9F9]/40 font-mono">
+      <div className="p-8 text-center text-xs text-[#F0F0ED]/40 font-mono">
         Loading session data...
       </div>
     );
@@ -212,10 +212,10 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
   if (!session) {
     return (
       <div className="p-8 text-center space-y-3">
-        <p className="text-xs text-[#FF6E42]">Session not found.</p>
+        <p className="text-xs text-[#E05252]">Session not found.</p>
         <button
           onClick={onBack}
-          className="px-3 py-1.5 rounded-lg text-xs bg-[#092634] border border-[#F9F9F9]/10 text-[#F9F9F9]"
+          className="px-3 py-1.5 rounded-lg text-xs bg-[#1B1D1F] border border-[#F0F0ED]/10 text-[#F0F0ED]"
         >
           Return to Project
         </button>
@@ -226,10 +226,10 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
   return (
     <div className="space-y-6">
       {/* Breadcrumb & Session Header */}
-      <div className="space-y-3 pb-5 border-b border-[#F9F9F9]/10">
+      <div className="space-y-3 pb-5 border-b border-[#F0F0ED]/10">
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#F9F9F9]/60 hover:text-[#F9F9F9] transition-colors cursor-pointer"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-[#F0F0ED]/60 hover:text-[#F0F0ED] transition-colors cursor-pointer"
         >
           <ArrowLeft size={14} />
           <span>Back to Sessions</span>
@@ -238,14 +238,14 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold tracking-tight text-[#F9F9F9]">
+              <h2 className="text-xl font-bold tracking-tight text-[#F0F0ED]">
                 {session.title}
               </h2>
               <StatusPill status={session.status} type="session" />
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#F9F9F9]/50 font-mono">
-              <span>ID: <code className="text-[#F9F9F9]/70">{session.id.slice(0, 8)}</code></span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#F0F0ED]/50 font-mono">
+              <span>ID: <code className="text-[#F0F0ED]/70">{session.id.slice(0, 8)}</code></span>
               <span className="flex items-center gap-1">
                 <Clock size={12} />
                 <span>Last active {new Date(session.lastActivityAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -260,14 +260,14 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
               <>
                 <button
                   onClick={() => handleStatusTransition('paused')}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#090B0D] border border-[#FF6E42]/40 text-[#FF6E42] hover:bg-[#FF6E42]/10 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#E05252]/40 text-[#E05252] hover:bg-[#E05252]/10 transition-colors cursor-pointer"
                 >
                   <Pause size={12} />
                   <span>Pause</span>
                 </button>
                 <button
                   onClick={() => handleStatusTransition('completed')}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#090B0D] border border-[#004E72] text-[#F9F9F9]/80 hover:bg-[#004E72]/20 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
                 >
                   <CheckCircle2 size={12} />
                   <span>Complete</span>
@@ -279,14 +279,14 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
               <>
                 <button
                   onClick={() => handleStatusTransition('active')}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#004E72] text-[#F9F9F9] hover:bg-[#004E72]/80 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#292C2F] text-[#F0F0ED] hover:bg-[#292C2F]/80 transition-colors cursor-pointer"
                 >
                   <Play size={12} />
                   <span>Resume</span>
                 </button>
                 <button
                   onClick={() => handleStatusTransition('completed')}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#090B0D] border border-[#004E72] text-[#F9F9F9]/80 hover:bg-[#004E72]/20 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
                 >
                   <CheckCircle2 size={12} />
                   <span>Complete</span>
@@ -298,14 +298,14 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
               <>
                 <button
                   onClick={() => handleStatusTransition('active')}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#090B0D] border border-[#004E72] text-[#F9F9F9]/80 hover:bg-[#004E72]/20 transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors cursor-pointer"
                 >
                   <Play size={12} />
                   <span>Reopen</span>
                 </button>
                 <button
                   onClick={() => handleStatusTransition('archived')}
-                  className="p-1.5 rounded-lg text-[#F9F9F9]/40 hover:text-[#F9F9F9] hover:bg-[#090B0D] transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-[#F0F0ED]/40 hover:text-[#F0F0ED] hover:bg-[#111213] transition-colors cursor-pointer"
                 >
                   <Archive size={13} />
                 </button>
@@ -315,7 +315,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
             {session.status === 'archived' && (
               <button
                 onClick={() => handleStatusTransition('active')}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#090B0D] border border-[#F9F9F9]/20 text-[#F9F9F9]/80 hover:bg-[#090B0D]/80 transition-colors cursor-pointer"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs bg-[#111213] border border-[#F0F0ED]/20 text-[#F0F0ED]/80 hover:bg-[#111213]/80 transition-colors cursor-pointer"
               >
                 <ArchiveRestore size={12} />
                 <span>Unarchive</span>
@@ -327,12 +327,12 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
 
       {/* Global Error Banner */}
       {error && (
-        <div className="flex items-center gap-2.5 p-3 rounded-lg bg-[#092634] border border-[#FF6E42]/50 text-xs text-[#FF6E42]">
+        <div className="flex items-center gap-2.5 p-3 rounded-lg bg-[#1B1D1F] border border-[#E05252]/50 text-xs text-[#E05252]">
           <AlertCircle size={15} className="shrink-0" />
           <span className="flex-1">{error}</span>
           <button
             onClick={() => setError(null)}
-            className="text-[#F9F9F9]/40 hover:text-[#F9F9F9] transition-colors"
+            className="text-[#F0F0ED]/40 hover:text-[#F0F0ED] transition-colors"
           >
             <X size={14} />
           </button>
@@ -340,13 +340,13 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
       )}
 
       {/* Navigation Tabs for Session Data */}
-      <div className="flex items-center gap-2 border-b border-[#F9F9F9]/10 pb-2">
+      <div className="flex items-center gap-2 border-b border-[#F0F0ED]/10 pb-2">
         <button
           onClick={() => setActiveTab('messages')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
             activeTab === 'messages'
-              ? 'bg-[#004E72] text-[#F9F9F9] font-semibold'
-              : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9] hover:bg-[#092634]'
+              ? 'bg-[#292C2F] text-[#F0F0ED] font-semibold'
+              : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED] hover:bg-[#1B1D1F]'
           }`}
         >
           <MessageSquare size={14} />
@@ -357,8 +357,8 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
           onClick={() => setActiveTab('tasks')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
             activeTab === 'tasks'
-              ? 'bg-[#004E72] text-[#F9F9F9] font-semibold'
-              : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9] hover:bg-[#092634]'
+              ? 'bg-[#292C2F] text-[#F0F0ED] font-semibold'
+              : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED] hover:bg-[#1B1D1F]'
           }`}
         >
           <ListTodo size={14} />
@@ -369,8 +369,8 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
           onClick={() => setActiveTab('events')}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
             activeTab === 'events'
-              ? 'bg-[#004E72] text-[#F9F9F9] font-semibold'
-              : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9] hover:bg-[#092634]'
+              ? 'bg-[#292C2F] text-[#F0F0ED] font-semibold'
+              : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED] hover:bg-[#1B1D1F]'
           }`}
         >
           <Activity size={14} />
@@ -383,34 +383,34 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
         <div className="space-y-4">
           <div className="space-y-3 min-h-[160px]">
             {messages.length === 0 ? (
-              <div className="p-8 text-center text-xs text-[#F9F9F9]/40 border border-dashed border-[#F9F9F9]/10 rounded-xl">
+              <div className="p-8 text-center text-xs text-[#F0F0ED]/40 border border-dashed border-[#F0F0ED]/10 rounded-xl">
                 No messages recorded in this session yet. Use the prompt below to append a note or message.
               </div>
             ) : (
               messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className="p-3.5 rounded-xl border border-[#F9F9F9]/10 bg-[#092634]/50 space-y-2"
+                  className="p-3.5 rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F]/50 space-y-2"
                 >
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <div className="flex items-center gap-2">
-                      <div className="p-1 rounded-md bg-[#090B0D] border border-[#F9F9F9]/10">
+                      <div className="p-1 rounded-md bg-[#111213] border border-[#F0F0ED]/10">
                         {renderSenderIcon(msg.sender)}
                       </div>
-                      <span className="font-semibold uppercase tracking-wider text-[11px] text-[#F9F9F9]">
+                      <span className="font-semibold uppercase tracking-wider text-[11px] text-[#F0F0ED]">
                         {msg.sender}
                       </span>
-                      <span className="font-mono text-[10px] text-[#004E72] font-bold">
+                      <span className="font-mono text-[10px] text-[#292C2F] font-bold">
                         #{msg.sequence}
                       </span>
                     </div>
 
-                    <span className="text-[10px] font-mono text-[#F9F9F9]/40">
+                    <span className="text-[10px] font-mono text-[#F0F0ED]/40">
                       {new Date(msg.createdAt).toLocaleTimeString()}
                     </span>
                   </div>
 
-                  <div className="text-xs text-[#F9F9F9]/90 font-mono whitespace-pre-wrap leading-relaxed pl-7">
+                  <div className="text-xs text-[#F0F0ED]/90 font-mono whitespace-pre-wrap leading-relaxed pl-7">
                     {msg.contentMarkdown}
                   </div>
                 </div>
@@ -421,16 +421,16 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
           {/* Add Message Form */}
           <form
             onSubmit={handleSendMessage}
-            className="p-3.5 rounded-xl border border-[#F9F9F9]/10 bg-[#092634] space-y-3"
+            className="p-3.5 rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F] space-y-3"
           >
             <div className="flex items-center justify-between gap-3 text-xs">
-              <span className="font-semibold text-[#F9F9F9]/80">Append Message / Test Note</span>
+              <span className="font-semibold text-[#F0F0ED]/80">Append Message / Test Note</span>
               <div className="flex items-center gap-2">
-                <label className="text-[11px] text-[#F9F9F9]/50">Sender:</label>
+                <label className="text-[11px] text-[#F0F0ED]/50">Sender:</label>
                 <select
                   value={msgSender}
                   onChange={(e) => setMsgSender(e.target.value as MessageSender)}
-                  className="px-2 py-1 rounded-md bg-[#090B0D] border border-[#F9F9F9]/10 text-xs text-[#F9F9F9] focus:outline-hidden"
+                  className="px-2 py-1 rounded-md bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] focus:outline-hidden"
                 >
                   <option value="user">User</option>
                   <option value="chatgpt">ChatGPT</option>
@@ -445,14 +445,14 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
               placeholder="Type message content or notes here..."
               value={msgContent}
               onChange={(e) => setMsgContent(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-xs text-[#F9F9F9] placeholder:text-[#F9F9F9]/30 focus:border-[#004E72] focus:outline-hidden font-mono"
+              className="w-full px-3 py-2 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden font-mono"
             />
 
             <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={isSendingMsg || !msgContent.trim()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#004E72] text-[#F9F9F9] hover:bg-[#004E72]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#292C2F] text-[#F0F0ED] hover:bg-[#292C2F]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
               >
                 <Send size={13} />
                 <span>{isSendingMsg ? 'Appending...' : 'Send Message'}</span>
@@ -467,29 +467,29 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
         <div className="space-y-4">
           <div className="space-y-2.5">
             {tasks.length === 0 ? (
-              <div className="p-8 text-center text-xs text-[#F9F9F9]/40 border border-dashed border-[#F9F9F9]/10 rounded-xl">
+              <div className="p-8 text-center text-xs text-[#F0F0ED]/40 border border-dashed border-[#F0F0ED]/10 rounded-xl">
                 No tasks assigned to this session yet.
               </div>
             ) : (
               tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="p-3 rounded-xl border border-[#F9F9F9]/10 bg-[#092634]/50 flex items-center justify-between gap-3"
+                  className="p-3 rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F]/50 flex items-center justify-between gap-3"
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-[#F9F9F9] truncate">
+                      <span className="text-xs font-semibold text-[#F0F0ED] truncate">
                         {task.title}
                       </span>
                       <StatusPill status={task.status} type="task" />
                       {task.assignedTo && (
-                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#090B0D] text-[#004E72] border border-[#004E72]/30">
+                        <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#111213] text-[#292C2F] border border-[#292C2F]/30">
                           @{task.assignedTo}
                         </span>
                       )}
                     </div>
                     {task.description && (
-                      <p className="text-[11px] text-[#F9F9F9]/60 truncate">{task.description}</p>
+                      <p className="text-[11px] text-[#F0F0ED]/60 truncate">{task.description}</p>
                     )}
                   </div>
 
@@ -497,7 +497,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
                     {task.status !== 'running' && task.status !== 'succeeded' && (
                       <button
                         onClick={() => handleUpdateTaskStatus(task.id, 'running')}
-                        className="px-2 py-1 rounded text-[11px] bg-[#004E72]/40 hover:bg-[#004E72] text-[#F9F9F9] transition-colors"
+                        className="px-2 py-1 rounded text-[11px] bg-[#292C2F]/40 hover:bg-[#292C2F] text-[#F0F0ED] transition-colors"
                       >
                         Start
                       </button>
@@ -505,7 +505,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
                     {task.status !== 'succeeded' && (
                       <button
                         onClick={() => handleUpdateTaskStatus(task.id, 'succeeded')}
-                        className="px-2 py-1 rounded text-[11px] bg-[#090B0D] border border-[#004E72] text-[#F9F9F9]/80 hover:bg-[#004E72]/20 transition-colors"
+                        className="px-2 py-1 rounded text-[11px] bg-[#111213] border border-[#292C2F] text-[#F0F0ED]/80 hover:bg-[#292C2F]/20 transition-colors"
                       >
                         Complete
                       </button>
@@ -513,7 +513,7 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
                     {task.status !== 'failed' && task.status !== 'succeeded' && (
                       <button
                         onClick={() => handleUpdateTaskStatus(task.id, 'failed')}
-                        className="px-2 py-1 rounded text-[11px] bg-[#090B0D] border border-[#FF6E42]/40 text-[#FF6E42] hover:bg-[#FF6E42]/10 transition-colors"
+                        className="px-2 py-1 rounded text-[11px] bg-[#111213] border border-[#E05252]/40 text-[#E05252] hover:bg-[#E05252]/10 transition-colors"
                       >
                         Fail
                       </button>
@@ -527,21 +527,21 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
           {/* Add Task Form */}
           <form
             onSubmit={handleCreateTask}
-            className="p-3.5 rounded-xl border border-[#F9F9F9]/10 bg-[#092634] space-y-3"
+            className="p-3.5 rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F] space-y-3"
           >
-            <div className="text-xs font-semibold text-[#F9F9F9]/80">Create Task</div>
+            <div className="text-xs font-semibold text-[#F0F0ED]/80">Create Task</div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 type="text"
                 placeholder="Task title (e.g. Run test suite)"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-xs text-[#F9F9F9] placeholder:text-[#F9F9F9]/30 focus:border-[#004E72] focus:outline-hidden"
+                className="px-3 py-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden"
               />
               <select
                 value={taskAgent}
                 onChange={(e) => setTaskAgent(e.target.value)}
-                className="px-3 py-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-xs text-[#F9F9F9] focus:outline-hidden"
+                className="px-3 py-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] focus:outline-hidden"
               >
                 <option value="antigravity">Assign: Antigravity</option>
                 <option value="chatgpt">Assign: ChatGPT</option>
@@ -553,13 +553,13 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
               placeholder="Task description (optional)"
               value={taskDesc}
               onChange={(e) => setTaskDesc(e.target.value)}
-              className="w-full px-3 py-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-xs text-[#F9F9F9] placeholder:text-[#F9F9F9]/30 focus:border-[#004E72] focus:outline-hidden"
+              className="w-full px-3 py-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden"
             />
             <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={isCreatingTask || !taskTitle.trim()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#004E72] text-[#F9F9F9] hover:bg-[#004E72]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#292C2F] text-[#F0F0ED] hover:bg-[#292C2F]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
               >
                 <Plus size={13} />
                 <span>{isCreatingTask ? 'Adding...' : 'Add Task'}</span>
@@ -574,23 +574,23 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
         <div className="space-y-4">
           <div className="space-y-2 font-mono text-xs">
             {events.length === 0 ? (
-              <div className="p-8 text-center text-xs text-[#F9F9F9]/40 border border-dashed border-[#F9F9F9]/10 rounded-xl">
+              <div className="p-8 text-center text-xs text-[#F0F0ED]/40 border border-dashed border-[#F0F0ED]/10 rounded-xl">
                 No telemetry events logged yet.
               </div>
             ) : (
               events.map((ev) => (
                 <div
                   key={ev.id}
-                  className="p-3 rounded-lg border border-[#F9F9F9]/10 bg-[#090B0D] flex items-center justify-between gap-3"
+                  className="p-3 rounded-lg border border-[#F0F0ED]/10 bg-[#111213] flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-[#004E72] font-semibold uppercase">
+                    <span className="text-[10px] text-[#292C2F] font-semibold uppercase">
                       [{ev.eventType}]
                     </span>
-                    <span className="text-[#F9F9F9]/80 text-[11px]">by {ev.actor}</span>
+                    <span className="text-[#F0F0ED]/80 text-[11px]">by {ev.actor}</span>
                   </div>
 
-                  <span className="text-[10px] text-[#F9F9F9]/40">
+                  <span className="text-[10px] text-[#F0F0ED]/40">
                     {new Date(ev.createdAt).toLocaleTimeString()}
                   </span>
                 </div>
@@ -601,26 +601,26 @@ export const SessionDetail: React.FC<SessionDetailProps> = ({
           {/* Record Event Form */}
           <form
             onSubmit={handleRecordEvent}
-            className="p-3.5 rounded-xl border border-[#F9F9F9]/10 bg-[#092634] flex items-center gap-3"
+            className="p-3.5 rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F] flex items-center gap-3"
           >
             <input
               type="text"
               placeholder="Event type (e.g. handshake, checkpoint)"
               value={eventType}
               onChange={(e) => setEventType(e.target.value)}
-              className="flex-1 px-3 py-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-xs text-[#F9F9F9] placeholder:text-[#F9F9F9]/30 focus:border-[#004E72] focus:outline-hidden font-mono"
+              className="flex-1 px-3 py-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] placeholder:text-[#F0F0ED]/30 focus:border-[#292C2F] focus:outline-hidden font-mono"
             />
             <input
               type="text"
               placeholder="Actor"
               value={eventActor}
               onChange={(e) => setEventActor(e.target.value)}
-              className="w-28 px-3 py-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-xs text-[#F9F9F9] focus:outline-hidden font-mono"
+              className="w-28 px-3 py-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-xs text-[#F0F0ED] focus:outline-hidden font-mono"
             />
             <button
               type="submit"
               disabled={isRecordingEvent || !eventType.trim()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#004E72] text-[#F9F9F9] hover:bg-[#004E72]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#292C2F] text-[#F0F0ED] hover:bg-[#292C2F]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer shrink-0"
             >
               <Plus size={13} />
               <span>Record</span>

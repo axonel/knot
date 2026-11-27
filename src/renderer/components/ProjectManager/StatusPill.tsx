@@ -7,35 +7,35 @@ interface StatusPillProps {
 }
 
 export const StatusPill: React.FC<StatusPillProps> = ({ status, type = 'session' }) => {
-  let bgClass = 'bg-[#090B0D]';
-  let borderClass = 'border-[#F9F9F9]/20';
-  let textClass = 'text-[#F9F9F9]/70';
+  let bgClass = 'bg-[#111213]';
+  let borderClass = 'border-[#F0F0ED]/20';
+  let textClass = 'text-[#F0F0ED]/70';
   let label = status;
 
   if (type === 'session') {
     switch (status) {
       case 'active':
-        bgClass = 'bg-[#004E72]/30';
-        borderClass = 'border-[#004E72]';
-        textClass = 'text-[#F9F9F9] font-semibold';
+        bgClass = 'bg-[#292C2F]/30';
+        borderClass = 'border-[#292C2F]';
+        textClass = 'text-[#F0F0ED] font-semibold';
         label = 'Active';
         break;
       case 'paused':
-        bgClass = 'bg-[#FF6E42]/10';
-        borderClass = 'border-[#FF6E42]/50';
-        textClass = 'text-[#FF6E42] font-semibold';
+        bgClass = 'bg-[#E05252]/10';
+        borderClass = 'border-[#E05252]/50';
+        textClass = 'text-[#E05252] font-semibold';
         label = 'Paused';
         break;
       case 'completed':
-        bgClass = 'bg-[#004E72]/20';
-        borderClass = 'border-[#004E72]/40';
-        textClass = 'text-[#F9F9F9]/80';
+        bgClass = 'bg-[#292C2F]/20';
+        borderClass = 'border-[#292C2F]/40';
+        textClass = 'text-[#F0F0ED]/80';
         label = 'Completed';
         break;
       case 'archived':
-        bgClass = 'bg-[#090B0D]';
-        borderClass = 'border-[#F9F9F9]/10';
-        textClass = 'text-[#F9F9F9]/40';
+        bgClass = 'bg-[#111213]';
+        borderClass = 'border-[#F0F0ED]/10';
+        textClass = 'text-[#F0F0ED]/40';
         label = 'Archived';
         break;
     }
@@ -43,46 +43,46 @@ export const StatusPill: React.FC<StatusPillProps> = ({ status, type = 'session'
     // Task status
     switch (status) {
       case 'running':
-        bgClass = 'bg-[#004E72]/40';
-        borderClass = 'border-[#004E72]';
-        textClass = 'text-[#F9F9F9] font-semibold';
+        bgClass = 'bg-[#292C2F]/40';
+        borderClass = 'border-[#292C2F]';
+        textClass = 'text-[#F0F0ED] font-semibold';
         label = 'Running';
         break;
       case 'queued':
-        bgClass = 'bg-[#FF6E42]/10';
-        borderClass = 'border-[#FF6E42]/40';
-        textClass = 'text-[#FF6E42]';
+        bgClass = 'bg-[#E05252]/10';
+        borderClass = 'border-[#E05252]/40';
+        textClass = 'text-[#E05252]';
         label = 'Queued';
         break;
       case 'succeeded':
-        bgClass = 'bg-[#004E72]/20';
-        borderClass = 'border-[#004E72]/30';
-        textClass = 'text-[#F9F9F9]/80';
+        bgClass = 'bg-[#292C2F]/20';
+        borderClass = 'border-[#292C2F]/30';
+        textClass = 'text-[#F0F0ED]/80';
         label = 'Succeeded';
         break;
       case 'failed':
-        bgClass = 'bg-[#FF6E42]/20';
-        borderClass = 'border-[#FF6E42]';
-        textClass = 'text-[#FF6E42] font-bold';
+        bgClass = 'bg-[#E05252]/20';
+        borderClass = 'border-[#E05252]';
+        textClass = 'text-[#E05252] font-bold';
         label = 'Failed';
         break;
       case 'cancelled':
-        bgClass = 'bg-[#090B0D]';
-        borderClass = 'border-[#F9F9F9]/10';
-        textClass = 'text-[#F9F9F9]/40';
+        bgClass = 'bg-[#111213]';
+        borderClass = 'border-[#F0F0ED]/10';
+        textClass = 'text-[#F0F0ED]/40';
         label = 'Cancelled';
         break;
       case 'awaiting_approval':
       case 'needs_attention':
-        bgClass = 'bg-[#FF6E42]/15';
-        borderClass = 'border-[#FF6E42]';
-        textClass = 'text-[#FF6E42]';
+        bgClass = 'bg-[#E05252]/15';
+        borderClass = 'border-[#E05252]';
+        textClass = 'text-[#E05252]';
         label = status === 'awaiting_approval' ? 'Approval' : 'Attention';
         break;
       case 'approved':
-        bgClass = 'bg-[#004E72]/30';
-        borderClass = 'border-[#004E72]/50';
-        textClass = 'text-[#F9F9F9]';
+        bgClass = 'bg-[#292C2F]/30';
+        borderClass = 'border-[#292C2F]/50';
+        textClass = 'text-[#F0F0ED]';
         label = 'Approved';
         break;
     }

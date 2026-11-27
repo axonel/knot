@@ -52,22 +52,22 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
     switch (state) {
       case 'verified':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#004E72]/40 text-[#F9F9F9] border border-[#004E72]">
-            <CheckCircle2 size={13} className="text-[#FF6E42]" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#292C2F]/40 text-[#F0F0ED] border border-[#292C2F]">
+            <CheckCircle2 size={13} className="text-[#E05252]" />
             Verified & Active
           </span>
         );
       case 'awaiting_response':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/40 animate-pulse">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#E05252]/20 text-[#E05252] border border-[#E05252]/40 animate-pulse">
             <Clock size={13} />
             Awaiting Response...
           </span>
         );
       case 'workspace_ready':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#004E72]/20 text-[#F9F9F9]/80 border border-[#004E72]/50">
-            <Zap size={13} className="text-[#004E72]" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#292C2F]/20 text-[#F0F0ED]/80 border border-[#292C2F]/50">
+            <Zap size={13} className="text-[#292C2F]" />
             Ready for Test
           </span>
         );
@@ -81,7 +81,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
       case 'not_configured':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#090B0D] text-[#F9F9F9]/40 border border-[#F9F9F9]/10">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#111213] text-[#F0F0ED]/40 border border-[#F0F0ED]/10">
             <Clock size={13} />
             Not Initialized
           </span>
@@ -96,15 +96,15 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
   const isWorkspaceReady = Boolean(status?.sessionPaths);
 
   return (
-    <div className="rounded-xl border border-[#F9F9F9]/10 bg-[#092634] p-5 shadow-lg space-y-4">
+    <div className="rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F] p-5 shadow-lg space-y-4">
       {/* Header Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F9F9F9]/10 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0F0ED]/10 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-[#F9F9F9]">ChatGPT Filesystem Bridge</h3>
+            <h3 className="text-base font-semibold text-[#F0F0ED]">ChatGPT Filesystem Bridge</h3>
             {getHandshakeBadge(handshakeState)}
           </div>
-          <p className="text-xs text-[#F9F9F9]/60 mt-0.5">
+          <p className="text-xs text-[#F0F0ED]/60 mt-0.5">
             Bidirectional Markdown message exchange via Desktop Commander MCP
           </p>
         </div>
@@ -114,7 +114,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
             <button
               onClick={onInitWorkspace}
               disabled={isInitializing}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] transition-colors border border-[#004E72]/40"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#292C2F] hover:bg-[#292C2F]/80 text-[#F0F0ED] transition-colors border border-[#292C2F]/40"
             >
               {isInitializing ? 'Initializing...' : 'Initialize Session Workspace'}
             </button>
@@ -125,8 +125,8 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
             disabled={!hasSession || !isWorkspaceReady}
             className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm ${
               hasSession && isWorkspaceReady
-                ? 'bg-[#FF6E42] hover:bg-[#FF6E42]/90 text-[#F9F9F9] cursor-pointer'
-                : 'bg-[#090B0D] text-[#F9F9F9]/30 border border-[#F9F9F9]/10 cursor-not-allowed'
+                ? 'bg-[#E05252] hover:bg-[#E05252]/90 text-[#F0F0ED] cursor-pointer'
+                : 'bg-[#111213] text-[#F0F0ED]/30 border border-[#F0F0ED]/10 cursor-not-allowed'
             }`}
             title={!hasSession ? 'Select a project and session first' : undefined}
           >
@@ -139,88 +139,88 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
       {/* Grid of Status Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {/* Workspace Root */}
-        <div className="p-3 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-[#F9F9F9]/60 font-mono uppercase tracking-wider">
+        <div className="p-3 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
             <span className="flex items-center gap-1">
-              <Folder size={12} className="text-[#004E72]" />
+              <Folder size={12} className="text-[#292C2F]" />
               Bridge Root
             </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => handleCopyPath(bridgeRoot)}
                 title="Copy Path"
-                className="p-1 hover:text-[#F9F9F9] transition-colors"
+                className="p-1 hover:text-[#F0F0ED] transition-colors"
               >
-                {copied ? <Check size={12} className="text-[#FF6E42]" /> : <Copy size={12} />}
+                {copied ? <Check size={12} className="text-[#E05252]" /> : <Copy size={12} />}
               </button>
               <button
                 onClick={() => handleOpenFolder(bridgeRoot)}
                 title="Open Folder"
-                className="p-1 hover:text-[#F9F9F9] transition-colors"
+                className="p-1 hover:text-[#F0F0ED] transition-colors"
               >
                 <ExternalLink size={12} />
               </button>
             </div>
           </div>
-          <div className="font-mono text-[11px] text-[#F9F9F9]/90 truncate" title={bridgeRoot}>
+          <div className="font-mono text-[11px] text-[#F0F0ED]/90 truncate" title={bridgeRoot}>
             {bridgeRoot}
           </div>
-          <div className="text-[10px] text-[#F9F9F9]/40 font-mono">Protocol: KNOT_MESSAGE_V1</div>
+          <div className="text-[10px] text-[#F0F0ED]/40 font-mono">Protocol: KNOT_MESSAGE_V1</div>
         </div>
 
         {/* Desktop Commander MCP Status */}
-        <div className="p-3 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-[#F9F9F9]/60 font-mono uppercase tracking-wider">
+        <div className="p-3 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
             <span className="flex items-center gap-1">
-              <Terminal size={12} className="text-[#004E72]" />
+              <Terminal size={12} className="text-[#292C2F]" />
               Desktop Commander
             </span>
             <span
               className={`w-2 h-2 rounded-full ${
-                isDCActive ? 'bg-[#FF6E42] shadow-[0_0_8px_#FF6E42]' : 'bg-[#F9F9F9]/20'
+                isDCActive ? 'bg-[#E05252] shadow-[0_0_8px_#E05252]' : 'bg-[#F0F0ED]/20'
               }`}
             />
           </div>
           <div className="flex items-center gap-2">
             <span
               className={`text-xs font-semibold ${
-                isDCActive ? 'text-[#F9F9F9]' : 'text-[#F9F9F9]/50'
+                isDCActive ? 'text-[#F0F0ED]' : 'text-[#F0F0ED]/50'
               }`}
             >
               {isDCActive ? 'Process Active' : 'Process Inactive'}
             </span>
           </div>
-          <div className="text-[10px] text-[#F9F9F9]/40 font-mono">
+          <div className="text-[10px] text-[#F0F0ED]/40 font-mono">
             {isDCActive ? 'Child process running on stdio' : 'Launch from Desktop Commander tab'}
           </div>
         </div>
 
         {/* MCP Permissions & Verification */}
-        <div className="p-3 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-[#F9F9F9]/60 font-mono uppercase tracking-wider">
+        <div className="p-3 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
             <span className="flex items-center gap-1">
-              <ShieldCheck size={12} className="text-[#004E72]" />
+              <ShieldCheck size={12} className="text-[#292C2F]" />
               MCP Scope
             </span>
-            <span className="text-[10px] font-mono text-[#F9F9F9]/40">read / write</span>
+            <span className="text-[10px] font-mono text-[#F0F0ED]/40">read / write</span>
           </div>
-          <div className="text-xs text-[#F9F9F9]/80 truncate">
+          <div className="text-xs text-[#F0F0ED]/80 truncate">
             {status?.lastVerifiedAt ? (
-              <span className="text-[#F9F9F9]/90">
+              <span className="text-[#F0F0ED]/90">
                 Verified: {new Date(status.lastVerifiedAt).toLocaleTimeString()}
               </span>
             ) : (
-              <span className="text-[#F9F9F9]/50">Never verified</span>
+              <span className="text-[#F0F0ED]/50">Never verified</span>
             )}
           </div>
-          <div className="text-[10px] text-[#F9F9F9]/40 font-mono">
+          <div className="text-[10px] text-[#F0F0ED]/40 font-mono">
             Strict 256 KB file cap, UUID validated
           </div>
         </div>
       </div>
 
       {/* Real-time Diagnostics Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-[#090B0D]/80 border border-[#F9F9F9]/10 text-[11px] font-mono text-[#F9F9F9]/70">
+      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-[#111213]/80 border border-[#F0F0ED]/10 text-[11px] font-mono text-[#F0F0ED]/70">
         <div className="flex items-center gap-2">
           <span
             className={`w-2 h-2 rounded-full ${
@@ -229,7 +229,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
           />
           <span>
             Watcher:{' '}
-            <strong className="text-[#F9F9F9]">
+            <strong className="text-[#F0F0ED]">
               {status?.watcherActive
                 ? `${status.watchedSessionsCount ?? 1} session inbox(es) active`
                 : 'Offline'}
@@ -239,15 +239,15 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
 
         <div className="flex items-center gap-3">
           {status?.antigravityRunning && (
-            <span className="text-[#FF6E42] font-semibold">● Antigravity Executing</span>
+            <span className="text-[#E05252] font-semibold">● Antigravity Executing</span>
           )}
           {typeof status?.unreadResultsCount === 'number' && status.unreadResultsCount > 0 && (
-            <span className="px-2 py-0.5 rounded bg-[#004E72]/40 text-[#F9F9F9] border border-[#004E72]/60">
+            <span className="px-2 py-0.5 rounded bg-[#292C2F]/40 text-[#F0F0ED] border border-[#292C2F]/60">
               {status.unreadResultsCount} unread outbox result(s)
             </span>
           )}
           {status?.latestDispatchedTask && (
-            <span className="text-[#F9F9F9]/50 truncate max-w-xs" title={status.latestDispatchedTask.title}>
+            <span className="text-[#F0F0ED]/50 truncate max-w-xs" title={status.latestDispatchedTask.title}>
               Dispatched: {status.latestDispatchedTask.title}
             </span>
           )}

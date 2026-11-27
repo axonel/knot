@@ -14,6 +14,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { diffLines, type Change } from 'diff';
+import { Magnet, CountUp, Waves, SpotlightCard } from '../ReactBits/index.js';
 import type {
   Project,
   Session,
@@ -343,55 +344,64 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
   const getProvenanceBadgeStyle = (provenance: ContextProvenance) => {
     switch (provenance) {
       case 'chatgpt-authored':
-        return 'bg-[#FF6E42]/10 border-[#FF6E42]/40 text-[#FF6E42]';
+        return 'bg-[#E05252]/10 border-[#E05252]/40 text-[#E05252]';
       case 'antigravity-reported':
-        return 'bg-[#004E72]/30 border-[#004E72] text-[#F9F9F9]';
+        return 'bg-[#292C2F]/30 border-[#292C2F] text-[#F0F0ED]';
       case 'knot-derived':
-        return 'bg-[#004E72]/20 border-[#004E72]/40 text-[#F9F9F9]/80';
+        return 'bg-[#292C2F]/20 border-[#292C2F]/40 text-[#F0F0ED]/80';
       case 'user-authored':
       default:
-        return 'bg-[#092634] border-[#004E72] text-[#F9F9F9]';
+        return 'bg-[#1B1D1F] border-[#292C2F] text-[#F0F0ED]';
     }
   };
 
   if (!project) {
     return (
-      <div className="h-full flex items-center justify-center p-8 bg-[#090B0D] text-[#F9F9F9]/50 text-xs font-mono">
-        Select a project from the sidebar to inspect its Context Vault.
+      <div className="h-full relative flex items-center justify-center p-8 bg-[#111213] overflow-hidden">
+        <Waves lineColor="rgba(240, 240, 237, 0.04)" accentColor="rgba(224, 82, 82, 0.2)" className="absolute inset-0 pointer-events-none" />
+        <SpotlightCard spotlightColor="rgba(224, 82, 82, 0.12)" className="p-8 rounded-xl bg-[#1B1D1F] border border-[#292C2F] text-center max-w-md shadow-2xl relative z-10 space-y-3">
+          <BookOpen size={32} className="mx-auto text-[#E05252]" />
+          <h3 className="text-sm font-bold text-[#F0F0ED]">Project Context Vault</h3>
+          <p className="text-xs text-[#A5A5A0] leading-relaxed">
+            Select a project from the sidebar to inspect its Context Vault, architecture decisions, and session handoffs.
+          </p>
+        </SpotlightCard>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#090B0D] text-[#F9F9F9] border border-[#F9F9F9]/10 rounded-xl overflow-hidden shadow-xl">
+    <div className="h-full flex flex-col bg-[#111213] text-[#F0F0ED] border border-[#F0F0ED]/10 rounded-xl overflow-hidden shadow-xl">
       {/* Top Header */}
-      <div className="px-4 py-3 bg-[#092634] border-b border-[#F9F9F9]/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div className="px-4 py-3 bg-[#1B1D1F] border-b border-[#F0F0ED]/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex items-center gap-2.5">
-          <BookOpen size={18} className="text-[#FF6E42]" />
+          <BookOpen size={18} className="text-[#E05252]" />
           <div>
-            <h2 className="text-xs font-bold text-[#F9F9F9] tracking-wider uppercase font-mono">
+            <h2 className="text-xs font-bold text-[#F0F0ED] tracking-wider uppercase font-mono">
               Project Context Vault
             </h2>
-            <p className="text-[11px] text-[#F9F9F9]/60 font-mono">
-              {project.name} &bull; {documents.length} document{documents.length !== 1 ? 's' : ''} stored
+            <p className="text-[11px] text-[#F0F0ED]/60 font-mono">
+              {project.name} &bull; <CountUp to={documents.length} /> document{documents.length !== 1 ? 's' : ''} stored
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleOpenCreateModal()}
-            className="px-3 py-1.5 rounded-lg bg-[#FF6E42] text-[#090B0D] font-bold text-xs flex items-center gap-1.5 hover:bg-[#FF6E42]/90 transition-all shadow-sm"
-          >
-            <Plus size={14} />
-            <span>New Document</span>
-          </button>
+          <Magnet padding={10} disabled={false}>
+            <button
+              onClick={() => handleOpenCreateModal()}
+              className="px-3 py-1.5 rounded-lg bg-[#E05252] text-[#F0F0ED] font-bold text-xs flex items-center gap-1.5 hover:bg-[#ef6565] transition-all shadow-sm cursor-pointer"
+            >
+              <Plus size={14} />
+              <span>New Document</span>
+            </button>
+          </Magnet>
 
           <button
             onClick={loadDocuments}
             title="Refresh Vault Data"
             disabled={loading}
-            className="p-2 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] hover:bg-[#004E72]/30 transition-all text-xs"
+            className="p-2 rounded-lg bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#F0F0ED] hover:bg-[#292C2F]/30 transition-all text-xs"
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
           </button>
@@ -400,15 +410,15 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
 
       {/* Unresolved Conflicts Warning Banner */}
       {conflicts.length > 0 && (
-        <div className="p-3 bg-[#092634] border-b border-[#FF6E42]/40 shrink-0 space-y-2">
+        <div className="p-3 bg-[#1B1D1F] border-b border-[#E05252]/40 shrink-0 space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#FF6E42] font-mono">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#E05252] font-mono">
               <ShieldAlert size={15} />
               <span>
                 {conflicts.length} Unresolved Context Update Conflict{conflicts.length !== 1 ? 's' : ''}
               </span>
             </div>
-            <span className="text-[11px] text-[#F9F9F9]/60 font-mono">
+            <span className="text-[11px] text-[#F0F0ED]/60 font-mono">
               Preserved current document; update was safely rejected
             </span>
           </div>
@@ -417,20 +427,20 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
             {conflicts.map((c) => (
               <div
                 key={c.id}
-                className="p-2 rounded bg-[#090B0D] border border-[#FF6E42]/30 flex items-center justify-between gap-3 text-xs"
+                className="p-2 rounded bg-[#111213] border border-[#E05252]/30 flex items-center justify-between gap-3 text-xs"
               >
                 <div className="min-w-0">
-                  <div className="font-semibold text-[#F9F9F9] truncate">
+                  <div className="font-semibold text-[#F0F0ED] truncate">
                     Incoming: &quot;{c.incomingTitle}&quot; (Author: {c.incomingAuthor})
                   </div>
-                  <div className="text-[11px] text-[#F9F9F9]/70 font-mono truncate">
+                  <div className="text-[11px] text-[#F0F0ED]/70 font-mono truncate">
                     {c.conflictReason} &bull; Expected Rev: {c.expectedRevision ?? 'none'}, Actual Rev:{' '}
                     {c.actualRevision}
                   </div>
                 </div>
                 <button
                   onClick={() => handleResolveConflict(c.id)}
-                  className="px-2.5 py-1 rounded bg-[#004E72] text-[#F9F9F9] font-medium text-[11px] hover:bg-[#004E72]/80 transition-all shrink-0"
+                  className="px-2.5 py-1 rounded bg-[#292C2F] text-[#F0F0ED] font-medium text-[11px] hover:bg-[#292C2F]/80 transition-all shrink-0"
                 >
                   Mark Resolved
                 </button>
@@ -442,17 +452,17 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
 
       {/* Session Handoff Highlight Card */}
       {session && (
-        <div className="px-4 py-2 bg-[#092634]/60 border-b border-[#F9F9F9]/10 shrink-0 flex items-center justify-between gap-3">
+        <div className="px-4 py-2 bg-[#1B1D1F]/60 border-b border-[#F0F0ED]/10 shrink-0 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/30 shrink-0">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold bg-[#E05252]/20 text-[#E05252] border border-[#E05252]/30 shrink-0">
               Session Handoff
             </span>
             {currentSessionHandoff ? (
-              <span className="text-xs font-semibold text-[#F9F9F9] truncate">
+              <span className="text-xs font-semibold text-[#F0F0ED] truncate">
                 {currentSessionHandoff.title} (Rev {currentSessionHandoff.currentRevision})
               </span>
             ) : (
-              <span className="text-xs text-[#F9F9F9]/50 font-mono truncate">
+              <span className="text-xs text-[#F0F0ED]/50 font-mono truncate">
                 No active handoff note written for session &quot;{session.title}&quot;
               </span>
             )}
@@ -461,7 +471,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
           {currentSessionHandoff ? (
             <button
               onClick={() => setSelectedDocId(currentSessionHandoff.id)}
-              className="text-[11px] font-mono text-[#FF6E42] hover:underline flex items-center gap-1 shrink-0"
+              className="text-[11px] font-mono text-[#E05252] hover:underline flex items-center gap-1 shrink-0"
             >
               <span>View Handoff</span>
               <ArrowRight size={11} />
@@ -469,7 +479,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
           ) : (
             <button
               onClick={() => handleOpenCreateModal('session_handoff', 'session')}
-              className="text-[11px] font-mono text-[#F9F9F9]/70 hover:text-[#FF6E42] transition-colors shrink-0"
+              className="text-[11px] font-mono text-[#F0F0ED]/70 hover:text-[#E05252] transition-colors shrink-0"
             >
               + Create Handoff Note
             </button>
@@ -478,18 +488,18 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
       )}
 
       {/* Filter and Search Bar */}
-      <div className="p-3 bg-[#092634]/30 border-b border-[#F9F9F9]/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div className="p-3 bg-[#1B1D1F]/30 border-b border-[#F0F0ED]/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex flex-wrap items-center gap-2">
           {/* Scope Filter Chips */}
-          <div className="flex items-center bg-[#090B0D] p-0.5 rounded-lg border border-[#F9F9F9]/10">
+          <div className="flex items-center bg-[#111213] p-0.5 rounded-lg border border-[#F0F0ED]/10">
             {(['all', 'project', 'session'] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setScopeFilter(s)}
                 className={`px-2.5 py-1 rounded text-[11px] font-mono uppercase transition-all ${
                   scopeFilter === s
-                    ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
-                    : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                    ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
+                    : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
                 }`}
               >
                 {s === 'all' ? 'All Scopes' : `${s} Context`}
@@ -501,7 +511,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg px-2.5 py-1 text-xs text-[#F9F9F9] focus:outline-none focus:border-[#004E72] font-mono"
+            className="bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-2.5 py-1 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F] font-mono"
           >
             <option value="all">All Categories</option>
             {availableCategories.map((c) => (
@@ -512,12 +522,12 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
           </select>
 
           {/* Show Archived Toggle */}
-          <label className="flex items-center gap-1.5 text-xs text-[#F9F9F9]/70 cursor-pointer select-none">
+          <label className="flex items-center gap-1.5 text-xs text-[#F0F0ED]/70 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={showArchived}
               onChange={(e) => setShowArchived(e.target.checked)}
-              className="rounded bg-[#090B0D] border-[#F9F9F9]/20 text-[#004E72]"
+              className="rounded bg-[#111213] border-[#F0F0ED]/20 text-[#292C2F]"
             />
             <span className="font-mono text-[11px]">Show Archived</span>
           </label>
@@ -525,13 +535,13 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
 
         {/* Search Input */}
         <div className="relative w-48 sm:w-64">
-          <Search size={13} className="absolute left-2.5 top-2.5 text-[#F9F9F9]/40" />
+          <Search size={13} className="absolute left-2.5 top-2.5 text-[#F0F0ED]/40" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search documents..."
-            className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg pl-8 pr-3 py-1 text-xs text-[#F9F9F9] focus:outline-none focus:border-[#004E72]"
+            className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg pl-8 pr-3 py-1 text-xs text-[#F0F0ED] focus:outline-none focus:border-[#292C2F]"
           />
         </div>
       </div>
@@ -539,9 +549,9 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
       {/* Main Content Area (Two Columns) */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Column: Document List */}
-        <div className="w-80 border-r border-[#F9F9F9]/10 flex flex-col overflow-y-auto shrink-0 bg-[#090B0D]/50 divide-y divide-[#F9F9F9]/5">
+        <div className="w-80 border-r border-[#F0F0ED]/10 flex flex-col overflow-y-auto shrink-0 bg-[#111213]/50 divide-y divide-[#F0F0ED]/5">
           {filteredDocuments.length === 0 ? (
-            <div className="p-6 text-center text-[#F9F9F9]/40 text-xs font-mono">
+            <div className="p-6 text-center text-[#F0F0ED]/40 text-xs font-mono">
               No context documents found matching filter.
             </div>
           ) : (
@@ -553,19 +563,19 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                   onClick={() => setSelectedDocId(doc.id)}
                   className={`w-full text-left p-3.5 transition-all flex flex-col gap-1.5 ${
                     isSelected
-                      ? 'bg-[#092634] border-l-2 border-[#FF6E42]'
-                      : 'hover:bg-[#092634]/40'
+                      ? 'bg-[#1B1D1F] border-l-2 border-[#E05252]'
+                      : 'hover:bg-[#1B1D1F]/40'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-[#F9F9F9] truncate">{doc.title}</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#090B0D] text-[#F9F9F9]/80 border border-[#F9F9F9]/10 shrink-0">
+                    <span className="text-xs font-semibold text-[#F0F0ED] truncate">{doc.title}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#111213] text-[#F0F0ED]/80 border border-[#F0F0ED]/10 shrink-0">
                       Rev {doc.currentRevision}
                     </span>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
-                    <span className="px-1.5 py-0.5 rounded bg-[#004E72]/40 text-[#F9F9F9]">
+                    <span className="px-1.5 py-0.5 rounded bg-[#292C2F]/40 text-[#F0F0ED]">
                       {CATEGORY_LABELS[doc.category] || doc.category}
                     </span>
 
@@ -578,25 +588,25 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                     </span>
 
                     {doc.scope === 'session' && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#092634] text-[#F9F9F9]/70 border border-[#F9F9F9]/10">
+                      <span className="px-1.5 py-0.5 rounded bg-[#1B1D1F] text-[#F0F0ED]/70 border border-[#F0F0ED]/10">
                         Session
                       </span>
                     )}
 
                     {doc.requiresVerification && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/30">
+                      <span className="px-1.5 py-0.5 rounded bg-[#E05252]/20 text-[#E05252] border border-[#E05252]/30">
                         Needs Verification
                       </span>
                     )}
 
                     {doc.isArchived && (
-                      <span className="px-1.5 py-0.5 rounded bg-[#090B0D] text-[#F9F9F9]/50 border border-[#F9F9F9]/20">
+                      <span className="px-1.5 py-0.5 rounded bg-[#111213] text-[#F0F0ED]/50 border border-[#F0F0ED]/20">
                         Archived
                       </span>
                     )}
                   </div>
 
-                  <div className="text-[10px] text-[#F9F9F9]/50 font-mono truncate">
+                  <div className="text-[10px] text-[#F0F0ED]/50 font-mono truncate">
                     Updated: {new Date(doc.updatedAt).toLocaleTimeString()}
                   </div>
                 </button>
@@ -606,25 +616,25 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
         </div>
 
         {/* Right Column: Selected Document Detail & History */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#090B0D]">
+        <div className="flex-1 flex flex-col overflow-hidden bg-[#111213]">
           {selectedDoc ? (
             <>
               {/* Document Subheader / Meta Bar */}
-              <div className="p-4 bg-[#092634] border-b border-[#F9F9F9]/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
+              <div className="p-4 bg-[#1B1D1F] border-b border-[#F0F0ED]/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-[#F9F9F9] truncate">{selectedDoc.title}</h3>
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#FF6E42] text-[#090B0D]">
+                    <h3 className="text-sm font-bold text-[#F0F0ED] truncate">{selectedDoc.title}</h3>
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#E05252] text-[#111213]">
                       Revision {selectedDoc.currentRevision}
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] font-mono text-[#F9F9F9]/70">
-                    <span>Scope: <strong className="text-[#F9F9F9]">{selectedDoc.scope}</strong></span>
+                  <div className="flex flex-wrap items-center gap-2 mt-1 text-[11px] font-mono text-[#F0F0ED]/70">
+                    <span>Scope: <strong className="text-[#F0F0ED]">{selectedDoc.scope}</strong></span>
                     <span>&bull;</span>
-                    <span>Category: <strong className="text-[#F9F9F9]">{CATEGORY_LABELS[selectedDoc.category] || selectedDoc.category}</strong></span>
+                    <span>Category: <strong className="text-[#F0F0ED]">{CATEGORY_LABELS[selectedDoc.category] || selectedDoc.category}</strong></span>
                     <span>&bull;</span>
-                    <span>Author: <strong className="text-[#F9F9F9]">{selectedDoc.author}</strong></span>
+                    <span>Author: <strong className="text-[#F0F0ED]">{selectedDoc.author}</strong></span>
                     <span>&bull;</span>
                     <span title={selectedDoc.contentHash}>SHA: {selectedDoc.contentHash.slice(0, 8)}...</span>
                   </div>
@@ -632,13 +642,13 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
 
                 {/* Document Actions */}
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-[#090B0D] p-0.5 rounded-lg border border-[#F9F9F9]/10">
+                  <div className="flex items-center bg-[#111213] p-0.5 rounded-lg border border-[#F0F0ED]/10">
                     <button
                       onClick={() => setActiveTab('content')}
                       className={`px-3 py-1 rounded text-xs font-medium transition-all ${
                         activeTab === 'content'
-                          ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
-                          : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                          ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
+                          : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
                       }`}
                     >
                       Content
@@ -647,8 +657,8 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                       onClick={() => setActiveTab('history')}
                       className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
                         activeTab === 'history'
-                          ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
-                          : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                          ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
+                          : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
                       }`}
                     >
                       <History size={12} />
@@ -659,8 +669,8 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                         onClick={() => setActiveTab('diff')}
                         className={`px-3 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 ${
                           activeTab === 'diff'
-                            ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
-                            : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
+                            ? 'bg-[#292C2F] text-[#F0F0ED] font-bold'
+                            : 'text-[#F0F0ED]/60 hover:text-[#F0F0ED]'
                         }`}
                       >
                         <GitCompare size={12} />
@@ -673,7 +683,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                     <>
                       <button
                         onClick={handleOpenEditModal}
-                        className="px-2.5 py-1 rounded bg-[#004E72] text-[#F9F9F9] text-xs font-medium hover:bg-[#004E72]/80 transition-all"
+                        className="px-2.5 py-1 rounded bg-[#292C2F] text-[#F0F0ED] text-xs font-medium hover:bg-[#292C2F]/80 transition-all"
                       >
                         Edit
                       </button>
@@ -682,7 +692,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                           setDocToArchive(selectedDoc);
                           setShowArchiveConfirm(true);
                         }}
-                        className="p-1.5 rounded bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#FF6E42] hover:border-[#FF6E42]/40 transition-all"
+                        className="p-1.5 rounded bg-[#111213] border border-[#F0F0ED]/10 text-[#F0F0ED]/70 hover:text-[#E05252] hover:border-[#E05252]/40 transition-all"
                         title="Archive Document"
                       >
                         <Archive size={13} />
@@ -694,7 +704,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                         setDocToArchive(selectedDoc);
                         setShowArchiveConfirm(true);
                       }}
-                      className="px-2.5 py-1 rounded bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 hover:bg-[#004E72]/80 transition-all"
+                      className="px-2.5 py-1 rounded bg-[#292C2F] text-[#F0F0ED] text-xs font-medium flex items-center gap-1 hover:bg-[#292C2F]/80 transition-all"
                     >
                       <RotateCcw size={12} />
                       <span>Restore</span>
@@ -708,12 +718,12 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                 {activeTab === 'content' && (
                   <div className="max-w-4xl mx-auto space-y-4">
                     {selectedDoc.requiresVerification && (
-                      <div className="p-3 rounded-lg bg-[#FF6E42]/10 border border-[#FF6E42]/30 text-xs text-[#FF6E42] flex items-center gap-2">
+                      <div className="p-3 rounded-lg bg-[#E05252]/10 border border-[#E05252]/30 text-xs text-[#E05252] flex items-center gap-2">
                         <AlertTriangle size={14} />
                         <span>This document is marked as requiring verification against the repository.</span>
                       </div>
                     )}
-                    <div className="bg-[#092634]/40 border border-[#F9F9F9]/10 rounded-xl p-5 shadow-sm font-mono text-xs leading-relaxed whitespace-pre-wrap">
+                    <div className="bg-[#1B1D1F]/40 border border-[#F0F0ED]/10 rounded-xl p-5 shadow-sm font-mono text-xs leading-relaxed whitespace-pre-wrap">
                       {selectedDoc.contentMarkdown}
                     </div>
                   </div>
@@ -721,7 +731,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
 
                 {activeTab === 'history' && (
                   <div className="max-w-4xl mx-auto space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider font-mono text-[#F9F9F9]/70 mb-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider font-mono text-[#F0F0ED]/70 mb-2">
                       Revision Timeline ({revisions.length} total)
                     </h4>
                     {revisions.map((rev) => (
@@ -729,37 +739,37 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                         key={rev.id}
                         className={`p-3.5 rounded-xl border transition-all ${
                           rev.revision === selectedDoc.currentRevision
-                            ? 'bg-[#092634] border-[#FF6E42]/50'
-                            : 'bg-[#092634]/30 border-[#F9F9F9]/10'
+                            ? 'bg-[#1B1D1F] border-[#E05252]/50'
+                            : 'bg-[#1B1D1F]/30 border-[#F0F0ED]/10'
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs text-[#F9F9F9]">
+                            <span className="font-bold text-xs text-[#F0F0ED]">
                               Revision {rev.revision}
                             </span>
                             {rev.revision === selectedDoc.currentRevision && (
-                              <span className="px-1.5 py-0.2 rounded text-[10px] bg-[#FF6E42] text-[#090B0D] font-bold font-mono">
+                              <span className="px-1.5 py-0.2 rounded text-[10px] bg-[#E05252] text-[#111213] font-bold font-mono">
                                 Current
                               </span>
                             )}
-                            <span className="text-[11px] text-[#F9F9F9]/60 font-mono">
+                            <span className="text-[11px] text-[#F0F0ED]/60 font-mono">
                               &bull; Author: {rev.author} ({rev.provenance})
                             </span>
                           </div>
 
-                          <span className="text-[11px] text-[#F9F9F9]/50 font-mono">
+                          <span className="text-[11px] text-[#F0F0ED]/50 font-mono">
                             {new Date(rev.createdAt).toLocaleString()}
                           </span>
                         </div>
 
                         {rev.changeSummary && (
-                          <div className="mt-2 text-xs text-[#F9F9F9]/80 font-sans italic">
+                          <div className="mt-2 text-xs text-[#F0F0ED]/80 font-sans italic">
                             &ldquo;{rev.changeSummary}&rdquo;
                           </div>
                         )}
 
-                        <div className="mt-2 flex items-center justify-between gap-2 text-[10px] font-mono text-[#F9F9F9]/60">
+                        <div className="mt-2 flex items-center justify-between gap-2 text-[10px] font-mono text-[#F0F0ED]/60">
                           <span>SHA: {rev.contentHash.slice(0, 12)}...</span>
                           {rev.revision !== selectedDoc.currentRevision && (
                             <button
@@ -767,7 +777,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                                 setSelectedRevisionNum(rev.revision);
                                 setActiveTab('diff');
                               }}
-                              className="text-[#FF6E42] hover:underline flex items-center gap-1 font-semibold"
+                              className="text-[#E05252] hover:underline flex items-center gap-1 font-semibold"
                             >
                               <span>Compare with Current</span>
                               <GitCompare size={11} />
@@ -781,13 +791,13 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
 
                 {activeTab === 'diff' && (
                   <div className="max-w-4xl mx-auto space-y-4">
-                    <div className="p-3 bg-[#092634] border border-[#F9F9F9]/10 rounded-lg flex items-center justify-between text-xs font-mono">
+                    <div className="p-3 bg-[#1B1D1F] border border-[#F0F0ED]/10 rounded-lg flex items-center justify-between text-xs font-mono">
                       <div className="flex items-center gap-2">
                         <span>Comparing:</span>
                         <select
                           value={selectedRevisionNum || ''}
                           onChange={(e) => setSelectedRevisionNum(Number(e.target.value))}
-                          className="bg-[#090B0D] border border-[#F9F9F9]/20 rounded px-2 py-0.5 text-xs text-[#F9F9F9]"
+                          className="bg-[#111213] border border-[#F0F0ED]/20 rounded px-2 py-0.5 text-xs text-[#F0F0ED]"
                         >
                           {revisions
                             .filter((r) => r.revision !== selectedDoc.currentRevision)
@@ -797,27 +807,27 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                               </option>
                             ))}
                         </select>
-                        <ArrowRight size={12} className="text-[#F9F9F9]/40" />
-                        <span className="font-bold text-[#FF6E42]">Current (Rev {selectedDoc.currentRevision})</span>
+                        <ArrowRight size={12} className="text-[#F0F0ED]/40" />
+                        <span className="font-bold text-[#E05252]">Current (Rev {selectedDoc.currentRevision})</span>
                       </div>
                     </div>
 
-                    <div className="border border-[#F9F9F9]/10 rounded-xl overflow-hidden bg-[#090B0D] font-mono text-xs">
+                    <div className="border border-[#F0F0ED]/10 rounded-xl overflow-hidden bg-[#111213] font-mono text-xs">
                       {diffLinesData.map((part: Change, idx: number) => {
                         const isAdded = part.added;
                         const isRemoved = part.removed;
-                        let lineStyle = 'text-[#F9F9F9]';
+                        let lineStyle = 'text-[#F0F0ED]';
                         let prefix = ' ';
                         let bgStyle = 'bg-transparent';
 
                         if (isAdded) {
-                          lineStyle = 'text-[#F9F9F9] font-medium';
+                          lineStyle = 'text-[#F0F0ED] font-medium';
                           prefix = '+';
-                          bgStyle = 'bg-[#004E72]/40 border-l-2 border-[#004E72]';
+                          bgStyle = 'bg-[#292C2F]/40 border-l-2 border-[#292C2F]';
                         } else if (isRemoved) {
-                          lineStyle = 'text-[#FF6E42] font-medium';
+                          lineStyle = 'text-[#E05252] font-medium';
                           prefix = '-';
-                          bgStyle = 'bg-[#FF6E42]/10 border-l-2 border-[#FF6E42]';
+                          bgStyle = 'bg-[#E05252]/10 border-l-2 border-[#E05252]';
                         }
 
                         return (
@@ -825,7 +835,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                             key={idx}
                             className={`px-4 py-1 flex items-start gap-3 whitespace-pre-wrap ${bgStyle} ${lineStyle}`}
                           >
-                            <span className="select-none text-[#F9F9F9]/40 shrink-0 font-bold">{prefix}</span>
+                            <span className="select-none text-[#F0F0ED]/40 shrink-0 font-bold">{prefix}</span>
                             <span className="flex-1">{part.value}</span>
                           </div>
                         );
@@ -836,7 +846,7 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-xs font-mono text-[#F9F9F9]/40">
+            <div className="flex-1 flex items-center justify-center text-xs font-mono text-[#F0F0ED]/40">
               Select a context document from the left list to view.
             </div>
           )}
@@ -848,32 +858,32 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
           <form
             onSubmit={handleCreateSubmit}
-            className="w-full max-w-xl bg-[#092634] border border-[#F9F9F9]/10 rounded-xl p-5 space-y-4 shadow-2xl"
+            className="w-full max-w-xl bg-[#1B1D1F] border border-[#F0F0ED]/10 rounded-xl p-5 space-y-4 shadow-2xl"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-[#F9F9F9]">Create Context Document</h3>
+              <h3 className="text-sm font-bold text-[#F0F0ED]">Create Context Document</h3>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="text-[#F9F9F9]/50 hover:text-[#F9F9F9]"
+                className="text-[#F0F0ED]/50 hover:text-[#F0F0ED]"
               >
                 <X size={16} />
               </button>
             </div>
 
             {formError && (
-              <div className="p-2.5 rounded bg-[#FF6E42]/20 border border-[#FF6E42]/40 text-xs text-[#FF6E42] font-mono">
+              <div className="p-2.5 rounded bg-[#E05252]/20 border border-[#E05252]/40 text-xs text-[#E05252] font-mono">
                 {formError}
               </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Scope</label>
+                <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Scope</label>
                 <select
                   value={formScope}
                   onChange={(e) => setFormScope(e.target.value as ContextScope)}
-                  className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg px-3 py-2 text-xs text-[#F9F9F9]"
+                  className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED]"
                 >
                   <option value="project">Project Context (Survives Sessions)</option>
                   <option value="session" disabled={!session}>
@@ -883,54 +893,54 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Category</label>
+                <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Category</label>
                 <input
                   type="text"
                   required
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
                   placeholder="e.g. architecture_decisions"
-                  className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg px-3 py-2 text-xs text-[#F9F9F9]"
+                  className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED]"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Document Title</label>
+              <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Document Title</label>
               <input
                 type="text"
                 required
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
                 placeholder="e.g. Database Architecture Decisions"
-                className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg px-3 py-2 text-xs text-[#F9F9F9]"
+                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED]"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Markdown Content</label>
+              <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Markdown Content</label>
               <textarea
                 required
                 rows={8}
                 value={formContent}
                 onChange={(e) => setFormContent(e.target.value)}
                 placeholder="# Decisions..."
-                className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg p-3 text-xs text-[#F9F9F9] font-mono"
+                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg p-3 text-xs text-[#F0F0ED] font-mono"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Change Summary</label>
+              <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Change Summary</label>
               <input
                 type="text"
                 value={formChangeSummary}
                 onChange={(e) => setFormChangeSummary(e.target.value)}
                 placeholder="Initial creation rationale"
-                className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg px-3 py-2 text-xs text-[#F9F9F9]"
+                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED]"
               />
             </div>
 
-            <label className="flex items-center gap-2 text-xs text-[#F9F9F9]/80 cursor-pointer">
+            <label className="flex items-center gap-2 text-xs text-[#F0F0ED]/80 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formRequiresVerification}
@@ -939,17 +949,17 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
               <span>Flag as requiring verification against repository</span>
             </label>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#F9F9F9]/10">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#F0F0ED]/10">
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 rounded-lg bg-[#090B0D] text-[#F9F9F9]/70 text-xs hover:text-[#F9F9F9]"
+                className="px-4 py-2 rounded-lg bg-[#111213] text-[#F0F0ED]/70 text-xs hover:text-[#F0F0ED]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-[#FF6E42] text-[#090B0D] font-bold text-xs hover:bg-[#FF6E42]/90"
+                className="px-4 py-2 rounded-lg bg-[#E05252] text-[#111213] font-bold text-xs hover:bg-[#E05252]/90"
               >
                 Create Document
               </button>
@@ -963,83 +973,83 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
           <form
             onSubmit={handleEditSubmit}
-            className="w-full max-w-xl bg-[#092634] border border-[#F9F9F9]/10 rounded-xl p-5 space-y-4 shadow-2xl"
+            className="w-full max-w-xl bg-[#1B1D1F] border border-[#F0F0ED]/10 rounded-xl p-5 space-y-4 shadow-2xl"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-[#F9F9F9]">
+              <h3 className="text-sm font-bold text-[#F0F0ED]">
                 Edit Document (Rev {selectedDoc.currentRevision} &rarr; {selectedDoc.currentRevision + 1})
               </h3>
               <button
                 type="button"
                 onClick={() => setShowEditModal(false)}
-                className="text-[#F9F9F9]/50 hover:text-[#F9F9F9]"
+                className="text-[#F0F0ED]/50 hover:text-[#F0F0ED]"
               >
                 <X size={16} />
               </button>
             </div>
 
             {formError && (
-              <div className="p-2.5 rounded bg-[#FF6E42]/20 border border-[#FF6E42]/40 text-xs text-[#FF6E42] font-mono">
+              <div className="p-2.5 rounded bg-[#E05252]/20 border border-[#E05252]/40 text-xs text-[#E05252] font-mono">
                 {formError}
               </div>
             )}
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Document Title</label>
+              <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Document Title</label>
               <input
                 type="text"
                 required
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
-                className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg px-3 py-2 text-xs text-[#F9F9F9]"
+                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED]"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Category</label>
+              <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Category</label>
               <input
                 type="text"
                 required
                 value={formCategory}
                 onChange={(e) => setFormCategory(e.target.value)}
-                className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg px-3 py-2 text-xs text-[#F9F9F9]"
+                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED]"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Markdown Content</label>
+              <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Markdown Content</label>
               <textarea
                 required
                 rows={8}
                 value={formContent}
                 onChange={(e) => setFormContent(e.target.value)}
-                className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg p-3 text-xs text-[#F9F9F9] font-mono"
+                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg p-3 text-xs text-[#F0F0ED] font-mono"
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-mono text-[#F9F9F9]/70 uppercase">Change Summary (Required for history)</label>
+              <label className="text-[11px] font-mono text-[#F0F0ED]/70 uppercase">Change Summary (Required for history)</label>
               <input
                 type="text"
                 required
                 value={formChangeSummary}
                 onChange={(e) => setFormChangeSummary(e.target.value)}
                 placeholder="What changed in this revision?"
-                className="w-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-lg px-3 py-2 text-xs text-[#F9F9F9]"
+                className="w-full bg-[#111213] border border-[#F0F0ED]/10 rounded-lg px-3 py-2 text-xs text-[#F0F0ED]"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#F9F9F9]/10">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#F0F0ED]/10">
               <button
                 type="button"
                 onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 rounded-lg bg-[#090B0D] text-[#F9F9F9]/70 text-xs hover:text-[#F9F9F9]"
+                className="px-4 py-2 rounded-lg bg-[#111213] text-[#F0F0ED]/70 text-xs hover:text-[#F0F0ED]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-lg bg-[#FF6E42] text-[#090B0D] font-bold text-xs hover:bg-[#FF6E42]/90"
+                className="px-4 py-2 rounded-lg bg-[#E05252] text-[#111213] font-bold text-xs hover:bg-[#E05252]/90"
               >
                 Save Revision {selectedDoc.currentRevision + 1}
               </button>
@@ -1051,22 +1061,22 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
       {/* Archive / Restore Confirmation Modal */}
       {showArchiveConfirm && docToArchive && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-md bg-[#092634] border border-[#F9F9F9]/10 rounded-xl p-5 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-bold text-[#F9F9F9]">
+          <div className="w-full max-w-md bg-[#1B1D1F] border border-[#F0F0ED]/10 rounded-xl p-5 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-bold text-[#F0F0ED]">
               {docToArchive.isArchived ? 'Restore Context Document' : 'Archive Context Document'}
             </h3>
-            <p className="text-xs text-[#F9F9F9]/80 font-mono leading-relaxed">
+            <p className="text-xs text-[#F0F0ED]/80 font-mono leading-relaxed">
               {docToArchive.isArchived
                 ? `Are you sure you want to restore "${docToArchive.title}"? It will reappear in active searches and be discoverable by ChatGPT.`
                 : `Are you sure you want to archive "${docToArchive.title}"? Archived documents will no longer be attached to tasks or included in active context manifests.`}
             </p>
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#F9F9F9]/10">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#F0F0ED]/10">
               <button
                 onClick={() => {
                   setShowArchiveConfirm(false);
                   setDocToArchive(null);
                 }}
-                className="px-4 py-2 rounded-lg bg-[#090B0D] text-[#F9F9F9]/70 text-xs hover:text-[#F9F9F9]"
+                className="px-4 py-2 rounded-lg bg-[#111213] text-[#F0F0ED]/70 text-xs hover:text-[#F0F0ED]"
               >
                 Cancel
               </button>
@@ -1074,8 +1084,8 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
                 onClick={() => handleArchiveToggle(docToArchive)}
                 className={`px-4 py-2 rounded-lg text-xs font-bold ${
                   docToArchive.isArchived
-                    ? 'bg-[#004E72] text-[#F9F9F9] hover:bg-[#004E72]/80'
-                    : 'bg-[#FF6E42] text-[#090B0D] hover:bg-[#FF6E42]/90'
+                    ? 'bg-[#292C2F] text-[#F0F0ED] hover:bg-[#292C2F]/80'
+                    : 'bg-[#E05252] text-[#111213] hover:bg-[#E05252]/90'
                 }`}
               >
                 {docToArchive.isArchived ? 'Confirm Restore' : 'Confirm Archive'}

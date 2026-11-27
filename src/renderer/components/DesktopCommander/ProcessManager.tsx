@@ -5,6 +5,7 @@ import { StatusBadge } from './StatusBadge.js';
 import { DiagnosticLogs } from './DiagnosticLogs.js';
 import { StopProcessModal } from '../Safety/StopProcessModal.js';
 import { Play, Square, Loader2, AlertCircle, Clock, Hash, Wifi, Key } from 'lucide-react';
+import { Magnet } from '../ReactBits/index.js';
 
 export const ProcessManager: React.FC = () => {
   const [status, setStatus] = useState<ProcessStatusInfo>({
@@ -111,14 +112,14 @@ export const ProcessManager: React.FC = () => {
   };
 
   return (
-    <div className="rounded-xl border border-[#F9F9F9]/10 bg-[#092634] p-5 shadow-lg select-none">
+    <div className="rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F] p-5 shadow-lg select-none">
       {/* Top Header Row */}
-      <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#F9F9F9]/10">
+      <div className="flex items-center justify-between gap-4 pb-4 border-b border-[#F0F0ED]/10">
         <div className="flex items-center gap-3">
           <DesktopCommanderLogo size={36} />
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-[#F9F9F9] tracking-tight">
+              <h2 className="text-base font-semibold text-[#F0F0ED] tracking-tight">
                 Desktop Commander Remote
               </h2>
               <StatusBadge state={status.state} />
@@ -126,14 +127,14 @@ export const ProcessManager: React.FC = () => {
                 <span
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border ${
                     status.connectionVerified
-                      ? 'bg-[#004E72]/20 border-[#004E72]/60 text-[#F9F9F9]'
+                      ? 'bg-[#292C2F]/20 border-[#292C2F]/60 text-[#F0F0ED]'
                       : status.connectionState === 'pairing_required'
-                      ? 'bg-[#FF6E42]/20 border-[#FF6E42]/60 text-[#FF6E42]'
-                      : 'bg-[#F9F9F9]/5 border-[#F9F9F9]/15 text-[#F9F9F9]/60'
+                      ? 'bg-[#E05252]/20 border-[#E05252]/60 text-[#E05252]'
+                      : 'bg-[#F0F0ED]/5 border-[#F0F0ED]/15 text-[#F0F0ED]/60'
                   }`}
                   data-testid="connection-badge"
                 >
-                  <Wifi size={12} className={status.connectionVerified ? 'text-[#004E72]' : 'text-current'} />
+                  <Wifi size={12} className={status.connectionVerified ? 'text-[#292C2F]' : 'text-current'} />
                   {status.connectionVerified
                     ? 'Remote Verified'
                     : status.connectionState === 'pairing_required'
@@ -142,8 +143,8 @@ export const ProcessManager: React.FC = () => {
                 </span>
               )}
             </div>
-            <p className="text-xs text-[#F9F9F9]/60 font-normal">
-              Managed child process bridge (<code className="text-[#F9F9F9]/80 font-mono text-[11px]">npx @wonderwhy-er/desktop-commander@latest remote</code>)
+            <p className="text-xs text-[#F0F0ED]/60 font-normal">
+              Managed child process bridge (<code className="text-[#F0F0ED]/80 font-mono text-[11px]">npx @wonderwhy-er/desktop-commander@latest remote</code>)
             </p>
           </div>
         </div>
@@ -151,40 +152,44 @@ export const ProcessManager: React.FC = () => {
         {/* Start / Stop Action Buttons */}
         <div className="flex items-center gap-2">
           {isRunning ? (
-            <button
-              onClick={() => setShowStopModal(true)}
-              disabled={isTransitioning}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FF6E42] text-[#F9F9F9] text-xs font-semibold hover:bg-[#FF6E42]/90 active:bg-[#FF6E42]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
-              data-testid="stop-btn"
-            >
-              {isTransitioning ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Square size={13} fill="currentColor" />
-              )}
-              <span>Stop Process</span>
-            </button>
+            <Magnet padding={10} disabled={false}>
+              <button
+                onClick={() => setShowStopModal(true)}
+                disabled={isTransitioning}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#E05252] text-[#F0F0ED] text-xs font-semibold hover:bg-[#ef6565] active:bg-[#c93b3b] disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                data-testid="stop-btn"
+              >
+                {isTransitioning ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Square size={13} fill="currentColor" />
+                )}
+                <span>Stop Process</span>
+              </button>
+            </Magnet>
           ) : (
-            <button
-              onClick={handleStart}
-              disabled={isTransitioning}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#004E72] text-[#F9F9F9] text-xs font-semibold hover:bg-[#004E72]/90 active:bg-[#004E72]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer border border-[#F9F9F9]/10"
-              data-testid="start-btn"
-            >
-              {isTransitioning ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Play size={13} fill="currentColor" />
-              )}
-              <span>Start Remote</span>
-            </button>
+            <Magnet padding={10} disabled={false}>
+              <button
+                onClick={handleStart}
+                disabled={isTransitioning}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#292C2F] text-[#F0F0ED] text-xs font-semibold hover:bg-[#32363a] active:bg-[#1B1D1F] disabled:opacity-50 transition-colors shadow-sm cursor-pointer border border-[#292C2F]"
+                data-testid="start-btn"
+              >
+                {isTransitioning ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Play size={13} fill="currentColor" />
+                )}
+                <span>Start Remote</span>
+              </button>
+            </Magnet>
           )}
         </div>
       </div>
 
       {/* Pairing Guidance Notice */}
       {isRunning && status.connectionState === 'pairing_required' && (
-        <div className="mt-3.5 flex items-start gap-2.5 p-3 rounded-lg bg-[#FF6E42]/10 border border-[#FF6E42]/30 text-[#FF6E42] text-xs">
+        <div className="mt-3.5 flex items-start gap-2.5 p-3 rounded-lg bg-[#E05252]/10 border border-[#E05252]/30 text-[#E05252] text-xs">
           <Key size={16} className="shrink-0 mt-0.5" />
           <div className="flex-1">
             <span className="font-semibold block">Device Pairing Required:</span>
@@ -197,7 +202,7 @@ export const ProcessManager: React.FC = () => {
 
       {/* Error Banner when state is Error or UI error exists */}
       {(status.errorMessage || uiError) && (
-        <div className="mt-3.5 flex items-start gap-2.5 p-3 rounded-lg bg-[#FF6E42]/10 border border-[#FF6E42]/30 text-[#FF6E42] text-xs">
+        <div className="mt-3.5 flex items-start gap-2.5 p-3 rounded-lg bg-[#E05252]/10 border border-[#E05252]/30 text-[#E05252] text-xs">
           <AlertCircle size={16} className="shrink-0 mt-0.5" />
           <div className="flex-1">
             <span className="font-semibold block">Process Error:</span>
@@ -209,42 +214,42 @@ export const ProcessManager: React.FC = () => {
       {/* Process Telemetry Info Grid */}
       <div className="grid grid-cols-3 gap-3 mt-4">
         {/* PID info */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10">
-          <Hash size={14} className="text-[#004E72]" />
+        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10">
+          <Hash size={14} className="text-[#292C2F]" />
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-[#F9F9F9]/50">
+            <span className="text-[10px] uppercase font-mono tracking-wider text-[#F0F0ED]/50">
               Process ID
             </span>
-            <span className="text-xs font-mono font-medium text-[#F9F9F9]">
+            <span className="text-xs font-mono font-medium text-[#F0F0ED]">
               {status.pid ? status.pid : '—'}
             </span>
           </div>
         </div>
 
         {/* Started At */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10">
-          <Clock size={14} className="text-[#004E72]" />
+        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10">
+          <Clock size={14} className="text-[#292C2F]" />
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-[#F9F9F9]/50">
+            <span className="text-[10px] uppercase font-mono tracking-wider text-[#F0F0ED]/50">
               Last Started
             </span>
-            <span className="text-xs font-medium text-[#F9F9F9]">
+            <span className="text-xs font-medium text-[#F0F0ED]">
               {formatTimestamp(status.startedAt)}
             </span>
           </div>
         </div>
 
         {/* Stopped At / Exit Code */}
-        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10">
-          <Clock size={14} className="text-[#FF6E42]" />
+        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/10">
+          <Clock size={14} className="text-[#E05252]" />
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-[#F9F9F9]/50">
+            <span className="text-[10px] uppercase font-mono tracking-wider text-[#F0F0ED]/50">
               Last Stopped
             </span>
-            <span className="text-xs font-medium text-[#F9F9F9]">
+            <span className="text-xs font-medium text-[#F0F0ED]">
               {formatTimestamp(status.stoppedAt)}
               {status.exitCode !== null && (
-                <span className="ml-1 text-[10px] font-mono text-[#F9F9F9]/60">
+                <span className="ml-1 text-[10px] font-mono text-[#F0F0ED]/60">
                   (exit {status.exitCode})
                 </span>
               )}

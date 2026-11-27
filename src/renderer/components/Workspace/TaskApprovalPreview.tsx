@@ -124,7 +124,7 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
   return (
     <div
       data-testid={`approval-preview-${task.id}`}
-      className="rounded-lg border border-[#F9F9F9]/15 bg-[#090B0D]/90 overflow-hidden text-xs my-1"
+      className="rounded-lg border border-[#292C2F] bg-[#111213] overflow-hidden text-xs my-1.5 shadow-sm"
     >
       {/* Header Toggle */}
       <button
@@ -132,28 +132,28 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
         onClick={() => setIsExpanded((prev) => !prev)}
         aria-expanded={isExpanded}
         data-testid={`approval-preview-toggle-${task.id}`}
-        className="w-full px-3 py-2 flex items-center justify-between bg-[#092634]/60 hover:bg-[#092634] text-[#F9F9F9] transition-all cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42]"
+        className="w-full px-3 py-2 flex items-center justify-between bg-[#1B1D1F] hover:bg-[#292C2F] text-[#F0F0ED] transition-all cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252]"
       >
         <div className="flex items-center gap-2 min-w-0">
           <ShieldAlert
             size={14}
-            className={isSensitive ? 'text-amber-400 shrink-0' : 'text-[#004E72] shrink-0'}
+            className={isSensitive ? 'text-[#E05252] shrink-0' : 'text-[#A5A5A0] shrink-0'}
           />
-          <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[#F9F9F9]">
+          <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-[#F0F0ED]">
             Pre-Execution Proposal Preview
           </span>
           <span
-            className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold uppercase ${
+            className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold uppercase ${
               isSensitive
-                ? 'bg-amber-950/60 text-amber-300 border border-amber-800'
-                : 'bg-[#004E72]/40 text-[#F9F9F9] border border-[#004E72]'
+                ? 'bg-[#292C2F] text-[#E05252] border border-[#E05252]/40'
+                : 'bg-[#292C2F] text-[#A5A5A0] border border-[#292C2F]'
             }`}
           >
             {policyCategory}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 text-[#F9F9F9]/60 shrink-0 text-[11px] font-mono">
+        <div className="flex items-center gap-1.5 text-[#A5A5A0] shrink-0 text-[11px] font-mono">
           <span>{isExpanded ? 'Hide' : 'Inspect'}</span>
           {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
@@ -161,18 +161,18 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
 
       {/* Expandable Preview Details */}
       {isExpanded && (
-        <div className="p-3 space-y-3 border-t border-[#F9F9F9]/10">
+        <div className="p-3 space-y-3 border-t border-[#292C2F] bg-[#111213]">
           {/* Explicit Unexecuted Proposal Disclaimer */}
           <div
             data-testid="preview-proposal-disclaimer"
-            className="flex items-start gap-2 p-2 rounded bg-amber-950/20 border border-amber-800/40 text-[11px] text-amber-200"
+            className="flex items-start gap-2 p-2.5 rounded bg-[#1B1D1F] border border-[#E05252]/40 text-[11px] text-[#F0F0ED]"
           >
-            <Info size={13} className="shrink-0 mt-0.5 text-amber-400" />
+            <Info size={13} className="shrink-0 mt-0.5 text-[#E05252]" />
             <div className="space-y-0.5">
-              <span className="font-bold font-mono tracking-wide uppercase text-amber-300 block text-[10px]">
+              <span className="font-bold font-mono tracking-wide uppercase text-[#E05252] block text-[10px]">
                 Planned Proposal &bull; Unexecuted
               </span>
-              <p className="text-[#F9F9F9]/80 leading-relaxed">
+              <p className="text-[#A5A5A0] leading-relaxed">
                 The operations below represent planned instructions that have not yet been executed.
                 Verify all parameters before authorizing execution.
               </p>
@@ -181,49 +181,49 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
 
           {/* Policy Reason (if evaluated) */}
           {policyReason && (
-            <div className="p-2 rounded bg-[#092634]/40 border border-amber-800/30 text-[11px] space-y-1">
-              <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase font-bold text-amber-400">
+            <div className="p-2 rounded bg-[#1B1D1F] border border-[#E05252]/30 text-[11px] space-y-1">
+              <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase font-bold text-[#E05252]">
                 <AlertTriangle size={12} />
                 <span>Approval Policy Trigger:</span>
               </div>
-              <p className="text-[#F9F9F9]/90 font-mono text-[11px] pl-4">{policyReason}</p>
+              <p className="text-[#F0F0ED] font-mono text-[11px] pl-4">{policyReason}</p>
             </div>
           )}
 
           {/* Execution Mode & Priority */}
-          <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-[#F9F9F9]/70 p-2 rounded bg-[#092634]/20 border border-[#F9F9F9]/5">
+          <div className="grid grid-cols-2 gap-2 text-[11px] font-mono text-[#A5A5A0] p-2 rounded bg-[#1B1D1F] border border-[#292C2F]">
             <div className="flex items-center gap-1.5">
-              <Workflow size={12} className="text-[#FF6E42]" />
-              <span>Mode: <strong className="text-[#F9F9F9]">{executionMode}</strong></span>
+              <Workflow size={12} className="text-[#E05252]" />
+              <span>Mode: <strong className="text-[#F0F0ED]">{executionMode}</strong></span>
             </div>
             <div className="flex items-center gap-1.5">
-              <CheckCircle2 size={12} className="text-[#FF6E42]" />
-              <span>Priority: <strong className="text-[#F9F9F9]">{task.priority || 'normal'}</strong></span>
+              <CheckCircle2 size={12} className="text-[#E05252]" />
+              <span>Priority: <strong className="text-[#F0F0ED]">{task.priority || 'normal'}</strong></span>
             </div>
           </div>
 
           {/* Proposed Commands */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#F9F9F9]/70 uppercase tracking-wide">
-              <Terminal size={12} className="text-[#FF6E42]" />
+            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#A5A5A0] uppercase tracking-wide">
+              <Terminal size={12} className="text-[#E05252]" />
               <span>Proposed Shell Commands:</span>
             </div>
             {proposedCommands && proposedCommands.length > 0 ? (
               <div
                 data-testid="preview-proposed-commands"
-                className="p-2 rounded bg-[#090B0D] border border-[#F9F9F9]/10 space-y-1 overflow-x-auto"
+                className="p-2.5 rounded bg-[#1B1D1F] border border-[#292C2F] space-y-1 overflow-x-auto"
               >
                 {proposedCommands.map((cmd, idx) => (
-                  <div key={idx} className="font-mono text-[11px] text-[#F9F9F9] flex items-start gap-2">
-                    <span className="text-[#FF6E42] select-none">$</span>
-                    <code className="text-[#F9F9F9]/90 whitespace-pre">{cmd}</code>
+                  <div key={idx} className="font-mono text-[11px] text-[#F0F0ED] flex items-start gap-2">
+                    <span className="text-[#E05252] select-none font-bold">$</span>
+                    <code className="text-[#F0F0ED]/90 whitespace-pre">{cmd}</code>
                   </div>
                 ))}
               </div>
             ) : (
               <div
                 data-testid="preview-no-commands"
-                className="p-2 rounded bg-[#092634]/20 border border-[#F9F9F9]/5 text-[11px] font-mono text-[#F9F9F9]/50 italic"
+                className="p-2 rounded bg-[#1B1D1F] border border-[#292C2F] text-[11px] font-mono text-[#A5A5A0] italic"
               >
                 No specific shell commands declared in task payload
               </div>
@@ -232,18 +232,18 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
 
           {/* Affected File Paths */}
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#F9F9F9]/70 uppercase tracking-wide">
-              <FileCode size={12} className="text-[#FF6E42]" />
+            <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#A5A5A0] uppercase tracking-wide">
+              <FileCode size={12} className="text-[#E05252]" />
               <span>Declared File Paths:</span>
             </div>
             {affectedFiles && affectedFiles.length > 0 ? (
               <ul
                 data-testid="preview-affected-files"
-                className="p-2 rounded bg-[#090B0D] border border-[#F9F9F9]/10 space-y-1 text-[11px] font-mono text-[#F9F9F9]/90 max-h-36 overflow-y-auto"
+                className="p-2.5 rounded bg-[#1B1D1F] border border-[#292C2F] space-y-1 text-[11px] font-mono text-[#F0F0ED] max-h-36 overflow-y-auto"
               >
                 {affectedFiles.map((file, idx) => (
                   <li key={idx} className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#004E72] shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E05252] shrink-0" />
                     <span className="truncate">{file}</span>
                   </li>
                 ))}
@@ -251,7 +251,7 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
             ) : (
               <div
                 data-testid="preview-no-files"
-                className="p-2 rounded bg-[#092634]/20 border border-[#F9F9F9]/5 text-[11px] font-mono text-[#F9F9F9]/50 italic"
+                className="p-2 rounded bg-[#1B1D1F] border border-[#292C2F] text-[11px] font-mono text-[#A5A5A0] italic"
               >
                 No specific file paths declared in task payload
               </div>
@@ -261,10 +261,10 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
           {/* Description & Scope */}
           {task.description && (
             <div className="space-y-1 pt-1">
-              <span className="text-[10px] font-mono uppercase text-[#F9F9F9]/40 font-bold">
+              <span className="text-[10px] font-mono uppercase text-[#A5A5A0]/80 font-bold">
                 Task Scope / Description:
               </span>
-              <p className="text-[11px] text-[#F9F9F9]/80 leading-relaxed bg-[#092634]/15 p-2 rounded border border-[#F9F9F9]/5 whitespace-pre-wrap">
+              <p className="text-[11px] text-[#F0F0ED] leading-relaxed bg-[#1B1D1F] p-2.5 rounded border border-[#292C2F] whitespace-pre-wrap font-sans">
                 {task.description}
               </p>
             </div>
@@ -273,15 +273,15 @@ export const TaskApprovalPreview: React.FC<TaskApprovalPreviewProps> = ({
           {/* Acceptance Criteria */}
           {task.acceptanceCriteria && task.acceptanceCriteria.length > 0 && (
             <div className="space-y-1 pt-1">
-              <div className="flex items-center gap-1 text-[10px] font-mono uppercase text-[#F9F9F9]/40 font-bold">
-                <ListChecks size={11} className="text-[#FF6E42]" />
+              <div className="flex items-center gap-1 text-[10px] font-mono uppercase text-[#A5A5A0]/80 font-bold">
+                <ListChecks size={11} className="text-[#E05252]" />
                 <span>Declared Acceptance Criteria:</span>
               </div>
-              <ul className="text-[11px] text-[#F9F9F9]/70 space-y-1 pl-1">
+              <ul className="text-[11px] text-[#A5A5A0] space-y-1 pl-1">
                 {task.acceptanceCriteria.map((criterion, idx) => (
                   <li key={idx} className="flex items-start gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6E42] mt-1 shrink-0" />
-                    <span>{criterion}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E05252] mt-1 shrink-0" />
+                    <span className="text-[#F0F0ED]">{criterion}</span>
                   </li>
                 ))}
               </ul>

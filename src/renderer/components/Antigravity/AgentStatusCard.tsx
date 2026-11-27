@@ -61,13 +61,13 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
         );
       case 'auth_required':
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#FF6E42]/10 text-[#FF6E42] border border-[#FF6E42]/20">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#E05252]/10 text-[#E05252] border border-[#E05252]/20">
             <AlertTriangle size={12} /> Authentication Required
           </span>
         );
       case 'not_installed':
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#FF6E42]/10 text-[#FF6E42] border border-[#FF6E42]/20">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#E05252]/10 text-[#E05252] border border-[#E05252]/20">
             <XCircle size={12} /> Not Installed
           </span>
         );
@@ -79,7 +79,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
         );
       default:
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#F9F9F9]/10 text-[#F9F9F9]/70 border border-[#F9F9F9]/20">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#F0F0ED]/10 text-[#F0F0ED]/70 border border-[#F0F0ED]/20">
             {readiness}
           </span>
         );
@@ -90,37 +90,37 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
     switch (processState) {
       case 'thinking':
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/40 animate-pulse">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#E05252]/20 text-[#E05252] border border-[#E05252]/40 animate-pulse">
             <Activity size={12} className="animate-spin" /> Thinking...
           </span>
         );
       case 'ready':
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#004E72]/30 text-[#F9F9F9] border border-[#004E72]">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#292C2F]/30 text-[#F0F0ED] border border-[#292C2F]">
             <CheckCircle size={12} className="text-emerald-400" /> Active / Idle
           </span>
         );
       case 'starting':
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#004E72]/20 text-[#F9F9F9]/80 border border-[#004E72]/40">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#292C2F]/20 text-[#F0F0ED]/80 border border-[#292C2F]/40">
             Starting...
           </span>
         );
       case 'stopped':
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#090B0D] text-[#F9F9F9]/50 border border-[#F9F9F9]/10">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#111213] text-[#F0F0ED]/50 border border-[#F0F0ED]/10">
             Stopped
           </span>
         );
       case 'authentication_required':
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/40">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#E05252]/20 text-[#E05252] border border-[#E05252]/40">
             Auth Required
           </span>
         );
       default:
         return (
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#090B0D] text-[#F9F9F9]/40 border border-[#F9F9F9]/10">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-[#111213] text-[#F0F0ED]/40 border border-[#F0F0ED]/10">
             {processState}
           </span>
         );
@@ -128,26 +128,26 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-[#F9F9F9]/10 bg-[#092634] p-5 shadow-lg space-y-4">
+    <div className="rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F] p-5 shadow-lg space-y-4">
       {/* Top Header Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F9F9F9]/10 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0F0ED]/10 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#004E72] flex items-center justify-center text-[#F9F9F9] shadow-inner">
+          <div className="w-10 h-10 rounded-lg bg-[#292C2F] flex items-center justify-center text-[#F0F0ED] shadow-inner">
             <Sparkles size={20} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-[#F9F9F9]">Google Antigravity Agent</h2>
+              <h2 className="text-sm font-semibold text-[#F0F0ED]">Google Antigravity Agent</h2>
               {getReadinessBadge()}
               {getProcessStateBadge()}
             </div>
-            <div className="text-xs text-[#F9F9F9]/60 font-mono mt-0.5">
+            <div className="text-xs text-[#F0F0ED]/60 font-mono mt-0.5">
               {isInstalled ? (
                 <span>
                   agy {capabilities?.version ? `v${capabilities.version}` : ''} ({capabilities?.executablePath})
                 </span>
               ) : (
-                <span className="text-[#FF6E42]">CLI binary 'agy' not detected</span>
+                <span className="text-[#E05252]">CLI binary 'agy' not detected</span>
               )}
             </div>
           </div>
@@ -156,19 +156,19 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
         {/* Action Controls */}
         <div className="flex items-center gap-2">
           {/* Mode Selector */}
-          <div className="flex items-center gap-1.5 bg-[#090B0D] border border-[#F9F9F9]/15 rounded-lg px-2.5 py-1.5">
-            <Cpu size={14} className="text-[#004E72]" />
-            <span className="text-[11px] text-[#F9F9F9]/60">Mode:</span>
+          <div className="flex items-center gap-1.5 bg-[#111213] border border-[#F0F0ED]/15 rounded-lg px-2.5 py-1.5">
+            <Cpu size={14} className="text-[#292C2F]" />
+            <span className="text-[11px] text-[#F0F0ED]/60">Mode:</span>
             <select
               value={selectedMode}
               onChange={(e) => onModeChange(e.target.value as AntigravityExecutionMode)}
               disabled={isRunning || disabled}
-              className="bg-transparent text-xs text-[#F9F9F9] font-mono focus:outline-none cursor-pointer disabled:cursor-not-allowed"
+              className="bg-transparent text-xs text-[#F0F0ED] font-mono focus:outline-none cursor-pointer disabled:cursor-not-allowed"
             >
-              <option value="default" className="bg-[#092634] text-[#F9F9F9]">default</option>
-              <option value="accept-edits" className="bg-[#092634] text-[#F9F9F9]">accept-edits</option>
-              <option value="auto" className="bg-[#092634] text-[#F9F9F9]">auto</option>
-              <option value="plan" className="bg-[#092634] text-[#F9F9F9]">plan</option>
+              <option value="default" className="bg-[#1B1D1F] text-[#F0F0ED]">default</option>
+              <option value="accept-edits" className="bg-[#1B1D1F] text-[#F0F0ED]">accept-edits</option>
+              <option value="auto" className="bg-[#1B1D1F] text-[#F0F0ED]">auto</option>
+              <option value="plan" className="bg-[#1B1D1F] text-[#F0F0ED]">plan</option>
             </select>
           </div>
 
@@ -176,7 +176,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
             <button
               onClick={() => onStart(selectedMode)}
               disabled={!isInstalled || disabled}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#004E72] text-[#F9F9F9] text-xs font-medium hover:bg-[#004E72]/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#292C2F] text-[#F0F0ED] text-xs font-medium hover:bg-[#292C2F]/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
             >
               <Play size={13} />
               <span>Start Agent</span>
@@ -186,7 +186,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
               {isThinking && (
                 <button
                   onClick={onInterrupt}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF6E42]/20 border border-[#FF6E42]/40 text-[#FF6E42] text-xs font-medium hover:bg-[#FF6E42]/30 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#E05252]/20 border border-[#E05252]/40 text-[#E05252] text-xs font-medium hover:bg-[#E05252]/30 transition-colors"
                   title="Interrupt current turn (SIGINT)"
                 >
                   <AlertTriangle size={13} />
@@ -208,7 +208,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
             <button
               onClick={onResume}
               disabled={!isInstalled || disabled}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/20 text-[#F9F9F9]/80 text-xs font-medium hover:bg-[#090B0D]/80 hover:text-[#F9F9F9] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#111213] border border-[#F0F0ED]/20 text-[#F0F0ED]/80 text-xs font-medium hover:bg-[#111213]/80 hover:text-[#F0F0ED] transition-colors"
               title="Resume previous conversation"
             >
               <span>Resume Session</span>
@@ -219,8 +219,8 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
 
       {/* Auth Banner if required */}
       {readiness === 'auth_required' && (
-        <div className="rounded-lg bg-[#FF6E42]/10 border border-[#FF6E42]/30 p-3 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-[#FF6E42]">
+        <div className="rounded-lg bg-[#E05252]/10 border border-[#E05252]/30 p-3 flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-[#E05252]">
             <AlertTriangle size={16} className="shrink-0" />
             <span>
               Google Antigravity authentication is required. Run the command in your terminal to log in:
@@ -228,7 +228,7 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
           </div>
           <button
             onClick={copyAuthCommand}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#090B0D] border border-[#FF6E42]/40 font-mono text-[#F9F9F9] hover:bg-[#090B0D]/80 transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#111213] border border-[#E05252]/40 font-mono text-[#F0F0ED] hover:bg-[#111213]/80 transition-colors shrink-0"
           >
             {copiedAuth ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
             <span>agy</span>
@@ -238,30 +238,30 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({
 
       {/* Meta Pills */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
-        <div className="bg-[#090B0D]/60 border border-[#F9F9F9]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F9F9F9]/70">
-          <Folder size={14} className="text-[#004E72] shrink-0" />
+        <div className="bg-[#111213]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
+          <Folder size={14} className="text-[#292C2F] shrink-0" />
           <div className="truncate">
-            <span className="text-[#F9F9F9]/40 text-[10px] block">CWD</span>
+            <span className="text-[#F0F0ED]/40 text-[10px] block">CWD</span>
             <span className="truncate block" title={status?.workingDirectory || 'No project directory'}>
               {status?.workingDirectory || 'No project directory'}
             </span>
           </div>
         </div>
 
-        <div className="bg-[#090B0D]/60 border border-[#F9F9F9]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F9F9F9]/70">
-          <Hash size={14} className="text-[#004E72] shrink-0" />
+        <div className="bg-[#111213]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
+          <Hash size={14} className="text-[#292C2F] shrink-0" />
           <div className="truncate">
-            <span className="text-[#F9F9F9]/40 text-[10px] block">CONVERSATION ID</span>
+            <span className="text-[#F0F0ED]/40 text-[10px] block">CONVERSATION ID</span>
             <span className="truncate block" title={status?.cliConversationId || 'None (New turn)'}>
               {status?.cliConversationId || 'None (New turn)'}
             </span>
           </div>
         </div>
 
-        <div className="bg-[#090B0D]/60 border border-[#F9F9F9]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F9F9F9]/70">
-          <Activity size={14} className="text-[#004E72] shrink-0" />
+        <div className="bg-[#111213]/60 border border-[#F0F0ED]/10 rounded-lg p-2.5 flex items-center gap-2 text-[#F0F0ED]/70">
+          <Activity size={14} className="text-[#292C2F] shrink-0" />
           <div>
-            <span className="text-[#F9F9F9]/40 text-[10px] block">PID / EXIT</span>
+            <span className="text-[#F0F0ED]/40 text-[10px] block">PID / EXIT</span>
             <span>
               {status?.pid ? `PID: ${status.pid}` : status?.lastExitCode !== null ? `Exit code: ${status?.lastExitCode}` : 'Not Running'}
             </span>

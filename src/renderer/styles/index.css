@@ -1,16 +1,48 @@
 @import "tailwindcss";
 
+@theme {
+  --color-blackout-main: #111213;
+  --color-blackout-panel: #1B1D1F;
+  --color-blackout-elevated: #292C2F;
+  --color-blackout-hover: #32363a;
+  --color-text-primary: #F0F0ED;
+  --color-text-secondary: #A5A5A0;
+  --color-signal: #E05252;
+  --color-signal-hover: #ef6565;
+  --color-signal-dim: rgba(224, 82, 82, 0.15);
+  --color-border-subtle: rgba(240, 240, 237, 0.08);
+  --color-border-medium: rgba(240, 240, 237, 0.16);
+
+  /* Legacy color aliases mapped to Blackout / Signal palette to prevent breakages */
+  --color-white: #F0F0ED;
+  --color-blue: #1B1D1F;
+  --color-orange: #E05252;
+  --color-navy: #1B1D1F;
+  --color-nearblack: #111213;
+}
+
 :root {
-  --color-white: #F9F9F9;
-  --color-blue: #004E72;
-  --color-orange: #FF6E42;
-  --color-navy: #092634;
-  --color-nearblack: #090B0D;
+  --color-blackout-main: #111213;
+  --color-blackout-panel: #1B1D1F;
+  --color-blackout-elevated: #292C2F;
+  --color-text-primary: #F0F0ED;
+  --color-text-secondary: #A5A5A0;
+  --color-signal: #E05252;
+  --color-signal-hover: #ef6565;
+  --color-border-subtle: rgba(240, 240, 237, 0.08);
+  --color-border-medium: rgba(240, 240, 237, 0.16);
+
+  /* Legacy color aliases */
+  --color-white: #F0F0ED;
+  --color-blue: #1B1D1F;
+  --color-orange: #E05252;
+  --color-navy: #1B1D1F;
+  --color-nearblack: #111213;
 }
 
 body {
-  background-color: #090B0D;
-  color: #F9F9F9;
+  background-color: #111213;
+  color: #F0F0ED;
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -19,22 +51,36 @@ body {
   overflow: hidden;
 }
 
-/* Custom scrollbars matching the palette */
+/* Custom scrollbars matching the Blackout / Signal palette */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090B0D;
+  background: #111213;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #092634;
+  background: #292C2F;
   border-radius: 3px;
-  border: 1px solid rgba(249, 249, 249, 0.1);
+  border: 1px solid rgba(240, 240, 237, 0.08);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #004E72;
+  background: #E05252;
+}
+
+/* ShinyText animation utility if not loaded */
+@keyframes shiny-text {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.animate-shiny-text {
+  animation: shiny-text 3s linear infinite;
 }

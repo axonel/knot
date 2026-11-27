@@ -6,8 +6,9 @@ import { ProjectManager } from './components/ProjectManager/ProjectManager.js';
 import { BridgeManager } from './components/Bridge/BridgeManager.js';
 import { AntigravityWorkspace } from './components/Antigravity/AntigravityWorkspace.js';
 import { CollaborationWorkspace } from './components/Workspace/CollaborationWorkspace.js';
-import { Layers } from 'lucide-react';
+import { Layers, ShieldCheck, Lock } from 'lucide-react';
 import { isEditableTarget } from './utils/keyboardUtils.js';
+import { ClickSpark, Noise, SpotlightCard } from './components/ReactBits/index.js';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState('workspace');
@@ -48,72 +49,93 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#090B0D] text-[#F9F9F9] font-sans">
-      {/* Navigation Sidebar */}
-      <Sidebar
-        currentTab={currentTab}
-        onTabChange={setCurrentTab}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
-        isFocusMode={isFocusMode}
-      />
+    <ClickSpark sparkColor="#E05252" sparkSize={6} sparkRadius={22}>
+      <div className="flex h-screen w-screen overflow-hidden bg-[#111213] text-[#F0F0ED] font-sans relative selection:bg-[#E05252]/30 selection:text-[#F0F0ED]">
+        {/* Subtle physical workstation texture */}
+        <Noise opacity={0.05} size={1.5} blendMode="overlay" className="fixed inset-0 pointer-events-none z-50" />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {!isFocusMode && <Header />}
+        {/* Navigation Sidebar */}
+        <Sidebar
+          currentTab={currentTab}
+          onTabChange={setCurrentTab}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+          isFocusMode={isFocusMode}
+        />
 
-        <main className={`flex-1 overflow-hidden ${currentTab === 'workspace' ? 'p-0 flex flex-col' : 'overflow-y-auto p-6 space-y-6'}`}>
-          {currentTab === 'workspace' ? (
-            <CollaborationWorkspace
-              isFocusMode={isFocusMode}
-              onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
-              centerView={workspaceCenterView}
-              onCenterViewChange={setWorkspaceCenterView}
-            />
-          ) : currentTab === 'projects' ? (
-            <section>
-              <ProjectManager />
-            </section>
-          ) : currentTab === 'antigravity' ? (
-            <section>
-              <AntigravityWorkspace />
-            </section>
-          ) : currentTab === 'bridge' ? (
-            <section>
-              <BridgeManager />
-            </section>
-          ) : (
-            <>
-              {/* Main Desktop Commander Process Manager Section */}
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+          {!isFocusMode && <Header />}
+
+          <main className={`flex-1 overflow-hidden ${currentTab === 'workspace' ? 'p-0 flex flex-col' : 'overflow-y-auto p-6 space-y-6'}`}>
+            {currentTab === 'workspace' ? (
+              <CollaborationWorkspace
+                isFocusMode={isFocusMode}
+                onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
+                centerView={workspaceCenterView}
+                onCenterViewChange={setWorkspaceCenterView}
+              />
+            ) : currentTab === 'projects' ? (
               <section>
-                <ProcessManager />
+                <ProjectManager />
               </section>
+            ) : currentTab === 'antigravity' ? (
+              <section>
+                <AntigravityWorkspace />
+              </section>
+            ) : currentTab === 'bridge' ? (
+              <section>
+                <BridgeManager />
+              </section>
+            ) : (
+              <>
+                {/* Main Desktop Commander Process Manager Section */}
+                <section>
+                  <ProcessManager />
+                </section>
 
-              {/* Architecture Overview Section */}
-              <section className="rounded-xl border border-[#F9F9F9]/10 bg-[#092634]/50 p-5 space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#F9F9F9]/60 font-mono">
-                  <Layers size={14} className="text-[#004E72]" />
-                  <span>Multi-Agent Architecture</span>
-                </div>
-                <p className="text-xs text-[#F9F9F9]/80 leading-relaxed font-normal">
-                  <strong className="text-[#F9F9F9]">Knot</strong> connects the user's existing ChatGPT browser session to their local development environment and Antigravity CLI. ChatGPT is the sole orchestrator and planning agent; Antigravity executes implementation tasks and reports results.
-                </p>
-                <div className="grid grid-cols-2 gap-3 pt-2 text-[11px] text-[#F9F9F9]/60">
-                  <div className="p-2.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10">
-                    <span className="text-[#004E72] font-semibold block mb-0.5">Process Isolation</span>
-                    Strict signal handling and PID tracking prevent orphan processes.
+                {/* Architecture Overview Section */}
+                <section className="rounded-xl border border-[#292C2F] bg-[#1B1D1F] p-5 space-y-3 shadow-lg">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#A5A5A0] font-mono">
+                    <Layers size={14} className="text-[#E05252]" />
+                    <span>Multi-Agent Architecture</span>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-[#090B0D] border border-[#FF6E42]">
-                    <span className="text-[#FF6E42] font-semibold block mb-0.5">Log Sanitization</span>
-                    All credentials and authorization tokens are scrubbed.
+                  <p className="text-xs text-[#F0F0ED]/90 leading-relaxed font-normal">
+                    <strong className="text-[#F0F0ED]">Knot</strong> connects the user's existing ChatGPT browser session to their local development environment and Antigravity CLI. ChatGPT acts as planner and orchestrator; Antigravity executes implementation tasks and reports results.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-[11px] text-[#A5A5A0]">
+                    <SpotlightCard
+                      spotlightColor="rgba(224, 82, 82, 0.1)"
+                      className="p-3 rounded-lg bg-[#111213] border border-[#292C2F] space-y-1"
+                    >
+                      <div className="flex items-center gap-1.5 text-[#E05252] font-semibold text-xs">
+                        <ShieldCheck size={13} />
+                        <span>Process Isolation</span>
+                      </div>
+                      <p className="text-[#A5A5A0] leading-snug">
+                        Strict signal handling, isolated cgroups and PID tracking prevent orphan background processes.
+                      </p>
+                    </SpotlightCard>
+                    <SpotlightCard
+                      spotlightColor="rgba(224, 82, 82, 0.1)"
+                      className="p-3 rounded-lg bg-[#111213] border border-[#292C2F] space-y-1"
+                    >
+                      <div className="flex items-center gap-1.5 text-[#E05252] font-semibold text-xs">
+                        <Lock size={13} />
+                        <span>Log Sanitization</span>
+                      </div>
+                      <p className="text-[#A5A5A0] leading-snug">
+                        Environment variables, credentials and authorization tokens are automatically scrubbed at the boundary.
+                      </p>
+                    </SpotlightCard>
                   </div>
-                </div>
-              </section>
-            </>
-          )}
-        </main>
+                </section>
+              </>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </ClickSpark>
   );
 };
 

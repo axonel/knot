@@ -10,6 +10,7 @@ import {
   ChevronRight,
   ShieldCheck,
 } from 'lucide-react';
+import { Magnet } from './ReactBits/index.js';
 
 interface SidebarProps {
   currentTab: string;
@@ -66,35 +67,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       className={`${
         isCollapsed ? 'w-14' : 'w-56'
-      } bg-[#092634] border-r border-[#F9F9F9]/10 flex flex-col justify-between py-3.5 select-none shrink-0 transition-all duration-200 z-20`}
+      } bg-[#1B1D1F] border-r border-[#292C2F] flex flex-col justify-between py-3.5 select-none shrink-0 transition-all duration-200 z-20`}
     >
       {/* Top Brand & Nav Section */}
       <div className={isCollapsed ? 'px-1.5' : 'px-3'}>
         {/* Brand Header */}
         <div
-          className={`pb-3 mb-3 border-b border-[#F9F9F9]/10 flex items-center ${
+          className={`pb-3 mb-3 border-b border-[#292C2F] flex items-center ${
             isCollapsed ? 'justify-center' : 'justify-between px-1'
           }`}
         >
           {isCollapsed ? (
-            <button
-              onClick={onToggleCollapse}
-              title="Expand Sidebar"
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-            >
-              <KnotLogo showText={false} size={28} />
-            </button>
+            <Magnet padding={10} disabled={false}>
+              <button
+                onClick={onToggleCollapse}
+                title="Expand Sidebar"
+                aria-label="Expand Sidebar"
+                className="cursor-pointer hover:opacity-80 transition-opacity p-0.5"
+              >
+                <KnotLogo showText={false} size={28} />
+              </button>
+            </Magnet>
           ) : (
             <>
-              <KnotLogo showText={true} subtitle={true} size={36} />
+              <KnotLogo showText={true} subtitle={true} size={34} />
               {onToggleCollapse && (
-                <button
-                  onClick={onToggleCollapse}
-                  title="Collapse Sidebar"
-                  className="p-1 rounded text-[#F9F9F9]/50 hover:text-[#F9F9F9] hover:bg-[#090B0D]/50 transition-all cursor-pointer"
-                >
-                  <ChevronLeft size={16} />
-                </button>
+                <Magnet padding={12} disabled={false}>
+                  <button
+                    onClick={onToggleCollapse}
+                    title="Collapse Sidebar"
+                    aria-label="Collapse Sidebar"
+                    className="p-1 rounded text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all cursor-pointer"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                </Magnet>
               )}
             </>
           )}
@@ -103,8 +110,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation list */}
         <nav className="space-y-1">
           {!isCollapsed && (
-            <div className="px-2 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#F9F9F9]/40 font-semibold">
-              Workspace
+            <div className="px-2 pb-1.5 text-[10px] font-mono uppercase tracking-wider text-[#A5A5A0]/60 font-semibold">
+              Workstation
             </div>
           )}
           {navItems.map((item) => {
@@ -117,16 +124,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={isCollapsed ? `${item.label}${item.badge ? ` (${item.badge})` : ''}` : undefined}
                 className={`w-full flex items-center ${
                   isCollapsed ? 'justify-center p-2.5' : 'justify-between px-2.5 py-2'
-                } rounded-lg text-xs font-medium transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
+                } rounded-lg text-xs font-medium transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] ${
                   isActive
-                    ? 'bg-[#004E72] text-[#F9F9F9] shadow-sm font-semibold'
-                    : 'text-[#F9F9F9]/70 hover:bg-[#090B0D]/50 hover:text-[#F9F9F9]'
+                    ? 'bg-[#292C2F] text-[#F0F0ED] shadow-sm font-semibold border-l-2 border-[#E05252]'
+                    : 'text-[#A5A5A0] hover:bg-[#292C2F]/50 hover:text-[#F0F0ED]'
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Icon
                     size={16}
-                    className={`shrink-0 ${isActive ? 'text-[#F9F9F9]' : 'text-current'}`}
+                    className={`shrink-0 ${isActive ? 'text-[#E05252]' : 'text-current'}`}
                   />
                   {!isCollapsed && <span className="truncate">{item.label}</span>}
                 </div>
@@ -135,15 +142,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {item.badge && (
                   isCollapsed ? (
                     <span
-                      className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#FF6E42]"
+                      className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#E05252]"
                       title={item.badge}
                     />
                   ) : (
                     <span
-                      className={`text-[9px] font-mono px-1.5 py-0.2 rounded border shrink-0 ${
+                      className={`text-[9px] font-mono px-1.5 py-0.5 rounded border shrink-0 ${
                         isActive
-                          ? 'bg-[#092634] text-[#F9F9F9] border-[#F9F9F9]/20'
-                          : 'bg-[#090B0D] text-[#F9F9F9]/40 border-[#F9F9F9]/10'
+                          ? 'bg-[#111213] text-[#E05252] border-[#E05252]/40 font-semibold'
+                          : 'bg-[#111213] text-[#A5A5A0]/60 border-[#292C2F]'
                       }`}
                     >
                       {item.badge}
@@ -159,34 +166,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Bottom Environment Status & Collapse Trigger */}
       <div className={isCollapsed ? 'px-1.5 space-y-2' : 'px-3 space-y-2'}>
         {isCollapsed ? (
-          <div className="flex flex-col items-center gap-1.5 pt-2 border-t border-[#F9F9F9]/10">
+          <div className="flex flex-col items-center gap-1.5 pt-2 border-t border-[#292C2F]">
             <div
               title="Process Isolation: Active"
-              className="p-2 rounded bg-[#090B0D] border border-[#F9F9F9]/10 text-[#004E72]"
+              className="p-2 rounded bg-[#111213] border border-[#292C2F] text-[#E05252]"
             >
               <ShieldCheck size={14} />
             </div>
             {onToggleCollapse && (
-              <button
-                onClick={onToggleCollapse}
-                title="Expand Sidebar"
-                className="w-full flex items-center justify-center p-2 rounded text-[#F9F9F9]/50 hover:text-[#F9F9F9] hover:bg-[#090B0D]/50 transition-all cursor-pointer"
-              >
-                <ChevronRight size={16} />
-              </button>
+              <Magnet padding={12} disabled={false}>
+                <button
+                  onClick={onToggleCollapse}
+                  title="Expand Sidebar"
+                  aria-label="Expand Sidebar"
+                  className="w-full flex items-center justify-center p-2 rounded text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all cursor-pointer"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </Magnet>
             )}
           </div>
         ) : (
           <>
-            <div className="p-2.5 rounded-lg bg-[#090B0D] border border-[#F9F9F9]/10 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] text-[#F9F9F9]/70">
-                <div className="flex items-center gap-1.5 font-medium">
-                  <ShieldCheck size={13} className="text-[#004E72]" />
+            <div className="p-2.5 rounded-lg bg-[#111213] border border-[#292C2F] space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] text-[#A5A5A0]">
+                <div className="flex items-center gap-1.5 font-medium text-[#F0F0ED]">
+                  <ShieldCheck size={13} className="text-[#E05252]" />
                   <span>Process Isolation</span>
                 </div>
-                <span className="text-[10px] font-mono text-[#F9F9F9]/40">Active</span>
+                <span className="text-[10px] font-mono text-[#E05252]">Active</span>
               </div>
-              <div className="text-[10px] text-[#F9F9F9]/40 font-mono leading-tight">
+              <div className="text-[10px] text-[#A5A5A0] font-mono leading-tight">
                 Desktop Commander Remote
               </div>
             </div>
@@ -194,7 +204,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {onToggleCollapse && (
               <button
                 onClick={onToggleCollapse}
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded text-xs text-[#F9F9F9]/50 hover:text-[#F9F9F9] hover:bg-[#090B0D]/50 transition-all cursor-pointer font-mono text-[11px]"
+                aria-label="Collapse Rail"
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded text-xs text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all cursor-pointer font-mono text-[11px]"
               >
                 <ChevronLeft size={14} />
                 <span>Collapse Rail</span>

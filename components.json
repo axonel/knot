@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/renderer/styles/index.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide-react",
+  "aliases": {
+    "components": "@/renderer/components",
+    "utils": "@/renderer/utils",
+    "ui": "@/renderer/components/ui",
+    "lib": "@/renderer/lib",
+    "hooks": "@/renderer/hooks"
+  },
+  "registries": {
+    "@react-bits": "https://reactbits.dev/r/{name}.json"
+  }
+}

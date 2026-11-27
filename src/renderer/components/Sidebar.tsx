@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 title={isCollapsed ? `${item.label}${item.badge ? ` (${item.badge})` : ''}` : undefined}
                 className={`w-full flex items-center ${
                   isCollapsed ? 'justify-center p-2.5' : 'justify-between px-2.5 py-2'
-                } rounded-lg text-xs font-medium transition-all cursor-pointer relative ${
+                } rounded-lg text-xs font-medium transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                   isActive
                     ? 'bg-[#004E72] text-[#F9F9F9] shadow-sm font-semibold'
                     : 'text-[#F9F9F9]/70 hover:bg-[#090B0D]/50 hover:text-[#F9F9F9]'

@@ -18,9 +18,18 @@ import { GitDiffViewer } from './GitDiffViewer.js';
 interface AntigravityExecutionPanelProps {
   session: Session | null;
   onRefresh?: () => void;
+  selectedTaskId?: string | null;
+  onSelectTaskId?: (taskId: string | null) => void;
+  onRegisterApproveHandler?: (handler: ((taskId: string) => Promise<void>) | null) => void;
 }
 
-export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps> = ({ session }) => {
+export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps> = ({
+  session,
+  onRefresh,
+  selectedTaskId,
+  onSelectTaskId,
+  onRegisterApproveHandler,
+}) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [status, setStatus] = useState<AntigravityStatus | null>(null);
   const [runningTask, setRunningTask] = useState<Task | null>(null);
@@ -97,12 +106,20 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
     try {
       await window.knotApi.orchestration.approveTask(taskId);
       await loadData();
+      onRefresh?.();
     } catch (err) {
       console.error('[AntigravityExecutionPanel] Failed to approve task:', err);
     } finally {
       setActionLoading(null);
     }
   };
+
+  useEffect(() => {
+    onRegisterApproveHandler?.(handleApprove);
+    return () => {
+      onRegisterApproveHandler?.(null);
+    };
+  }, [onRegisterApproveHandler, session?.id]);
 
   const handleReject = async (taskId: string) => {
     if (!window.knotApi) return;
@@ -187,7 +204,10 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
   };
 
   const awaitingApprovalTask = tasks.find((t) => t.status === 'awaiting_approval');
-  const highlightedTask = runningTask || awaitingApprovalTask;
+  const highlightedTask =
+    (selectedTaskId ? tasks.find((t) => t.id === selectedTaskId) : null) ||
+    awaitingApprovalTask ||
+    runningTask;
 
   return (
     <div className="flex flex-col h-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-xl overflow-hidden">
@@ -259,10 +279,15 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                 <button
                   onClick={() => handleApprove(highlightedTask.id)}
                   disabled={actionLoading === highlightedTask.id}
-                  className="px-3 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-semibold flex items-center gap-1 transition-all"
+                  title="Approve & Dispatch Task (Ctrl+Enter)"
+                  aria-label="Approve and Dispatch Task (Ctrl+Enter)"
+                  className="px-3 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-semibold flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] cursor-pointer"
                 >
                   <CheckCircle2 size={12} />
                   <span>Approve & Dispatch</span>
+                  <kbd className="hidden sm:inline-flex px-1.5 py-0.2 rounded text-[10px] font-mono bg-[#090B0D]/60 border border-[#F9F9F9]/20 text-[#F9F9F9]/70">
+                    Ctrl+Enter
+                  </kbd>
                 </button>
                 <button
                   onClick={() => handleReject(highlightedTask.id)}
@@ -343,11 +368,18 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
               </p>
             </div>
           ) : (
-            tasks.map((task) => (
-              <div
-                key={task.id}
-                className="p-2.5 rounded-lg bg-[#092634]/40 border border-[#F9F9F9]/10 space-y-1.5 transition-all hover:border-[#004E72]/40"
-              >
+            tasks.map((task) => {
+              const isSelected = selectedTaskId === task.id || (!selectedTaskId && highlightedTask?.id === task.id);
+              return (
+                <div
+                  key={task.id}
+                  onClick={() => onSelectTaskId?.(task.id)}
+                  className={`p-2.5 rounded-lg bg-[#092634]/40 border space-y-1.5 transition-all cursor-pointer ${
+                    isSelected
+                      ? 'border-[#FF6E42] bg-[#004E72]/20 shadow-xs'
+                      : 'border-[#F9F9F9]/10 hover:border-[#004E72]/40'
+                  }`}
+                >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="font-semibold text-xs text-[#F9F9F9] truncate">
@@ -381,7 +413,8 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                   )}
                 </div>
               </div>
-            ))
+            );
+          })
           )
         ) : (
           /* Live Stream view */

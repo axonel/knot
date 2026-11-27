@@ -36,6 +36,22 @@ export const WorkspaceSidebarTree: React.FC<WorkspaceSidebarTreeProps> = ({
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
     new Set(projects.map((p) => p.id))
   );
+  const seenProjectsRef = React.useRef<Set<string>>(new Set());
+
+  React.useEffect(() => {
+    setExpandedProjects((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const p of projects) {
+        if (!seenProjectsRef.current.has(p.id)) {
+          seenProjectsRef.current.add(p.id);
+          next.add(p.id);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [projects]);
 
   const toggleExpand = (projectId: string) => {
     setExpandedProjects((prev) => {

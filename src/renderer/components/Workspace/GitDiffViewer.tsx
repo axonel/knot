@@ -68,6 +68,18 @@ export const GitDiffViewer: React.FC<GitDiffViewerProps> = ({ taskId, onClose })
     };
   }, [taskId]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [onClose]);
+
   const handleCopyCommit = (hash: string) => {
     navigator.clipboard.writeText(hash);
     setCopiedCommit(true);

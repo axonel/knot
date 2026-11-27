@@ -7,11 +7,13 @@ import { BridgeManager } from './components/Bridge/BridgeManager.js';
 import { AntigravityWorkspace } from './components/Antigravity/AntigravityWorkspace.js';
 import { CollaborationWorkspace } from './components/Workspace/CollaborationWorkspace.js';
 import { Layers } from 'lucide-react';
+import { isEditableTarget } from './utils/keyboardUtils.js';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState('workspace');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [workspaceCenterView, setWorkspaceCenterView] = useState<'conversation' | 'context' | 'timeline'>('conversation');
 
   useEffect(() => {
     const handleResize = () => {
@@ -22,6 +24,27 @@ export const App: React.FC = () => {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleGlobalNav = (e: KeyboardEvent) => {
+      if (e.repeat || isEditableTarget(e.target)) return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+      if (e.key === '1') {
+        setWorkspaceCenterView('conversation');
+        setCurrentTab('workspace');
+      } else if (e.key === '2') {
+        setWorkspaceCenterView('context');
+        setCurrentTab('workspace');
+      } else if (e.key === '3') {
+        setWorkspaceCenterView('timeline');
+        setCurrentTab('workspace');
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalNav);
+    return () => window.removeEventListener('keydown', handleGlobalNav);
   }, []);
 
   return (
@@ -44,6 +67,8 @@ export const App: React.FC = () => {
             <CollaborationWorkspace
               isFocusMode={isFocusMode}
               onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
+              centerView={workspaceCenterView}
+              onCenterViewChange={setWorkspaceCenterView}
             />
           ) : currentTab === 'projects' ? (
             <section>

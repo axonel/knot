@@ -112,6 +112,21 @@ export const UnifiedTimelinePanel: React.FC<UnifiedTimelinePanelProps> = ({
       .catch((err) => console.error('[UnifiedTimelinePanel] Error loading tasks:', err));
   }, [session?.id]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showExportModal) {
+          e.stopPropagation();
+          e.preventDefault();
+          setShowExportModal(false);
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [showExportModal]);
+
   // Load events or trace based on view level and selected task
   const loadTimelineData = useCallback(async () => {
     if (!window.knotApi?.events) return;

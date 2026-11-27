@@ -14,6 +14,7 @@ import {
   Maximize2,
   Minimize2,
   X,
+  Keyboard,
 } from 'lucide-react';
 import type {
   Project,
@@ -31,15 +32,21 @@ import { ContextVaultPanel } from './ContextVaultPanel.js';
 import { UnifiedTimelinePanel } from './UnifiedTimelinePanel.js';
 import { ReliabilityModal } from './ReliabilityModal.js';
 import { SecurityModal } from './SecurityModal.js';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal.js';
+import { isEditableTarget } from '../../utils/keyboardUtils.js';
 
 interface CollaborationWorkspaceProps {
   isFocusMode?: boolean;
   onToggleFocusMode?: () => void;
+  centerView?: 'conversation' | 'context' | 'timeline';
+  onCenterViewChange?: (view: 'conversation' | 'context' | 'timeline') => void;
 }
 
 export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
   isFocusMode: externalFocusMode,
   onToggleFocusMode: externalToggleFocusMode,
+  centerView: externalCenterView,
+  onCenterViewChange: externalCenterViewChange,
 }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [sessionsByProject, setSessionsByProject] = useState<Map<string, Session[]>>(new Map());
@@ -90,9 +97,34 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
   const [compactDrawer, setCompactDrawer] = useState<'none' | 'projects' | 'activity' | 'execution'>('none');
 
   // View state: conversation vs context vault vs unified timeline
-  const [centerView, setCenterView] = useState<'conversation' | 'context' | 'timeline'>('conversation');
+  const [internalCenterView, setInternalCenterView] = useState<'conversation' | 'context' | 'timeline'>('conversation');
+  const centerView = externalCenterView !== undefined ? externalCenterView : internalCenterView;
+  const setCenterView = useCallback((view: 'conversation' | 'context' | 'timeline') => {
+    if (externalCenterViewChange) {
+      externalCenterViewChange(view);
+    } else {
+      setInternalCenterView(view);
+    }
+  }, [externalCenterViewChange]);
+
   const [selectedTimelineTaskId, setSelectedTimelineTaskId] = useState<string | null>(null);
   const [unresolvedConflictsCount, setUnresolvedConflictsCount] = useState(0);
+
+  // Keyboard Shortcuts modal state
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+
+  // Task selection & approval refs/state for Ctrl+Enter
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [isApprovingTask, setIsApprovingTask] = useState(false);
+  const executionApproveHandlerRef = useRef<((taskId: string) => Promise<void>) | null>(null);
+
+  // Focus restoration refs for closing overlays and drawers
+  const activityToggleBtnRef = useRef<HTMLButtonElement | null>(null);
+  const executionToggleBtnRef = useRef<HTMLButtonElement | null>(null);
+  const projectsToggleBtnRef = useRef<HTMLButtonElement | null>(null);
+  const shortcutsBtnRef = useRef<HTMLButtonElement | null>(null);
+  const reliabilityBtnRef = useRef<HTMLButtonElement | null>(null);
+  const securityBtnRef = useRef<HTMLButtonElement | null>(null);
 
   // Modals
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -252,6 +284,161 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
     };
   }, [loadWorkspaceData, triggerDebouncedLoad]);
 
+  // Active session tasks and current effective task selection
+  const activeSessionTasks = selectedSession ? tasksBySession.get(selectedSession.id) || [] : [];
+  const effectiveSelectedTaskId =
+    selectedTaskId && activeSessionTasks.some((t) => t.id === selectedTaskId)
+      ? selectedTaskId
+      : activeSessionTasks.find((t) => t.status === 'awaiting_approval')?.id ||
+        activeSessionTasks[0]?.id ||
+        null;
+
+  // Task approval handler for Ctrl+Enter
+  const handleApproveSelectedTask = useCallback(async () => {
+    if (isApprovingTask || !effectiveSelectedTaskId) return;
+
+    const targetTask = activeSessionTasks.find((t) => t.id === effectiveSelectedTaskId);
+    // Strict safety invariant: only approve tasks that are genuinely awaiting approval
+    if (!targetTask || targetTask.status !== 'awaiting_approval') {
+      return;
+    }
+
+    setIsApprovingTask(true);
+    try {
+      if (executionApproveHandlerRef.current) {
+        await executionApproveHandlerRef.current(targetTask.id);
+      } else if (window.knotApi) {
+        await window.knotApi.orchestration.approveTask(targetTask.id);
+        await loadWorkspaceData();
+      }
+    } catch (err) {
+      console.error('[CollaborationWorkspace] Error approving task via keyboard shortcut:', err);
+    } finally {
+      setIsApprovingTask(false);
+    }
+  }, [isApprovingTask, effectiveSelectedTaskId, activeSessionTasks, loadWorkspaceData]);
+
+  // Global Keyboard Shortcuts Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent key-repeat from triggering duplicate operations
+      if (e.repeat) return;
+
+      // Esc closes highest-priority open modal, diff viewer or drawer
+      if (e.key === 'Escape') {
+        if (showShortcutsModal) {
+          e.preventDefault();
+          setShowShortcutsModal(false);
+          shortcutsBtnRef.current?.focus();
+          return;
+        }
+        if (showNewSessionModal) {
+          e.preventDefault();
+          setShowNewSessionModal(false);
+          return;
+        }
+        if (showNewProjectModal) {
+          e.preventDefault();
+          setShowNewProjectModal(false);
+          return;
+        }
+        if (showReliabilityModal) {
+          e.preventDefault();
+          setShowReliabilityModal(false);
+          reliabilityBtnRef.current?.focus();
+          return;
+        }
+        if (showSecurityModal) {
+          e.preventDefault();
+          setShowSecurityModal(false);
+          securityBtnRef.current?.focus();
+          return;
+        }
+        if (compactDrawer !== 'none') {
+          e.preventDefault();
+          const prevDrawer = compactDrawer;
+          setCompactDrawer('none');
+          if (prevDrawer === 'projects') projectsToggleBtnRef.current?.focus();
+          else if (prevDrawer === 'activity') activityToggleBtnRef.current?.focus();
+          else if (prevDrawer === 'execution') executionToggleBtnRef.current?.focus();
+          return;
+        }
+        return;
+      }
+
+      // Input guard: Do not trigger shortcuts while typing in inputs, textareas, or editors
+      if (isEditableTarget(e.target)) {
+        return;
+      }
+
+      // Ctrl + Enter: Approve currently selected task if awaiting approval
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleApproveSelectedTask();
+        return;
+      }
+
+      // Ctrl + B: Toggle ChatGPT Planner / Activity panel or drawer
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'b' || e.key === 'B')) {
+        e.preventDefault();
+        if (isCompact || isFocusMode) {
+          setCompactDrawer((prev) => {
+            const next = prev === 'activity' ? 'none' : 'activity';
+            if (next === 'none') activityToggleBtnRef.current?.focus();
+            return next;
+          });
+        } else {
+          setShowLeftActivity((prev) => !prev);
+        }
+        return;
+      }
+
+      // Disallow single-key shortcuts when modifier keys are pressed
+      if (e.ctrlKey || e.altKey || e.metaKey) {
+        return;
+      }
+
+      // Single-key navigation shortcuts
+      if (e.key === '1') {
+        e.preventDefault();
+        setCenterView('conversation');
+        return;
+      }
+
+      if (e.key === '2') {
+        e.preventDefault();
+        setCenterView('context');
+        return;
+      }
+
+      if (e.key === '3') {
+        e.preventDefault();
+        setCenterView('timeline');
+        return;
+      }
+
+      if (e.key === '?') {
+        e.preventDefault();
+        setShowShortcutsModal((prev) => !prev);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isCompact,
+    isFocusMode,
+    showShortcutsModal,
+    showNewSessionModal,
+    showNewProjectModal,
+    showReliabilityModal,
+    showSecurityModal,
+    compactDrawer,
+    handleApproveSelectedTask,
+    setCenterView,
+  ]);
+
   // Handle Project Creation Modal
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -318,6 +505,8 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
     <div className="flex h-full w-full overflow-hidden bg-[#090B0D] relative">
       {/* Workspace Project Tree: Inline in Wide Mode, Slide-Over Drawer in Compact or Focus Mode */}
       <div
+        aria-hidden={isCompact || isFocusMode ? compactDrawer !== 'projects' : !showProjectTree}
+        inert={(isCompact || isFocusMode ? compactDrawer !== 'projects' : !showProjectTree) ? true : undefined}
         className={
           isCompact || isFocusMode
             ? `absolute inset-y-0 left-0 z-40 w-72 max-w-[85vw] bg-[#092634] border-r border-[#F9F9F9]/15 shadow-2xl flex flex-col transition-transform duration-200 ease-out ${
@@ -377,6 +566,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
 
             {/* Project Tree Toggle Button */}
             <button
+              ref={projectsToggleBtnRef}
               onClick={() => {
                 if (isCompact || isFocusMode) {
                   setCompactDrawer((prev) => (prev === 'projects' ? 'none' : 'projects'));
@@ -391,7 +581,8 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
                   ? 'Collapse Projects Panel'
                   : 'Expand Projects Panel'
               }
-              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer border ${
+              aria-label="Projects and Sessions"
+              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                 (isCompact || isFocusMode ? compactDrawer === 'projects' : showProjectTree)
                   ? 'bg-[#004E72] text-[#F9F9F9] border-[#004E72] font-semibold'
                   : 'bg-[#090B0D] text-[#F9F9F9]/70 border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
@@ -421,7 +612,9 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
           <div className="flex items-center bg-[#090B0D] p-0.5 rounded-lg border border-[#F9F9F9]/10">
             <button
               onClick={() => setCenterView('conversation')}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
+              title="Conversation View (Shortcut: 1)"
+              aria-label="Conversation View (1)"
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                 centerView === 'conversation'
                   ? 'bg-[#004E72] text-[#F9F9F9] font-bold shadow-xs'
                   : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
@@ -431,7 +624,9 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
             </button>
             <button
               onClick={() => setCenterView('context')}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              title="Context Vault (Shortcut: 2)"
+              aria-label="Context Vault (2)"
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                 centerView === 'context'
                   ? 'bg-[#004E72] text-[#F9F9F9] font-bold shadow-xs'
                   : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
@@ -448,7 +643,9 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
             </button>
             <button
               onClick={() => setCenterView('timeline')}
-              className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              title="Unified Timeline (Shortcut: 3)"
+              aria-label="Unified Timeline (3)"
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                 centerView === 'timeline'
                   ? 'bg-[#004E72] text-[#F9F9F9] font-bold shadow-xs'
                   : 'text-[#F9F9F9]/60 hover:text-[#F9F9F9]'
@@ -463,6 +660,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
           <div className="flex items-center gap-1.5 shrink-0">
             {/* Activity Toggle */}
             <button
+              ref={activityToggleBtnRef}
               onClick={() => {
                 if (isCompact || isFocusMode) {
                   setCompactDrawer((prev) => (prev === 'activity' ? 'none' : 'activity'));
@@ -471,7 +669,8 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
                 }
               }}
               title="Toggle ChatGPT Planner / Activity"
-              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer ${
+              aria-label="Toggle ChatGPT Planner / Activity (Ctrl+B)"
+              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                 (isCompact || isFocusMode ? compactDrawer === 'activity' : showLeftActivity)
                   ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
                   : 'bg-[#090B0D] text-[#F9F9F9]/60 border border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
@@ -483,6 +682,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
 
             {/* Execution Toggle */}
             <button
+              ref={executionToggleBtnRef}
               onClick={() => {
                 if (isCompact || isFocusMode) {
                   setCompactDrawer((prev) => (prev === 'execution' ? 'none' : 'execution'));
@@ -491,7 +691,8 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
                 }
               }}
               title="Toggle Antigravity Worker / Execution"
-              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer ${
+              aria-label="Toggle Antigravity Worker / Execution"
+              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                 (isCompact || isFocusMode ? compactDrawer === 'execution' : showRightExecution)
                   ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
                   : 'bg-[#090B0D] text-[#F9F9F9]/60 border border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
@@ -505,7 +706,8 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
             <button
               onClick={toggleFocusMode}
               title={isFocusMode ? 'Exit Focus Mode' : 'Focus Mode: Maximize Central Workspace'}
-              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer ${
+              aria-label="Toggle Focus Mode"
+              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                 isFocusMode
                   ? 'bg-[#FF6E42] text-[#090B0D] font-bold shadow-xs'
                   : 'bg-[#090B0D] text-[#F9F9F9]/60 border border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
@@ -515,11 +717,24 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               <span className="hidden md:inline">{isFocusMode ? 'Focus Active' : 'Focus'}</span>
             </button>
 
+            {/* Keyboard Shortcuts Reference Button */}
+            <button
+              ref={shortcutsBtnRef}
+              onClick={() => setShowShortcutsModal(true)}
+              title="Keyboard Shortcuts Reference (?)"
+              aria-label="Keyboard Shortcuts Reference (?)"
+              className="px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all bg-[#090B0D] text-[#F9F9F9]/80 border border-[#F9F9F9]/10 hover:text-[#F9F9F9] hover:border-[#F9F9F9]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] cursor-pointer font-mono"
+            >
+              <Keyboard size={13} className="text-[#FF6E42]" />
+              <span className="hidden lg:inline text-[10px] text-[#F9F9F9]/60">?</span>
+            </button>
+
             {/* Diagnostic Button */}
             <button
               onClick={() => setShowDiagnostic((v) => !v)}
               title="Toggle Directory Access Diagnostic"
-              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer ${
+              aria-label="Toggle Directory Access Diagnostic"
+              className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] ${
                 showDiagnostic
                   ? 'bg-[#004E72] text-[#F9F9F9] font-bold'
                   : 'bg-[#090B0D] text-[#F9F9F9]/60 border border-[#F9F9F9]/10 hover:text-[#F9F9F9]'
@@ -531,18 +746,22 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
 
             {/* Reliability Modal Button */}
             <button
+              ref={reliabilityBtnRef}
               onClick={() => setShowReliabilityModal(true)}
               title="Runtime Reliability & Recovery Diagnostics"
-              className="p-1.5 rounded text-xs font-medium flex items-center transition-all bg-[#090B0D] text-[#F9F9F9]/80 border border-[#F9F9F9]/10 hover:text-[#F9F9F9] hover:border-[#F9F9F9]/30 cursor-pointer"
+              aria-label="Runtime Reliability and Recovery Diagnostics"
+              className="p-1.5 rounded text-xs font-medium flex items-center transition-all bg-[#090B0D] text-[#F9F9F9]/80 border border-[#F9F9F9]/10 hover:text-[#F9F9F9] hover:border-[#F9F9F9]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] cursor-pointer"
             >
               <Wrench size={12} className="text-[#FF6E42]" />
             </button>
 
             {/* Security Modal Button */}
             <button
+              ref={securityBtnRef}
               onClick={() => setShowSecurityModal(true)}
               title="Security Boundaries & Threat Policy"
-              className="p-1.5 rounded text-xs font-medium flex items-center transition-all bg-[#090B0D] text-[#F9F9F9]/80 border border-[#F9F9F9]/10 hover:text-[#F9F9F9] hover:border-[#F9F9F9]/30 cursor-pointer"
+              aria-label="Security Boundaries and Threat Policy"
+              className="p-1.5 rounded text-xs font-medium flex items-center transition-all bg-[#090B0D] text-[#F9F9F9]/80 border border-[#F9F9F9]/10 hover:text-[#F9F9F9] hover:border-[#F9F9F9]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] cursor-pointer"
             >
               <ShieldAlert size={12} className="text-[#FF6E42]" />
             </button>
@@ -551,7 +770,8 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
             <button
               onClick={loadWorkspaceData}
               title="Refresh Workspace Data"
-              className="p-1.5 rounded bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] hover:bg-[#004E72]/20 transition-all text-xs cursor-pointer"
+              aria-label="Refresh Workspace Data"
+              className="p-1.5 rounded bg-[#090B0D] border border-[#F9F9F9]/10 text-[#F9F9F9]/70 hover:text-[#F9F9F9] hover:bg-[#004E72]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] transition-all text-xs cursor-pointer"
             >
               <RefreshCw size={12} />
             </button>
@@ -623,6 +843,8 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
 
           {/* Left Panel: ChatGPT Planner & Activity */}
           <div
+            aria-hidden={isCompact || isFocusMode ? compactDrawer !== 'activity' : !showLeftActivity}
+            inert={(isCompact || isFocusMode ? compactDrawer !== 'activity' : !showLeftActivity) ? true : undefined}
             className={
               isCompact || isFocusMode
                 ? `absolute inset-y-0 left-0 z-40 w-80 max-w-[85vw] bg-[#092634] border-r border-[#F9F9F9]/15 shadow-2xl flex flex-col transition-transform duration-200 ease-out ${
@@ -689,6 +911,8 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
 
           {/* Right Panel: Antigravity Execution Worker */}
           <div
+            aria-hidden={isCompact || isFocusMode ? compactDrawer !== 'execution' : !showRightExecution}
+            inert={(isCompact || isFocusMode ? compactDrawer !== 'execution' : !showRightExecution) ? true : undefined}
             className={
               isCompact || isFocusMode
                 ? `absolute inset-y-0 right-0 z-40 w-84 max-w-[90vw] bg-[#092634] border-l border-[#F9F9F9]/15 shadow-2xl flex flex-col transition-transform duration-200 ease-out ${
@@ -718,6 +942,11 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
               <AntigravityExecutionPanel
                 session={selectedSession}
                 onRefresh={loadWorkspaceData}
+                selectedTaskId={effectiveSelectedTaskId}
+                onSelectTaskId={setSelectedTaskId}
+                onRegisterApproveHandler={(handler) => {
+                  executionApproveHandlerRef.current = handler;
+                }}
               />
             </div>
           </div>
@@ -846,6 +1075,15 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
         onProjectUpdated={(updated) => {
           setSelectedProject(updated);
           setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        }}
+      />
+
+      {/* Keyboard Shortcuts Reference Modal */}
+      <KeyboardShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => {
+          setShowShortcutsModal(false);
+          shortcutsBtnRef.current?.focus();
         }}
       />
     </div>

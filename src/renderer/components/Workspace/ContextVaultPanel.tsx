@@ -149,6 +149,33 @@ export const ContextVaultPanel: React.FC<ContextVaultPanelProps> = ({
     }
   }, [selectedDocId]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showCreateModal) {
+          e.stopPropagation();
+          e.preventDefault();
+          setShowCreateModal(false);
+          return;
+        }
+        if (showEditModal) {
+          e.stopPropagation();
+          e.preventDefault();
+          setShowEditModal(false);
+          return;
+        }
+        if (selectedRevisionNum !== null) {
+          e.stopPropagation();
+          e.preventDefault();
+          setSelectedRevisionNum(null);
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [showCreateModal, showEditModal, selectedRevisionNum]);
+
   // Filtered documents
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {

@@ -5,6 +5,7 @@ import {
   Plus,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   ListTodo,
 } from 'lucide-react';
 import type { Project, Session, Task } from '../../../shared/types.js';
@@ -18,6 +19,7 @@ interface WorkspaceSidebarTreeProps {
   onSelectSession: (project: Project, session: Session) => void;
   onCreateProject: () => void;
   onCreateSession: (project: Project) => void;
+  onCollapse?: () => void;
 }
 
 export const WorkspaceSidebarTree: React.FC<WorkspaceSidebarTreeProps> = ({
@@ -29,6 +31,7 @@ export const WorkspaceSidebarTree: React.FC<WorkspaceSidebarTreeProps> = ({
   onSelectSession,
   onCreateProject,
   onCreateSession,
+  onCollapse,
 }) => {
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(
     new Set(projects.map((p) => p.id))
@@ -53,14 +56,25 @@ export const WorkspaceSidebarTree: React.FC<WorkspaceSidebarTreeProps> = ({
         <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#F9F9F9]/60">
           Projects & Sessions
         </span>
-        <button
-          onClick={onCreateProject}
-          title="Create New Project"
-          className="p-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] transition-all text-xs flex items-center gap-1"
-        >
-          <Plus size={12} />
-          <span className="text-[10px] pr-0.5">Project</span>
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onCreateProject}
+            title="Create New Project"
+            className="p-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] transition-all text-xs flex items-center gap-1 cursor-pointer"
+          >
+            <Plus size={12} />
+            <span className="text-[10px] pr-0.5">Project</span>
+          </button>
+          {onCollapse && (
+            <button
+              onClick={onCollapse}
+              title="Collapse Projects Panel"
+              className="p-1 rounded text-[#F9F9F9]/50 hover:text-[#F9F9F9] hover:bg-[#090B0D]/50 transition-all cursor-pointer"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Projects List */}

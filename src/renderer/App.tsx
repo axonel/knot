@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar.js';
 import { Header } from './components/Header.js';
 import { ProcessManager } from './components/DesktopCommander/ProcessManager.js';
@@ -10,19 +10,41 @@ import { Layers } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [currentTab, setCurrentTab] = useState('workspace');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      // Auto-collapse sidebar when screen width narrows below 1100px
+      if (window.innerWidth < 1100) {
+        setIsSidebarCollapsed(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#090B0D] text-[#F9F9F9] font-sans">
       {/* Navigation Sidebar */}
-      <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
+      <Sidebar
+        currentTab={currentTab}
+        onTabChange={setCurrentTab}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+        isFocusMode={isFocusMode}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header />
+        {!isFocusMode && <Header />}
 
         <main className={`flex-1 overflow-hidden ${currentTab === 'workspace' ? 'p-0 flex flex-col' : 'overflow-y-auto p-6 space-y-6'}`}>
           {currentTab === 'workspace' ? (
-            <CollaborationWorkspace />
+            <CollaborationWorkspace
+              isFocusMode={isFocusMode}
+              onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
+            />
           ) : currentTab === 'projects' ? (
             <section>
               <ProjectManager />
@@ -56,7 +78,7 @@ export const App: React.FC = () => {
                     <span className="text-[#004E72] font-semibold block mb-0.5">Process Isolation</span>
                     Strict signal handling and PID tracking prevent orphan processes.
                   </div>
-                  <div className="p-2.5 rounded-lg bg-[#090B0D] border border-[#FF6E42] font-semibold block mb-0.5">
+                  <div className="p-2.5 rounded-lg bg-[#090B0D] border border-[#FF6E42]">
                     <span className="text-[#FF6E42] font-semibold block mb-0.5">Log Sanitization</span>
                     All credentials and authorization tokens are scrubbed.
                   </div>

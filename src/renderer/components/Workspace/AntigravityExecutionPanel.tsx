@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import type { Task, Session, AntigravityStatus, AntigravityUiEvent } from '../../../shared/types.js';
 import { GitDiffViewer } from './GitDiffViewer.js';
+import { TaskApprovalPreview } from './TaskApprovalPreview.js';
+import { useTaskUndoManager, type PendingTaskAction } from '../../hooks/useTaskUndoManager.js';
 
 interface AntigravityExecutionPanelProps {
   session: Session | null;
@@ -21,6 +23,11 @@ interface AntigravityExecutionPanelProps {
   selectedTaskId?: string | null;
   onSelectTaskId?: (taskId: string | null) => void;
   onRegisterApproveHandler?: (handler: ((taskId: string) => Promise<void>) | null) => void;
+  // Safety guardrail props from parent workspace
+  scheduleUndoAction?: (task: Task, actionType: 'cancel' | 'reject') => void;
+  undoAction?: (taskId: string) => void;
+  isTaskPending?: (taskId: string) => boolean;
+  getPendingAction?: (taskId: string) => PendingTaskAction | undefined;
 }
 
 export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps> = ({
@@ -29,6 +36,10 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
   selectedTaskId,
   onSelectTaskId,
   onRegisterApproveHandler,
+  scheduleUndoAction,
+  undoAction,
+  isTaskPending,
+  getPendingAction,
 }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [status, setStatus] = useState<AntigravityStatus | null>(null);
@@ -58,6 +69,34 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
       console.error('[AntigravityExecutionPanel] Failed to load data:', err);
     }
   };
+
+  // Local fallback undo manager if parent did not provide one (e.g. standalone test)
+  const localUndoManager = useTaskUndoManager(async (taskId, actionType) => {
+    if (!window.knotApi) return;
+    try {
+      // Revalidate task status before executing
+      const taskList = session ? await window.knotApi.orchestration.listTasks(session.id) : [];
+      const currentTask = taskList.find((t) => t.id === taskId);
+      if (currentTask && ['succeeded', 'failed', 'cancelled'].includes(currentTask.status)) {
+        return;
+      }
+
+      if (actionType === 'cancel') {
+        await window.knotApi.orchestration.cancelTask(taskId, 'Cancelled by user');
+      } else {
+        await window.knotApi.orchestration.rejectTask(taskId, 'Rejected by user');
+      }
+      await loadData();
+      onRefresh?.();
+    } catch (err) {
+      console.error(`[AntigravityExecutionPanel] Deferred ${actionType} failed:`, err);
+    }
+  });
+
+  const effectiveScheduleUndo = scheduleUndoAction || localUndoManager.scheduleAction;
+  const effectiveUndoAction = undoAction || localUndoManager.undoAction;
+  const effectiveIsTaskPending = isTaskPending || localUndoManager.isTaskPending;
+  const effectiveGetPendingAction = getPendingAction || localUndoManager.getPendingAction;
 
   const orchDebounceTimer = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -102,6 +141,12 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
 
   const handleApprove = async (taskId: string) => {
     if (!window.knotApi) return;
+    // Safety check: Cannot approve task if it is scheduled for rejection
+    const pending = effectiveGetPendingAction(taskId);
+    if (pending && pending.actionType === 'reject') {
+      return;
+    }
+
     setActionLoading(taskId);
     try {
       await window.knotApi.orchestration.approveTask(taskId);
@@ -119,32 +164,18 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
     return () => {
       onRegisterApproveHandler?.(null);
     };
-  }, [onRegisterApproveHandler, session?.id]);
+  }, [onRegisterApproveHandler, session?.id, effectiveGetPendingAction]);
 
-  const handleReject = async (taskId: string) => {
-    if (!window.knotApi) return;
-    setActionLoading(taskId);
-    try {
-      await window.knotApi.orchestration.rejectTask(taskId, 'Rejected by user');
-      await loadData();
-    } catch (err) {
-      console.error('[AntigravityExecutionPanel] Failed to reject task:', err);
-    } finally {
-      setActionLoading(null);
-    }
+  const handleReject = (targetTask: Task) => {
+    // 3-second undo grace period
+    if (effectiveIsTaskPending(targetTask.id)) return;
+    effectiveScheduleUndo(targetTask, 'reject');
   };
 
-  const handleCancel = async (taskId: string) => {
-    if (!window.knotApi) return;
-    setActionLoading(taskId);
-    try {
-      await window.knotApi.orchestration.cancelTask(taskId, 'Cancelled by user');
-      await loadData();
-    } catch (err) {
-      console.error('[AntigravityExecutionPanel] Failed to cancel task:', err);
-    } finally {
-      setActionLoading(null);
-    }
+  const handleCancel = (targetTask: Task) => {
+    // 3-second undo grace period
+    if (effectiveIsTaskPending(targetTask.id)) return;
+    effectiveScheduleUndo(targetTask, 'cancel');
   };
 
   const handleRetry = async (taskId: string) => {
@@ -160,7 +191,25 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
     }
   };
 
-  const getStatusBadge = (tStatus: string, approvalStatus?: string | null) => {
+  const getStatusBadge = (task: Task) => {
+    // Check pending undo action first
+    if (effectiveIsTaskPending(task.id)) {
+      const pending = effectiveGetPendingAction(task.id);
+      const isCancel = pending?.actionType === 'cancel';
+      return (
+        <span
+          data-testid={`status-badge-pending-${task.id}`}
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#FF6E42]/20 text-[#FF6E42] border border-[#FF6E42]/50 animate-pulse"
+        >
+          <RotateCcw size={10} />
+          <span>{isCancel ? `Cancelling (${pending?.secondsRemaining}s)` : `Rejecting (${pending?.secondsRemaining}s)`}</span>
+        </span>
+      );
+    }
+
+    const tStatus = task.status;
+    const approvalStatus = task.approvalStatus;
+
     if (tStatus === 'awaiting_approval' || approvalStatus === 'awaiting_approval') {
       return (
         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-950/60 text-amber-300 border border-amber-800">
@@ -209,6 +258,11 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
     awaitingApprovalTask ||
     runningTask;
 
+  const isHighlightedPending = highlightedTask ? effectiveIsTaskPending(highlightedTask.id) : false;
+  const highlightedPendingAction = highlightedTask ? effectiveGetPendingAction(highlightedTask.id) : undefined;
+  const isPendingRejection = isHighlightedPending && highlightedPendingAction?.actionType === 'reject';
+  const isPendingCancellation = isHighlightedPending && highlightedPendingAction?.actionType === 'cancel';
+
   return (
     <div className="flex flex-col h-full bg-[#090B0D] border border-[#F9F9F9]/10 rounded-xl overflow-hidden">
       {/* Header */}
@@ -243,6 +297,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
       {/* Highlighted Active or Approval Card */}
       {highlightedTask && (
         <div
+          data-testid={`highlighted-task-card-${highlightedTask.id}`}
           className={`p-3 border-b space-y-2 shrink-0 ${
             highlightedTask.status === 'awaiting_approval'
               ? 'bg-amber-950/20 border-amber-800/40'
@@ -253,24 +308,59 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#FF6E42]">
               {highlightedTask.status === 'awaiting_approval' ? 'Requires Approval' : 'Active Task'}
             </span>
-            {getStatusBadge(highlightedTask.status, highlightedTask.approvalStatus)}
+            {getStatusBadge(highlightedTask)}
           </div>
 
           <h4 className="text-xs font-bold text-[#F9F9F9]">{highlightedTask.title}</h4>
 
-          {highlightedTask.acceptanceCriteria && highlightedTask.acceptanceCriteria.length > 0 && (
-            <div className="space-y-1 pt-1">
-              <span className="text-[10px] font-mono text-[#F9F9F9]/40 uppercase">Acceptance Criteria</span>
-              <ul className="text-[11px] text-[#F9F9F9]/70 space-y-0.5">
-                {highlightedTask.acceptanceCriteria.map((c, idx) => (
-                  <li key={idx} className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#FF6E42]" />
-                    <span>{c}</span>
-                  </li>
-                ))}
-              </ul>
+          {/* Pending 3-Second Undo Grace Period Banner */}
+          {isHighlightedPending && highlightedPendingAction && (
+            <div
+              data-testid={`active-task-pending-banner-${highlightedTask.id}`}
+              className="p-2.5 rounded-lg bg-[#092634] border border-[#FF6E42]/60 space-y-1.5 animate-in fade-in duration-150"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 rounded bg-[#FF6E42]/20 text-[#FF6E42]">
+                    <RotateCcw size={13} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#FF6E42]">
+                      {isPendingCancellation ? 'Cancellation Scheduled' : 'Rejection Scheduled'}
+                    </span>
+                    <span
+                      data-testid={`active-task-countdown-${highlightedTask.id}`}
+                      className="ml-2 px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-[#FF6E42] text-[#090B0D]"
+                    >
+                      {highlightedPendingAction.secondsRemaining}s remaining
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => effectiveUndoAction(highlightedTask.id)}
+                  data-testid="undo-task-action-btn"
+                  aria-label={`Undo ${highlightedPendingAction.actionType} for ${highlightedTask.title}`}
+                  className="px-2.5 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-bold flex items-center gap-1 border border-[#FF6E42]/50 hover:border-[#FF6E42] cursor-pointer"
+                >
+                  <RotateCcw size={11} className="text-[#FF6E42]" />
+                  <span>Undo</span>
+                </button>
+              </div>
+
+              <p className="text-[10px] text-[#F9F9F9]/70 font-mono">
+                {isPendingCancellation
+                  ? 'Task execution continues in background until the grace period expires without undo.'
+                  : 'Action will dispatch to backend when the 3-second timer expires.'}
+              </p>
             </div>
           )}
+
+          {/* Pre-Execution Proposal Preview */}
+          <TaskApprovalPreview
+            task={highlightedTask}
+            defaultExpanded={highlightedTask.status === 'awaiting_approval'}
+          />
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 pt-1">
@@ -278,10 +368,10 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
               <>
                 <button
                   onClick={() => handleApprove(highlightedTask.id)}
-                  disabled={actionLoading === highlightedTask.id}
-                  title="Approve & Dispatch Task (Ctrl+Enter)"
+                  disabled={actionLoading === highlightedTask.id || isPendingRejection}
+                  title={isPendingRejection ? 'Task is currently scheduled for rejection' : 'Approve & Dispatch Task (Ctrl+Enter)'}
                   aria-label="Approve and Dispatch Task (Ctrl+Enter)"
-                  className="px-3 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-semibold flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] cursor-pointer"
+                  className="px-3 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 disabled:opacity-40 disabled:cursor-not-allowed text-[#F9F9F9] text-xs font-semibold flex items-center gap-1.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6E42] cursor-pointer"
                 >
                   <CheckCircle2 size={12} />
                   <span>Approve & Dispatch</span>
@@ -289,28 +379,52 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                     Ctrl+Enter
                   </kbd>
                 </button>
-                <button
-                  onClick={() => handleReject(highlightedTask.id)}
-                  disabled={actionLoading === highlightedTask.id}
-                  className="px-3 py-1 rounded bg-[#090B0D] hover:bg-rose-950/50 text-rose-300 border border-rose-800 text-xs font-semibold flex items-center gap-1 transition-all"
-                >
-                  <XCircle size={12} />
-                  <span>Reject</span>
-                </button>
+                {isPendingRejection ? (
+                  <button
+                    onClick={() => effectiveUndoAction(highlightedTask.id)}
+                    data-testid="undo-rejection-btn"
+                    className="px-3 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-semibold flex items-center gap-1.5 border border-[#FF6E42] cursor-pointer"
+                  >
+                    <RotateCcw size={12} className="text-[#FF6E42]" />
+                    <span>Undo Rejection</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleReject(highlightedTask)}
+                    disabled={actionLoading === highlightedTask.id}
+                    data-testid="reject-task-btn"
+                    className="px-3 py-1 rounded bg-[#090B0D] hover:bg-rose-950/50 text-rose-300 border border-rose-800 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <XCircle size={12} />
+                    <span>Reject</span>
+                  </button>
+                )}
               </>
             ) : highlightedTask.status === 'running' ? (
               <>
-                <button
-                  onClick={() => handleCancel(highlightedTask.id)}
-                  disabled={actionLoading === highlightedTask.id}
-                  className="px-2.5 py-1 rounded bg-[#090B0D] hover:bg-rose-950/50 text-rose-300 border border-rose-800 text-xs font-medium flex items-center gap-1 transition-all"
-                >
-                  <XCircle size={12} />
-                  <span>Cancel Task</span>
-                </button>
+                {isPendingCancellation ? (
+                  <button
+                    onClick={() => effectiveUndoAction(highlightedTask.id)}
+                    data-testid="undo-cancellation-btn"
+                    className="px-2.5 py-1 rounded bg-[#004E72] hover:bg-[#004E72]/80 text-[#F9F9F9] text-xs font-semibold flex items-center gap-1.5 border border-[#FF6E42] cursor-pointer"
+                  >
+                    <RotateCcw size={12} className="text-[#FF6E42]" />
+                    <span>Undo Cancellation</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleCancel(highlightedTask)}
+                    disabled={actionLoading === highlightedTask.id}
+                    data-testid="cancel-task-btn"
+                    className="px-2.5 py-1 rounded bg-[#090B0D] hover:bg-rose-950/50 text-rose-300 border border-rose-800 text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
+                  >
+                    <XCircle size={12} />
+                    <span>Cancel Task</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setInspectingTaskId(highlightedTask.id)}
-                  className="px-2.5 py-1 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 transition-all"
+                  className="px-2.5 py-1 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
                 >
                   <GitCommit size={12} />
                   <span>Inspect Git Changes</span>
@@ -319,7 +433,7 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
             ) : (
               <button
                 onClick={() => setInspectingTaskId(highlightedTask.id)}
-                className="px-2.5 py-1 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 transition-all"
+                className="px-2.5 py-1 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-xs font-medium flex items-center gap-1 transition-all cursor-pointer"
               >
                 <GitCommit size={12} />
                 <span>Inspect Git Changes</span>
@@ -380,41 +494,47 @@ export const AntigravityExecutionPanel: React.FC<AntigravityExecutionPanelProps>
                       : 'border-[#F9F9F9]/10 hover:border-[#004E72]/40'
                   }`}
                 >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="font-semibold text-xs text-[#F9F9F9] truncate">
-                      {task.title}
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="font-semibold text-xs text-[#F9F9F9] truncate">
+                        {task.title}
+                      </span>
+                    </div>
+                    {getStatusBadge(task)}
                   </div>
-                  {getStatusBadge(task.status, task.approvalStatus)}
-                </div>
 
-                <div className="flex items-center justify-between text-[10px] font-mono text-[#F9F9F9]/40 pt-1">
-                  <span>Priority: {task.priority || 'normal'}</span>
-                  <span>{new Date(task.createdAt).toLocaleTimeString()}</span>
-                </div>
+                  <div className="flex items-center justify-between text-[10px] font-mono text-[#F9F9F9]/40 pt-1">
+                    <span>Priority: {task.priority || 'normal'}</span>
+                    <span>{new Date(task.createdAt).toLocaleTimeString()}</span>
+                  </div>
 
-                {/* Inspect or Retry buttons for items in list */}
-                <div className="pt-1 flex items-center gap-2">
-                  <button
-                    onClick={() => setInspectingTaskId(task.id)}
-                    className="px-2 py-0.5 rounded bg-[#090B0D] hover:bg-[#004E72]/40 text-[#F9F9F9]/80 hover:text-[#F9F9F9] border border-[#F9F9F9]/10 text-[10px] font-mono flex items-center gap-1 transition-all"
-                  >
-                    <GitCommit size={10} /> Inspect Changes
-                  </button>
-                  {['failed', 'cancelled'].includes(task.status) && (
+                  {/* Inspect or Retry buttons for items in list */}
+                  <div className="pt-1 flex items-center gap-2">
                     <button
-                      onClick={() => handleRetry(task.id)}
-                      disabled={actionLoading === task.id}
-                      className="px-2 py-0.5 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-[10px] font-mono flex items-center gap-1 transition-all"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setInspectingTaskId(task.id);
+                      }}
+                      className="px-2 py-0.5 rounded bg-[#090B0D] hover:bg-[#004E72]/40 text-[#F9F9F9]/80 hover:text-[#F9F9F9] border border-[#F9F9F9]/10 text-[10px] font-mono flex items-center gap-1 transition-all"
                     >
-                      <RotateCcw size={10} /> Retry Task
+                      <GitCommit size={10} /> Inspect Changes
                     </button>
-                  )}
+                    {['failed', 'cancelled'].includes(task.status) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRetry(task.id);
+                        }}
+                        disabled={actionLoading === task.id}
+                        className="px-2 py-0.5 rounded bg-[#004E72]/30 hover:bg-[#004E72] text-[#F9F9F9] text-[10px] font-mono flex items-center gap-1 transition-all"
+                      >
+                        <RotateCcw size={10} /> Retry Task
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })
           )
         ) : (
           /* Live Stream view */

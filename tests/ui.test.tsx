@@ -492,8 +492,13 @@ describe('UI and Branding Components', () => {
         expect(screen.getByTestId('connection-badge')).toHaveTextContent('Remote Verified');
       });
 
-      // Click Stop button
+      // Click Stop button - opens confirmation modal (P2 safety guardrail)
       fireEvent.click(screen.getByTestId('stop-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('confirm-stop-btn')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByTestId('confirm-stop-btn'));
 
       await waitFor(() => {
         expect(window.knotApi?.stopDesktopCommander).toHaveBeenCalledTimes(1);

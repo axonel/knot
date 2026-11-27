@@ -153,7 +153,7 @@ describe('Unified Execution Timeline Integration & End-to-End Audit Trail', () =
     });
 
     // Transition task in queue
-    taskQueue.approveTask(task.id);
+    taskQueue.approveTask(task.id, undefined, 'Lead Developer Alice');
 
     // 4. Git Baseline Capture
     const gitStart = await gitService.getRepoStatus(repoDir, repoDir);

@@ -3,6 +3,7 @@ import { LogEntry, ProcessStatusInfo } from '../../../shared/types.js';
 import { DesktopCommanderLogo } from '../DesktopCommanderLogo.js';
 import { StatusBadge } from './StatusBadge.js';
 import { DiagnosticLogs } from './DiagnosticLogs.js';
+import { StopProcessModal } from '../Safety/StopProcessModal.js';
 import { Play, Square, Loader2, AlertCircle, Clock, Hash, Wifi, Key } from 'lucide-react';
 
 export const ProcessManager: React.FC = () => {
@@ -20,6 +21,7 @@ export const ProcessManager: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [actionPending, setActionPending] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
+  const [showStopModal, setShowStopModal] = useState(false);
 
   // Initialize status and register listeners
   useEffect(() => {
@@ -150,7 +152,7 @@ export const ProcessManager: React.FC = () => {
         <div className="flex items-center gap-2">
           {isRunning ? (
             <button
-              onClick={handleStop}
+              onClick={() => setShowStopModal(true)}
               disabled={isTransitioning}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FF6E42] text-[#F9F9F9] text-xs font-semibold hover:bg-[#FF6E42]/90 active:bg-[#FF6E42]/80 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
               data-testid="stop-btn"
@@ -253,6 +255,23 @@ export const ProcessManager: React.FC = () => {
 
       {/* Expandable Diagnostic Logs */}
       <DiagnosticLogs logs={logs} onClear={handleClearLogs} defaultExpanded={true} />
+
+      {/* Stop Process Confirmation Modal */}
+      <StopProcessModal
+        isOpen={showStopModal}
+        isStopping={actionPending || status.state === 'Stopping'}
+        processDetails={{
+          name: 'Desktop Commander Remote',
+          processType: 'desktop_commander',
+          state: status.state,
+          pid: status.pid,
+        }}
+        onConfirmStop={async () => {
+          await handleStop();
+          setShowStopModal(false);
+        }}
+        onCancel={() => setShowStopModal(false)}
+      />
     </div>
   );
 };

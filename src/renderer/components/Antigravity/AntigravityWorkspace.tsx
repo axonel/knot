@@ -10,6 +10,7 @@ import type {
 import { AgentStatusCard } from './AgentStatusCard.js';
 import { ConversationTimeline, type ActiveToolEvent } from './ConversationTimeline.js';
 import { Composer } from './Composer.js';
+import { StopProcessModal } from '../Safety/StopProcessModal.js';
 import { FolderGit2, RefreshCw } from 'lucide-react';
 
 export const AntigravityWorkspace: React.FC = () => {
@@ -24,6 +25,8 @@ export const AntigravityWorkspace: React.FC = () => {
   const [activeTools, setActiveTools] = useState<ActiveToolEvent[]>([]);
   const [selectedMode, setSelectedMode] = useState<AntigravityExecutionMode>('default');
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [showStopModal, setShowStopModal] = useState(false);
+  const [isStoppingProcess, setIsStoppingProcess] = useState(false);
 
   // Load Projects
   const loadProjects = useCallback(async () => {
@@ -278,7 +281,7 @@ export const AntigravityWorkspace: React.FC = () => {
       <AgentStatusCard
         status={status}
         onStart={handleStart}
-        onStop={handleStop}
+        onStop={() => setShowStopModal(true)}
         onInterrupt={handleInterrupt}
         onResume={handleResume}
         onModeChange={setSelectedMode}
@@ -301,6 +304,29 @@ export const AntigravityWorkspace: React.FC = () => {
         isThinking={isThinking}
         workingDirectory={currentProject?.repositoryPath}
         disabled={!selectedSessionId}
+      />
+
+      {/* Stop Process Confirmation Modal */}
+      <StopProcessModal
+        isOpen={showStopModal}
+        isStopping={isStoppingProcess}
+        processDetails={{
+          name: 'Antigravity Implementation Worker',
+          processType: 'antigravity',
+          state: status?.state || 'Running',
+          pid: status?.pid ?? null,
+          activeSessionId: selectedSessionId,
+        }}
+        onConfirmStop={async () => {
+          setIsStoppingProcess(true);
+          try {
+            await handleStop();
+          } finally {
+            setIsStoppingProcess(false);
+            setShowStopModal(false);
+          }
+        }}
+        onCancel={() => setShowStopModal(false)}
       />
     </div>
   );

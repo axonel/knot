@@ -33,6 +33,8 @@ import { UnifiedTimelinePanel } from './UnifiedTimelinePanel.js';
 import { ReliabilityModal } from './ReliabilityModal.js';
 import { SecurityModal } from './SecurityModal.js';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal.js';
+import { useTaskUndoManager } from '../../hooks/useTaskUndoManager.js';
+import { UndoNotificationBanner } from '../Safety/UndoNotificationBanner.js';
 import { isEditableTarget } from '../../utils/keyboardUtils.js';
 
 interface CollaborationWorkspaceProps {
@@ -293,9 +295,42 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
         activeSessionTasks[0]?.id ||
         null;
 
+  // 3-second undo manager for task cancellation and rejection
+  const {
+    pendingActions,
+    scheduleAction,
+    undoAction,
+    isTaskPending,
+    getPendingAction,
+  } = useTaskUndoManager(async (taskId, actionType) => {
+    if (!window.knotApi) return;
+    try {
+      // Revalidate task status before executing backend action
+      const currentTask = activeSessionTasks.find((t) => t.id === taskId);
+      if (currentTask && ['succeeded', 'failed', 'cancelled'].includes(currentTask.status)) {
+        return; // Already resolved, skip redundant action
+      }
+
+      if (actionType === 'cancel') {
+        await window.knotApi.orchestration.cancelTask(taskId, 'Cancelled by user');
+      } else {
+        await window.knotApi.orchestration.rejectTask(taskId, 'Rejected by user');
+      }
+      await loadWorkspaceData();
+    } catch (err) {
+      console.error(`[CollaborationWorkspace] Failed executing deferred ${actionType} for ${taskId}:`, err);
+    }
+  });
+
   // Task approval handler for Ctrl+Enter
   const handleApproveSelectedTask = useCallback(async () => {
     if (isApprovingTask || !effectiveSelectedTaskId) return;
+
+    // Safety invariant: cannot approve if task is currently undergoing pending rejection
+    const pending = getPendingAction(effectiveSelectedTaskId);
+    if (pending && pending.actionType === 'reject') {
+      return;
+    }
 
     const targetTask = activeSessionTasks.find((t) => t.id === effectiveSelectedTaskId);
     // Strict safety invariant: only approve tasks that are genuinely awaiting approval
@@ -316,7 +351,7 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
     } finally {
       setIsApprovingTask(false);
     }
-  }, [isApprovingTask, effectiveSelectedTaskId, activeSessionTasks, loadWorkspaceData]);
+  }, [isApprovingTask, effectiveSelectedTaskId, activeSessionTasks, loadWorkspaceData, getPendingAction]);
 
   // Global Keyboard Shortcuts Listener
   useEffect(() => {
@@ -947,6 +982,10 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
                 onRegisterApproveHandler={(handler) => {
                   executionApproveHandlerRef.current = handler;
                 }}
+                scheduleUndoAction={scheduleAction}
+                undoAction={undoAction}
+                isTaskPending={isTaskPending}
+                getPendingAction={getPendingAction}
               />
             </div>
           </div>
@@ -1085,6 +1124,12 @@ export const CollaborationWorkspace: React.FC<CollaborationWorkspaceProps> = ({
           setShowShortcutsModal(false);
           shortcutsBtnRef.current?.focus();
         }}
+      />
+
+      {/* Persistent Floating Undo Notification Banner */}
+      <UndoNotificationBanner
+        pendingActions={pendingActions}
+        onUndo={undoAction}
       />
     </div>
   );

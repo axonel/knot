@@ -267,6 +267,11 @@ describe('ContextRepository', () => {
       expect(sessionDocs).toHaveLength(2);
     });
 
+    it('lists documents for a session without explicit scope filter (Context Vault default)', () => {
+      const docs = dbService.context.list({ projectId, sessionId });
+      expect(docs).toHaveLength(3);
+    });
+
     it('filters by category', () => {
       const handoffDocs = dbService.context.list({ projectId, category: 'session_handoff' });
       expect(handoffDocs).toHaveLength(1);
@@ -324,6 +329,174 @@ describe('ContextRepository', () => {
 
       const finalList = dbService.context.list({ projectId });
       expect(finalList.find((d) => d.id === doc.id)).toBeDefined();
+    });
+  });
+
+  describe('Context Vault SQLite Regression Suite', () => {
+    let session2Id: string;
+
+    beforeEach(() => {
+      const session2 = dbService.sessions.create({
+        projectId,
+        title: 'Session 2 (Isolated)',
+      });
+      session2Id = session2.id;
+    });
+
+    it('handles empty database behavior gracefully', () => {
+      const emptyProject = dbService.projects.create({
+        name: 'Empty Project',
+        repositoryPath: '/path/to/empty',
+      });
+
+      const docs = dbService.context.list({ projectId: emptyProject.id });
+      expect(docs).toEqual([]);
+
+      const sessionDocs = dbService.context.list({ projectId: emptyProject.id, sessionId: 'non-existent-session' });
+      expect(sessionDocs).toEqual([]);
+
+      const nonExistentProjectDocs = dbService.context.list({ projectId: 'non-existent-project' });
+      expect(nonExistentProjectDocs).toEqual([]);
+    });
+
+    it('correctly returns both session documents and shared project documents when querying by sessionId', () => {
+      // 1. Create a project-scoped document
+      const projectDoc = dbService.context.create({
+        projectId,
+        title: 'Project Architecture',
+        category: 'architecture_decisions',
+        contentMarkdown: 'Shared across all sessions.',
+        scope: 'project',
+      });
+
+      // 2. Create a session-scoped document for Session 1
+      const session1Doc = dbService.context.create({
+        projectId,
+        sessionId,
+        title: 'Session 1 Plan',
+        category: 'session_objective',
+        contentMarkdown: 'Specific to session 1.',
+        scope: 'session',
+      });
+
+      // 3. Create a session-scoped document for Session 2
+      const session2Doc = dbService.context.create({
+        projectId,
+        sessionId: session2Id,
+        title: 'Session 2 Plan',
+        category: 'session_objective',
+        contentMarkdown: 'Specific to session 2.',
+        scope: 'session',
+      });
+
+      // Querying with sessionId (as ContextVaultPanel does by default)
+      const session1Context = dbService.context.list({ projectId, sessionId });
+      expect(session1Context).toHaveLength(2);
+      expect(session1Context.map((d) => d.id)).toContain(projectDoc.id);
+      expect(session1Context.map((d) => d.id)).toContain(session1Doc.id);
+      expect(session1Context.map((d) => d.id)).not.toContain(session2Doc.id);
+
+      // Querying Session 2
+      const session2Context = dbService.context.list({ projectId, sessionId: session2Id });
+      expect(session2Context).toHaveLength(2);
+      expect(session2Context.map((d) => d.id)).toContain(projectDoc.id);
+      expect(session2Context.map((d) => d.id)).toContain(session2Doc.id);
+      expect(session2Context.map((d) => d.id)).not.toContain(session1Doc.id);
+
+      // Querying strictly session scope
+      const session1Only = dbService.context.list({ projectId, sessionId, scope: 'session' });
+      expect(session1Only).toHaveLength(1);
+      expect(session1Only[0].id).toBe(session1Doc.id);
+
+      // Querying strictly project scope
+      const projectOnly = dbService.context.list({ projectId, scope: 'project' });
+      expect(projectOnly).toHaveLength(1);
+      expect(projectOnly[0].id).toBe(projectDoc.id);
+
+      // Querying with sessionId: null (strictly documents with no session assigned)
+      const noSession = dbService.context.list({ projectId, sessionId: null });
+      expect(noSession).toHaveLength(1);
+      expect(noSession[0].id).toBe(projectDoc.id);
+    });
+
+    it('correctly filters archived documents in session-specific queries', () => {
+      const activeDoc = dbService.context.create({
+        projectId,
+        sessionId,
+        title: 'Active Session Note',
+        category: 'user_notes',
+        contentMarkdown: 'Active.',
+      });
+
+      const toArchiveDoc = dbService.context.create({
+        projectId,
+        sessionId,
+        title: 'Archived Session Note',
+        category: 'user_notes',
+        contentMarkdown: 'To be archived.',
+      });
+      dbService.context.archive(toArchiveDoc.id);
+
+      // Default excludes archived
+      const defaultDocs = dbService.context.list({ projectId, sessionId });
+      expect(defaultDocs.some((d) => d.id === activeDoc.id)).toBe(true);
+      expect(defaultDocs.some((d) => d.id === toArchiveDoc.id)).toBe(false);
+
+      // includeArchived: true includes archived
+      const withArchived = dbService.context.list({ projectId, sessionId, includeArchived: true });
+      expect(withArchived.some((d) => d.id === activeDoc.id)).toBe(true);
+      expect(withArchived.some((d) => d.id === toArchiveDoc.id)).toBe(true);
+    });
+
+    it('safely handles special characters, SQL injection attempts, and malformed queries', () => {
+      dbService.context.create({
+        projectId,
+        title: "Knot's Architecture & \"Quoted\" Symbols",
+        category: 'architecture_decisions',
+        contentMarkdown: "Content with 'single' and \"double\" quotes and 100% symbols.",
+      });
+
+      // Special characters in search query
+      const singleQuoteSearch = dbService.context.list({ projectId, searchQuery: "Knot's" });
+      expect(singleQuoteSearch).toHaveLength(1);
+
+      const doubleQuoteSearch = dbService.context.list({ projectId, searchQuery: '"Quoted"' });
+      expect(doubleQuoteSearch).toHaveLength(1);
+
+      const sqlInjectionSearch = dbService.context.list({
+        projectId,
+        searchQuery: "' OR 1=1; DROP TABLE context_documents; --",
+      });
+      expect(sqlInjectionSearch).toHaveLength(0);
+
+      // Verify table is intact
+      const intactDocs = dbService.context.list({ projectId });
+      expect(intactDocs.length).toBeGreaterThanOrEqual(1);
+
+      // Whitespace-only search query is ignored
+      const whitespaceSearch = dbService.context.list({ projectId, searchQuery: '   ' });
+      expect(whitespaceSearch.length).toBe(intactDocs.length);
+    });
+
+    it('verifies context vault table and index schema migration definitions', () => {
+      // Introspect sqlite_master for required tables and indexes
+      const tables = (dbService as any).db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'context_%'")
+        .all();
+      const tableNames = tables.map((t: any) => t.name);
+      expect(tableNames).toContain('context_documents');
+      expect(tableNames).toContain('context_revisions');
+      expect(tableNames).toContain('context_conflicts');
+
+      const indexes = (dbService as any).db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_context_%'")
+        .all();
+      const indexNames = indexes.map((i: any) => i.name);
+      expect(indexNames).toContain('idx_context_documents_project_id');
+      expect(indexNames).toContain('idx_context_documents_session_id');
+      expect(indexNames).toContain('idx_context_documents_scope');
+      expect(indexNames).toContain('idx_context_documents_category');
+      expect(indexNames).toContain('idx_context_documents_is_archived');
     });
   });
 });

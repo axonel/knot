@@ -425,8 +425,8 @@ export class ContextRepository {
         sql += ' AND session_id IS NULL';
       } else {
         if (!filter.scope) {
-          sql += ' AND (session_id = ? OR scope = "project")';
-          params.push(filter.sessionId);
+          sql += ' AND (session_id = ? OR scope = ?)';
+          params.push(filter.sessionId, 'project');
         } else {
           sql += ' AND session_id = ?';
           params.push(filter.sessionId);

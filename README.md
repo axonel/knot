@@ -10,17 +10,19 @@
 
 ## 🎨 Visual Identity & Design System
 
-Knot features an original geometric mark symbolizing two independent agents collaborating across an intertwined, real-time connection knot.
+Knot features an original geometric mark symbolizing two independent agents collaborating across an intertwined, real-time connection knot, rendered in vivid brand orange (`#FE6102`).
 
-The application strictly enforces a focused 5-color developer tool palette:
+The application strictly enforces the Blackout / Signal developer tool design system:
 
-| Color | Hex Code | Intended Usage |
-|---|---|---|
-| **White** | `#F9F9F9` | Primary text, key icons, and light surfaces |
-| **Blue** | `#004E72` | Primary interactive elements, active navigation states, system highlights |
-| **Orange** | `#FF6E42` | Secondary accent, stop/kill actions, warning & error indicators |
-| **Navy Blue** | `#092634` | Main application surfaces, cards, sidebar, header |
-| **Near-black** | `#090B0D` | Main canvas background, terminal log viewer surfaces |
+| Role | Color | Hex Code | Intended Usage |
+|---|---|---|---|
+| **Brand Mark** | **Vivid Orange** | `#FE6102` | Interlocking Knot brand mark, master icons, and favicon |
+| **Canvas** | **Solid Black** | `#000000` | Main application background, canvas, and root surfaces |
+| **Panels** | **Blackout Charcoal** | `#1B1D1F` | Main cards, sidebar, navigation, toolbars, and containers |
+| **Surfaces** | **Elevated Dark** | `#292C2F` | Elevated cards, input fields, badges, dividers, and borders |
+| **Primary Text** | **Off-White** | `#F0F0ED` | Primary headers, values, active states, and labels |
+| **Secondary Text** | **Muted Silver** | `#A5A5A0` | Secondary copy, metadata, timestamps, and subtitles |
+| **Signal Accent** | **Signal Red** | `#E05252` | Status indicators, active agent pulses, and critical actions |
 
 ---
 
@@ -385,7 +387,7 @@ Knot includes a read-only Git change inspection service and modal diff viewer th
   - Suppresses diff display for credentials, private keys, and environment files (`.env*`, `*.pem`, `*.key`, `id_rsa*`, `credentials.json`, `secrets.*`). Displays: *"Diff omitted: File may contain sensitive credentials or secrets."*
   - Suppresses binary files (*"Diff omitted: Binary file detected."*) and files exceeding 250 KB (*"Diff omitted: File exceeds display threshold."*).
 - **Interactive UI Diff Viewer**:
-  - Strictly adheres to Knot's 5-color palette (`#F9F9F9`, `#004E72`, `#FF6E42`, `#092634`, `#090B0D`).
+  - Strictly adheres to Knot's Blackout / Signal design system.
   - Searchable file sidebar with filter chips (All, Added, Modified, Deleted, Uncertain).
   - Split line numbers with syntax-highlighted hunk lines and one-click commit hash copying.
 
@@ -414,7 +416,7 @@ For complete documentation, see 👉 **[Project Context Vault Specification](doc
   - Knot validates project ownership and non-archived status, then injects read-only context into the task prompt for Antigravity under `## Attached Project & Session Context (Read-Only)`.
   - Unreferenced documents are never injected; Antigravity cannot modify context vault records.
 - **Interactive UI Context Vault Panel**:
-  - Strictly adheres to Knot's 5-color palette (`#F9F9F9`, `#004E72`, `#FF6E42`, `#092634`, `#090B0D`).
+  - Strictly adheres to Knot's Blackout / Signal design system.
   - Active session handoff note card and conflict resolution banner.
   - Category filters, real-time search, and archive toggle.
   - 3-tab document view: rendered Markdown Content, Revision Timeline (History), and line-by-line Diff comparison (`diffLines`).
@@ -455,7 +457,7 @@ For full architectural details, see 👉 **[Unified Execution Timeline & Audit T
   - Full-featured `UnifiedTimelinePanel` in Knot's central workspace tab switcher.
   - Real-time search, actor filters (`ChatGPT`, `Antigravity`, `Knot`, `User`, `Git`), and category filters (`Tasks`, `Execution`, `Approvals`, `Git`, `Context`, `Verification`, `Errors`).
   - One-click navigation to inspect Git diffs or jump to related context vault documents.
-  - Strictly follows Knot's 5-color developer tool palette (`#F9F9F9`, `#004E72`, `#FF6E42`, `#092634`, `#090B0D`).
+  - Strictly follows Knot's Blackout / Signal design system.
 
 ---
 

@@ -10,6 +10,9 @@ import {
   Terminal,
   ShieldCheck,
   Zap,
+  Radio,
+  Eye,
+  X,
 } from 'lucide-react';
 import type { BridgeStatusInfo, HandshakeState } from '../../../shared/types.js';
 
@@ -31,6 +34,7 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
   isInitializing = false,
 }) => {
   const [copied, setCopied] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   const handleCopyPath = async (text: string) => {
     try {
@@ -52,37 +56,52 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
     switch (state) {
       case 'verified':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#292C2F]/40 text-[#F0F0ED] border border-[#292C2F]">
-            <CheckCircle2 size={13} className="text-[#E05252]" />
+          <span
+            data-testid="connection-badge"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-[#000000] text-[#F0F0ED] border border-[#292C2F]"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#E05252]" />
             Verified & Active
           </span>
         );
       case 'awaiting_response':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#E05252]/20 text-[#E05252] border border-[#E05252]/40 animate-pulse">
-            <Clock size={13} />
+          <span
+            data-testid="connection-badge"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-[#000000] text-[#E05252] border border-[#E05252]/40 animate-pulse"
+          >
+            <Clock size={12} className="text-[#E05252]" />
             Awaiting Response...
           </span>
         );
       case 'workspace_ready':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#292C2F]/20 text-[#F0F0ED]/80 border border-[#292C2F]/50">
-            <Zap size={13} className="text-[#292C2F]" />
+          <span
+            data-testid="connection-badge"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-[#000000] text-[#F0F0ED] border border-[#292C2F]"
+          >
+            <Zap size={12} className="text-[#A5A5A0]" />
             Ready for Test
           </span>
         );
       case 'error':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-950/40 text-red-400 border border-red-800/50">
-            <AlertCircle size={13} />
+          <span
+            data-testid="connection-badge"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-[#000000] text-[#E05252] border border-[#E05252]"
+          >
+            <AlertCircle size={12} className="text-[#E05252]" />
             Verification Failed
           </span>
         );
       case 'not_configured':
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#000000] text-[#F0F0ED]/40 border border-[#F0F0ED]/10">
-            <Clock size={13} />
+          <span
+            data-testid="connection-badge"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-[#000000] text-[#A5A5A0] border border-[#292C2F]"
+          >
+            <Clock size={12} className="text-[#A5A5A0]" />
             Not Initialized
           </span>
         );
@@ -93,20 +112,25 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
   const isDCActive = status?.desktopCommanderRunning ?? false;
   const handshakeState = status?.handshakeState || 'not_configured';
   const hasSession = Boolean(selectedProjectId && selectedSessionId);
-  const isWorkspaceReady = Boolean(status?.sessionPaths);
+  const isWorkspaceReady = Boolean(status?.sessionPaths || status?.workspaceInitialized);
 
   return (
-    <div className="rounded-xl border border-[#F0F0ED]/10 bg-[#1B1D1F] p-5 shadow-lg space-y-4">
-      {/* Header Row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F0F0ED]/10 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-[#F0F0ED]">ChatGPT Filesystem Bridge</h3>
-            {getHandshakeBadge(handshakeState)}
+    <div className="rounded-xl border border-[#292C2F] bg-[#1B1D1F] p-4.5 space-y-4 select-none">
+      {/* Top Overview Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 border-b border-[#292C2F]">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[#000000] border border-[#292C2F] flex items-center justify-center text-[#E05252] shrink-0">
+            <Radio size={16} />
           </div>
-          <p className="text-xs text-[#F0F0ED]/60 mt-0.5">
-            Bidirectional Markdown message exchange via Desktop Commander MCP
-          </p>
+          <div>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h3 className="text-sm font-semibold text-[#F0F0ED]">ChatGPT Filesystem Bridge</h3>
+              {getHandshakeBadge(handshakeState)}
+            </div>
+            <p className="text-xs text-[#A5A5A0] mt-0.5">
+              Bidirectional local filesystem synchronization with Desktop Commander MCP
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -114,7 +138,8 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
             <button
               onClick={onInitWorkspace}
               disabled={isInitializing}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#292C2F] hover:bg-[#292C2F]/80 text-[#F0F0ED] transition-colors border border-[#292C2F]/40"
+              data-testid="init-workspace-btn"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-medium bg-[#292C2F] hover:bg-[#292C2F]/80 text-[#F0F0ED] transition-colors border border-[#292C2F] cursor-pointer disabled:opacity-50"
             >
               {isInitializing ? 'Initializing...' : 'Initialize Session Workspace'}
             </button>
@@ -123,10 +148,11 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
           <button
             onClick={onOpenTestModal}
             disabled={!hasSession || !isWorkspaceReady}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm ${
+            data-testid="test-connection-btn"
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-xs ${
               hasSession && isWorkspaceReady
                 ? 'bg-[#E05252] hover:bg-[#E05252]/90 text-[#F0F0ED] cursor-pointer'
-                : 'bg-[#000000] text-[#F0F0ED]/30 border border-[#F0F0ED]/10 cursor-not-allowed'
+                : 'bg-[#000000] text-[#A5A5A0]/40 border border-[#292C2F] cursor-not-allowed'
             }`}
             title={!hasSession ? 'Select a project and session first' : undefined}
           >
@@ -136,95 +162,128 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
         </div>
       </div>
 
-      {/* Grid of Status Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Workspace Root */}
-        <div className="p-3 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
-            <span className="flex items-center gap-1">
-              <Folder size={12} className="text-[#292C2F]" />
-              Bridge Root
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => handleCopyPath(bridgeRoot)}
-                title="Copy Path"
-                className="p-1 hover:text-[#F0F0ED] transition-colors"
-              >
-                {copied ? <Check size={12} className="text-[#E05252]" /> : <Copy size={12} />}
-              </button>
-              <button
-                onClick={() => handleOpenFolder(bridgeRoot)}
-                title="Open Folder"
-                className="p-1 hover:text-[#F0F0ED] transition-colors"
-              >
-                <ExternalLink size={12} />
-              </button>
+      {/* Restrained 4-Column Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* 1. Bridge Status */}
+        <div className="p-3 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1.5 flex flex-col justify-between">
+          <div>
+            <div className="text-[10px] text-[#A5A5A0] font-mono uppercase tracking-wider">
+              Bridge State
+            </div>
+            <div className="text-xs font-semibold text-[#F0F0ED] mt-1 flex items-center gap-1.5">
+              {isWorkspaceReady ? (
+                <>
+                  <CheckCircle2 size={13} className="text-[#E05252]" />
+                  <span>Workspace Initialized</span>
+                </>
+              ) : (
+                <>
+                  <Clock size={13} className="text-[#A5A5A0]" />
+                  <span>Not Initialized</span>
+                </>
+              )}
             </div>
           </div>
-          <div className="font-mono text-[11px] text-[#F0F0ED]/90 truncate" title={bridgeRoot}>
-            {bridgeRoot}
-          </div>
-          <div className="text-[10px] text-[#F0F0ED]/40 font-mono">Protocol: KNOT_MESSAGE_V1</div>
-        </div>
-
-        {/* Desktop Commander MCP Status */}
-        <div className="p-3 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
-            <span className="flex items-center gap-1">
-              <Terminal size={12} className="text-[#292C2F]" />
-              Desktop Commander
-            </span>
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isDCActive ? 'bg-[#E05252] shadow-[0_0_8px_#E05252]' : 'bg-[#F0F0ED]/20'
-              }`}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-xs font-semibold ${
-                isDCActive ? 'text-[#F0F0ED]' : 'text-[#F0F0ED]/50'
-              }`}
-            >
-              {isDCActive ? 'Process Active' : 'Process Inactive'}
-            </span>
-          </div>
-          <div className="text-[10px] text-[#F0F0ED]/40 font-mono">
-            {isDCActive ? 'Child process running on stdio' : 'Launch from Desktop Commander tab'}
+          <div className="text-[10px] text-[#A5A5A0] font-mono pt-1 border-t border-[#292C2F]/60">
+            Protocol: KNOT_MESSAGE_V1
           </div>
         </div>
 
-        {/* MCP Permissions & Verification */}
-        <div className="p-3 rounded-lg bg-[#000000] border border-[#F0F0ED]/10 space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-[#F0F0ED]/60 font-mono uppercase tracking-wider">
-            <span className="flex items-center gap-1">
-              <ShieldCheck size={12} className="text-[#292C2F]" />
-              MCP Scope
-            </span>
-            <span className="text-[10px] font-mono text-[#F0F0ED]/40">read / write</span>
-          </div>
-          <div className="text-xs text-[#F0F0ED]/80 truncate">
-            {status?.lastVerifiedAt ? (
-              <span className="text-[#F0F0ED]/90">
-                Verified: {new Date(status.lastVerifiedAt).toLocaleTimeString()}
+        {/* 2. Bridge Root */}
+        <div className="p-3 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1.5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-[10px] text-[#A5A5A0] font-mono uppercase tracking-wider">
+              <span className="flex items-center gap-1">
+                <Folder size={11} className="text-[#A5A5A0]" />
+                Bridge Root
               </span>
-            ) : (
-              <span className="text-[#F0F0ED]/50">Never verified</span>
-            )}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleCopyPath(bridgeRoot)}
+                  title="Copy Bridge Path"
+                  aria-label="Copy Bridge Path"
+                  data-testid="copy-bridge-path-btn"
+                  className="p-1 text-[#A5A5A0] hover:text-[#F0F0ED] transition-colors cursor-pointer"
+                >
+                  {copied ? <Check size={12} className="text-[#E05252]" /> : <Copy size={12} />}
+                </button>
+                <button
+                  onClick={() => handleOpenFolder(bridgeRoot)}
+                  title="Open Bridge Folder"
+                  aria-label="Open Bridge Folder"
+                  data-testid="open-bridge-folder-btn"
+                  className="p-1 text-[#A5A5A0] hover:text-[#F0F0ED] transition-colors cursor-pointer"
+                >
+                  <ExternalLink size={12} />
+                </button>
+              </div>
+            </div>
+            <div
+              className="font-mono text-[11px] text-[#F0F0ED] truncate mt-1"
+              title={bridgeRoot}
+              data-testid="bridge-root-path"
+            >
+              {bridgeRoot}
+            </div>
           </div>
-          <div className="text-[10px] text-[#F0F0ED]/40 font-mono">
-            Strict 256 KB file cap, UUID validated
+          <div className="text-[10px] text-[#A5A5A0] font-mono pt-1 border-t border-[#292C2F]/60 truncate">
+            Strict 256 KB file cap
+          </div>
+        </div>
+
+        {/* 3. Desktop Commander Remote */}
+        <div className="p-3 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1.5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-[10px] text-[#A5A5A0] font-mono uppercase tracking-wider">
+              <span className="flex items-center gap-1">
+                <Terminal size={11} className="text-[#A5A5A0]" />
+                Desktop Commander
+              </span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isDCActive ? 'bg-[#E05252]' : 'bg-[#292C2F]'
+                }`}
+              />
+            </div>
+            <div className="text-xs font-semibold text-[#F0F0ED] mt-1 flex items-center gap-1.5">
+              <span>{isDCActive ? 'Process Active' : 'Process Inactive'}</span>
+            </div>
+          </div>
+          <div className="text-[10px] text-[#A5A5A0] font-mono pt-1 border-t border-[#292C2F]/60 truncate">
+            {isDCActive ? 'Child process running on stdio' : 'Start from Desktop Commander tab'}
+          </div>
+        </div>
+
+        {/* 4. MCP Scope */}
+        <div className="p-3 rounded-lg bg-[#000000] border border-[#292C2F] space-y-1.5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-[10px] text-[#A5A5A0] font-mono uppercase tracking-wider">
+              <span className="flex items-center gap-1">
+                <ShieldCheck size={11} className="text-[#A5A5A0]" />
+                MCP Scope
+              </span>
+              <span className="text-[10px] font-mono text-[#A5A5A0]">read / write</span>
+            </div>
+            <div className="text-xs text-[#F0F0ED] mt-1 truncate">
+              {status?.lastVerifiedAt ? (
+                <span>Verified: {new Date(status.lastVerifiedAt).toLocaleTimeString()}</span>
+              ) : (
+                <span className="text-[#A5A5A0]">Never verified</span>
+              )}
+            </div>
+          </div>
+          <div className="text-[10px] text-[#A5A5A0] font-mono pt-1 border-t border-[#292C2F]/60 truncate">
+            UUID validated, isolated sandbox
           </div>
         </div>
       </div>
 
-      {/* Real-time Diagnostics Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-[#000000]/80 border border-[#F0F0ED]/10 text-[11px] font-mono text-[#F0F0ED]/70">
+      {/* Watcher and Outbox Diagnostics Row */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-lg bg-[#000000] border border-[#292C2F] text-[11px] font-mono text-[#A5A5A0]">
         <div className="flex items-center gap-2">
           <span
             className={`w-2 h-2 rounded-full ${
-              status?.watcherActive ? 'bg-emerald-400' : 'bg-amber-400'
+              status?.watcherActive ? 'bg-[#E05252]' : 'bg-[#292C2F]'
             }`}
           />
           <span>
@@ -237,22 +296,80 @@ export const ConnectionStatusCard: React.FC<ConnectionStatusCardProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           {status?.antigravityRunning && (
-            <span className="text-[#E05252] font-semibold">● Antigravity Executing</span>
+            <span className="text-[#E05252] font-semibold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#E05252]" />
+              Antigravity Executing
+            </span>
           )}
+
           {typeof status?.unreadResultsCount === 'number' && status.unreadResultsCount > 0 && (
-            <span className="px-2 py-0.5 rounded bg-[#292C2F]/40 text-[#F0F0ED] border border-[#292C2F]/60">
+            <span className="px-2 py-0.5 rounded bg-[#292C2F] text-[#F0F0ED] border border-[#292C2F]">
               {status.unreadResultsCount} unread outbox result(s)
             </span>
           )}
+
           {status?.latestDispatchedTask && (
-            <span className="text-[#F0F0ED]/50 truncate max-w-xs" title={status.latestDispatchedTask.title}>
-              Dispatched: {status.latestDispatchedTask.title}
-            </span>
+            <div className="flex items-center gap-1.5 text-[#A5A5A0]">
+              <span>Dispatched:</span>
+              <span
+                className="text-[#F0F0ED] truncate max-w-[200px] sm:max-w-[320px]"
+                title={status.latestDispatchedTask.title}
+              >
+                {status.latestDispatchedTask.title}
+              </span>
+              <button
+                onClick={() => setIsDetailModalOpen(true)}
+                title="Inspect Full Dispatched Summary"
+                className="p-0.5 hover:text-[#F0F0ED] transition-colors cursor-pointer"
+              >
+                <Eye size={12} />
+              </button>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Dispatched Task Detail Dialog */}
+      {isDetailModalOpen && status?.latestDispatchedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000000]/80">
+          <div className="w-full max-w-lg bg-[#1B1D1F] border border-[#292C2F] rounded-xl p-5 space-y-3 shadow-xl">
+            <div className="flex items-center justify-between border-b border-[#292C2F] pb-2">
+              <h4 className="text-sm font-semibold text-[#F0F0ED]">Latest Dispatched Task</h4>
+              <button
+                onClick={() => setIsDetailModalOpen(false)}
+                className="p-1 text-[#A5A5A0] hover:text-[#F0F0ED] transition-colors cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-2 font-mono text-xs text-[#F0F0ED]">
+              <div>
+                <span className="text-[#A5A5A0]">Task ID:</span> {status.latestDispatchedTask.taskId}
+              </div>
+              <div>
+                <span className="text-[#A5A5A0]">Dispatched At:</span>{' '}
+                {new Date(status.latestDispatchedTask.timestamp).toLocaleString()}
+              </div>
+              <div className="pt-2 border-t border-[#292C2F]">
+                <div className="text-[#A5A5A0] mb-1 font-sans">Full Task Summary:</div>
+                <div className="p-3 bg-[#000000] border border-[#292C2F] rounded-lg max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed text-[#F0F0ED]">
+                  {status.latestDispatchedTask.title}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setIsDetailModalOpen(false)}
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-[#292C2F] hover:bg-[#292C2F]/80 text-[#F0F0ED] transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

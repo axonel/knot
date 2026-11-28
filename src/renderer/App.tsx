@@ -80,7 +80,7 @@ export const App: React.FC = () => {
                 <AntigravityWorkspace />
               </section>
             ) : currentTab === 'bridge' ? (
-              <section>
+              <section className="w-full">
                 <BridgeManager />
               </section>
             ) : (

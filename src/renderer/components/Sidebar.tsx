@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Magnet } from './ReactBits/index.js';
 
 interface SidebarProps {
   currentTab: string;
@@ -65,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside
       className={`${
-        isCollapsed ? 'w-14' : 'w-56'
+        isCollapsed ? 'w-14' : 'w-[248px]'
       } bg-[#1B1D1F] border-r border-[#292C2F] flex flex-col justify-between py-3.5 select-none shrink-0 transition-all duration-200 z-20`}
     >
       {/* Top Brand & Nav Section */}
@@ -77,30 +76,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }`}
         >
           {isCollapsed ? (
-            <Magnet padding={10} disabled={false}>
-              <button
-                onClick={onToggleCollapse}
-                title="Expand Sidebar"
-                aria-label="Expand Sidebar"
-                className="cursor-pointer hover:opacity-80 transition-opacity p-0.5"
-              >
-                <KnotLogo showText={false} size={28} />
-              </button>
-            </Magnet>
+            <button
+              onClick={onToggleCollapse}
+              title="Expand Sidebar"
+              aria-label="Expand Sidebar"
+              className="cursor-pointer hover:opacity-80 transition-opacity p-0.5"
+            >
+              <KnotLogo showText={false} size={28} />
+            </button>
           ) : (
             <>
               <KnotLogo showText={true} subtitle={true} size={34} />
               {onToggleCollapse && (
-                <Magnet padding={12} disabled={false}>
-                  <button
-                    onClick={onToggleCollapse}
-                    title="Collapse Sidebar"
-                    aria-label="Collapse Sidebar"
-                    className="p-1 rounded text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all cursor-pointer"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                </Magnet>
+                <button
+                  onClick={onToggleCollapse}
+                  title="Collapse Sidebar"
+                  aria-label="Collapse Sidebar"
+                  className="p-1 rounded text-[#A5A5A0] hover:text-[#F0F0ED] hover:bg-[#292C2F] transition-all cursor-pointer"
+                >
+                  <ChevronLeft size={16} />
+                </button>
               )}
             </>
           )}
@@ -119,13 +114,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <button
                 key={item.id}
+                data-testid={`nav-item-${item.id}`}
                 onClick={() => onTabChange(item.id)}
                 title={isCollapsed ? `${item.label}${item.badge ? ` (${item.badge})` : ''}` : undefined}
                 className={`w-full flex items-center ${
-                  isCollapsed ? 'justify-center p-2.5' : 'justify-between px-2.5 py-2'
+                  isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
                 } rounded-lg text-xs font-medium transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E05252] ${
                   isActive
-                    ? 'bg-[#292C2F] text-[#F0F0ED] shadow-sm font-semibold border-l-2 border-[#E05252]'
+                    ? 'bg-[#292C2F] text-[#F0F0ED] shadow-xs font-semibold border-l-2 border-[#E05252]'
                     : 'text-[#A5A5A0] hover:bg-[#292C2F]/50 hover:text-[#F0F0ED]'
                 }`}
               >
@@ -134,7 +130,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     size={16}
                     className={`shrink-0 ${isActive ? 'text-[#E05252]' : 'text-current'}`}
                   />
-                  {!isCollapsed && <span className="truncate">{item.label}</span>}
+                  {!isCollapsed && (
+                    <span className="whitespace-nowrap font-medium text-left">
+                      {item.label}
+                    </span>
+                  )}
                 </div>
 
                 {/* Badges */}

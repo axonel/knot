@@ -340,7 +340,7 @@ describe('P0 Responsive Desktop Layout Redesign (Hyprland / Omarchy Linux)', () 
       fireEvent.click(expandBtn);
 
       await waitFor(() => {
-        expect(container.querySelector('aside')).toHaveClass('w-56');
+        expect(container.querySelector('aside')).toHaveClass('w-[248px]');
         expect(screen.getByText('Where AI agents work together.')).toBeInTheDocument();
       });
     });
